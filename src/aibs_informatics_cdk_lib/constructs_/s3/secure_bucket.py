@@ -18,8 +18,10 @@ import constructs
 from aibs_informatics_core.env import EnvBase
 from aws_cdk import aws_s3 as s3
 
+from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstructMixins
 
-class SecureS3Bucket(constructs.Construct):
+
+class SecureS3Bucket(s3.Bucket, EnvBaseConstructMixins):
     def __init__(
         self,
         scope: constructs.Construct,
@@ -31,29 +33,29 @@ class SecureS3Bucket(constructs.Construct):
         region: str = cdk.Aws.REGION,
         lifecycle_rules: Optional[Sequence[s3.LifecycleRule]] = None,
         inventories: Optional[Sequence[s3.Inventory]] = None,
+        auto_delete_objects: bool = False,
+        bucket_key_enabled: bool = False,
+        block_public_access: Optional[s3.BlockPublicAccess] = s3.BlockPublicAccess.BLOCK_ALL,
+        public_read_access: bool = False,
+        **kwargs,
     ):
-
-        super().__init__(scope, id)
         self.env_base = env_base
-
-        # Construct the bucket name to be like:
-        # dev-xxx-<GIVEN NAME>-us-east-1-1234567890
-        self._full_bucket_name = self.env_base.get_bucket_name(
+        self._full_bucket_name = env_base.get_bucket_name(
             base_name=bucket_name, account_id=account_id, region=region
         )
-
-        self.s3_bucket = s3.Bucket(
-            self,
-            "-".join([self.env_base, bucket_name]),
+        super().__init__(
+            scope,
+            id,
             access_control=s3.BucketAccessControl.PRIVATE,
-            auto_delete_objects=False,
-            block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
-            bucket_key_enabled=False,
+            auto_delete_objects=auto_delete_objects,
+            block_public_access=block_public_access,
+            bucket_key_enabled=bucket_key_enabled,
             bucket_name=self.bucket_name,
-            public_read_access=False,
+            public_read_access=public_read_access,
             removal_policy=removal_policy,
             lifecycle_rules=lifecycle_rules,
             inventories=inventories,
+            **kwargs,
         )
 
     @property

@@ -21,7 +21,7 @@ from aws_cdk import aws_efs as efs
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as lambda_
 
-from aibs_informatics_cdk_lib.constructs.base import EnvBaseConstruct
+from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstruct
 
 logger = logging.getLogger(__name__)
 

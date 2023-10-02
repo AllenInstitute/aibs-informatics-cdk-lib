@@ -9,8 +9,8 @@ from aibs_informatics_core.utils.hashing import sha256_hexdigest
 from aws_cdk import aws_s3_deployment as s3deployment
 from aws_cdk import aws_ssm as ssm
 
-from aibs_informatics_cdk_lib.constructs.base import EnvBaseConstruct
-from aibs_informatics_cdk_lib.constructs.s3 import SecureS3Bucket
+from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstruct
+from aibs_informatics_cdk_lib.constructs_.s3 import SecureS3Bucket
 
 
 class SSMTools(EnvBaseConstruct):

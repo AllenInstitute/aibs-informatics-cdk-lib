@@ -6,7 +6,7 @@ from aws_cdk import aws_batch_alpha as batch
 from aws_cdk import aws_ecr as ecr
 from aws_cdk import aws_ecs as ecs
 
-from aibs_informatics_cdk_lib.constructs.base import EnvBaseConstruct
+from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstruct
 
 LATEST_TAG = "latest"
 

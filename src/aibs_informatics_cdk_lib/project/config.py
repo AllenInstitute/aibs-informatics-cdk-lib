@@ -8,8 +8,7 @@ __all__ = [
     "StageConfig",
     "PipelineConfig",
     "ProjectConfig",
-    "ProjectConfigProvider",
-    "GCSProjectConfig",
+    "ConfigProvider",
 ]
 
 from pathlib import Path
@@ -21,7 +20,7 @@ from aibs_informatics_core.collections import DeepChainMap
 from aibs_informatics_core.env import ENV_BASE_KEY, ENV_LABEL_KEY, ENV_TYPE_KEY, EnvBase, EnvType
 from aibs_informatics_core.models.unique_ids import UniqueID
 from aibs_informatics_core.utils.os_operations import expandvars
-from aibs_informatics_core.utils.tools.dict_helpers import remove_null_values
+from aibs_informatics_core.utils.tools.dicttools import remove_null_values
 
 
 class EnvVarStr(str):
@@ -124,17 +123,16 @@ class ProjectConfig(pydantic.BaseModel):
     default_config: StageConfig
     default_config_overrides: Dict[EnvType, dict]
 
-    def get_config(self, env_type: Union[str, EnvType]) -> "ProjectConfig":
+    def get_stage_config(self, env_type: Union[str, EnvType]) -> StageConfig:
         """Get default config with `EnvType` overrides"""
+
         try:
-            return ProjectConfig.parse_obj(
+            return StageConfig.parse_obj(
                 {
-                    **self.global_config.dict(),
                     **DeepChainMap(
                         self.default_config_overrides[EnvType(env_type)],
-                        self.default_config.dict(),
+                        self.default_config.dict(exclude_unset=True),
                     ),
-                    "project_config": self.dict(),
                 }
             )
         except Exception as e:
@@ -168,10 +166,10 @@ class ProjectConfig(pydantic.BaseModel):
         return cls.parse_file(path=path)
 
 
-class ProjectConfigProvider:
+class ConfigProvider:
     @classmethod
-    def get_config(
+    def get_stage_config(
         cls, env_type: Union[str, EnvType], path: Union[str, Path] = DEFAULT_CONFIG_PATH
     ) -> "ProjectConfig":
         proj_config = ProjectConfig.parse_file(path)
-        return proj_config.get_config(env_type=env_type)
+        return proj_config.get_stage_config(env_type=env_type)

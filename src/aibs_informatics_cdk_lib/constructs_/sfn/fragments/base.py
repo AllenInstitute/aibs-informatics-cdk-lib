@@ -12,7 +12,7 @@ from aws_cdk import aws_stepfunctions as sfn
 
 from aibs_informatics_cdk_lib.common.aws.core_utils import build_lambda_arn
 from aibs_informatics_cdk_lib.common.aws.sfn_utils import JsonReferencePath
-from aibs_informatics_cdk_lib.constructs.base import EnvBaseConstructMixins
+from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstructMixins
 
 T = TypeVar("T", bound=ValidatedStr)
 

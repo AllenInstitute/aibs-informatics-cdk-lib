@@ -9,10 +9,11 @@ from aws_cdk import aws_stepfunctions as sfn
 from constructs import Construct
 
 from aibs_informatics_cdk_lib.common.aws.core_utils import build_sfn_arn
-from aibs_informatics_cdk_lib.constructs.base import EnvBaseConstruct
-from aibs_informatics_cdk_lib.constructs.cw_tools import (
+from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstruct
+from aibs_informatics_cdk_lib.constructs_.cw import (
     AlarmMetricConfig,
     DashboardTools,
+    EnhancedDashboard,
     GraphMetricConfig,
     GroupedGraphMetricConfig,
 )
@@ -58,10 +59,11 @@ class MonitoringConstruct(EnvBaseConstruct):
 
     def create_dashboard(
         self, start: Optional[str] = "-P1W", end: Optional[str] = None
-    ) -> cw.Dashboard:
-        return cw.Dashboard(
+    ) -> EnhancedDashboard:
+        return EnhancedDashboard(
             self,
             f"{self.monitoring_name}-dashboard",
+            self.env_base,
             dashboard_name=self.get_name_with_env(self.monitoring_name, "Dashboard"),
             start=start,
             end=end,
@@ -308,6 +310,4 @@ class ResourceMonitoring(MonitoringConstruct):
                 protocol=sns.SubscriptionProtocol("EMAIL"),
             )
 
-        dashboard = self.create_dashboard(start="-P1D")
-
-        self.dashboard_tools = DashboardTools(self, "cwdb", env_base, dashboard)
+        self.dashboard = self.create_dashboard(start="-P1D")

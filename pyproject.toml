@@ -20,6 +20,7 @@ dependencies = [
     "constructs>=10.0.0",
     "aibs-informatics-core",
     "aibs-informatics-aws-utils",
+    "pydantic~=1.9",
 ]
 
 [project.optional-dependencies]

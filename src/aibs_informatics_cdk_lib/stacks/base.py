@@ -5,13 +5,13 @@ __all__ = [
     "get_all_stacks",
 ]
 
-from typing import List, Literal, Optional, cast
+from typing import List, Optional, cast
 
 import aws_cdk as cdk
 import constructs
 from aibs_informatics_core.env import EnvBase, EnvType
 
-from aibs_informatics_cdk_lib.constructs.base import EnvBaseConstructMixins
+from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstructMixins
 
 
 def get_all_stacks(scope: constructs.Construct) -> List[cdk.Stack]:
