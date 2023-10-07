@@ -18,15 +18,15 @@ dependencies = [
     "aws-cdk-lib>=2.90.0",
     "aws-cdk.aws-batch-alpha>=2.90.0a",
     "constructs>=10.0.0",
-    "aibs-informatics-core",
-    "aibs-informatics-aws-utils",
+    "aibs-informatics-aws-utils @ git+ssh://git@github.com/AllenInstitute/aibs-informatics-aws-utils.git@main",
+    "aibs-informatics-core @ git+ssh://git@github.com/AllenInstitute/aibs-informatics-core.git@main",
     "pydantic~=1.9",
 ]
 
 [project.optional-dependencies]
 dev = [
     "boto3-stubs[s3,batch]",
-    "aibs-informatics-test-resources",
+    "aibs-informatics-test-resources @ git+ssh://git@github.com/AllenInstitute/aibs-informatics-test-resources.git@main",
 ]
 
 [tool.setuptools.dynamic]
