@@ -1,5 +1,5 @@
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Union, cast
 
 import constructs
 from aibs_informatics_aws_utils.batch import (
@@ -38,13 +38,13 @@ class BatchOperation:
         cls,
         scope: constructs.Construct,
         id: str,
-        command: List[str],
+        command: Union[List[str], str],
         image: str,
         job_definition_name: str,
-        environment: Optional[Mapping[str, str]] = None,
-        memory: Optional[int] = None,
-        vcpus: Optional[int] = None,
-        gpu: Optional[int] = None,
+        environment: Optional[Union[Mapping[str, str], str]] = None,
+        memory: Optional[Union[int, str]] = None,
+        vcpus: Optional[Union[int, str]] = None,
+        gpu: Optional[Union[int, str]] = None,
         mount_points: Optional[List[MountPointTypeDef]] = None,
         volumes: Optional[List[VolumeTypeDef]] = None,
     ) -> sfn.Chain:
@@ -52,6 +52,10 @@ class BatchOperation:
         job_definition_name = (
             f"States.format('{{}}-{job_definition_name}-{{}}', $$.State.Name. $$.Execution.Name)"
         )
+        if not isinstance(environment, str):
+            environment_pairs = to_key_value_pairs(environment or {})
+        else:
+            environment_pairs = environment
 
         request: RegisterJobDefinitionRequestRequestTypeDef = {
             "jobDefinitionName": job_definition_name,
@@ -59,7 +63,7 @@ class BatchOperation:
             "containerProperties": {
                 "image": image,
                 "command": command,
-                "environment": to_key_value_pairs(environment or {}),
+                "environment": environment_pairs,
                 "resourceRequirements": to_resource_requirements(gpu, memory, vcpus),
                 "mountPoints": mount_points,
                 "volumes": volumes,
@@ -96,16 +100,22 @@ class BatchOperation:
         job_definition: str,
         job_queue: str,
         parameters: Optional[Mapping[str, str]] = None,
-        command: Optional[List[str]] = None,
-        environment: Optional[Mapping[str, str]] = None,
-        memory: Optional[int] = None,
-        vcpus: Optional[int] = None,
-        gpu: Optional[int] = None,
+        command: Union[List[str], str] = None,
+        environment: Optional[Union[Mapping[str, str], str]] = None,
+        memory: Optional[Union[int, str]] = None,
+        vcpus: Optional[Union[int, str]] = None,
+        gpu: Optional[Union[int, str]] = None,
     ) -> sfn.Chain:
         job_name = f"States.format('{{}}-{job_name}-{{}}', $$.State.Name. $$.Execution.Name)"
+
+        if not isinstance(environment, str):
+            environment_pairs = to_key_value_pairs(environment or {})
+        else:
+            environment_pairs = environment
+
         container_overrides: ContainerOverridesTypeDef = {
             "command": command,
-            "environment": to_key_value_pairs(environment or {}),
+            "environment": environment_pairs,
             "resourceRequirements": to_resource_requirements(gpu, memory, vcpus),
         }
 

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Mapping, Optional
+from typing import TYPE_CHECKING, List, Mapping, Optional, Union
 
 import constructs
 from aibs_informatics_aws_utils.constants.lambda_ import (
@@ -37,20 +37,20 @@ else:
     RegisterJobDefinitionRequestRequestTypeDef = dict
 
 
-class BatchJobFragment(EnvBaseStateMachineFragment):
+class SubmitJobFragment(EnvBaseStateMachineFragment):
     def __init__(
         self,
         scope: constructs.Construct,
         id: str,
         env_base: EnvBase,
         name: str,
-        command: List[str],
-        image: str,
         job_queue: str,
-        environment: Optional[Mapping[str, str]] = None,
-        memory: Optional[int] = None,
-        vcpus: Optional[int] = None,
-        gpu: Optional[int] = None,
+        command: Union[List[str], str],
+        image: str,
+        environment: Optional[Union[Mapping[str, str], str]] = None,
+        memory: Optional[Union[int, str]] = None,
+        vcpus: Optional[Union[int, str]] = None,
+        gpu: Optional[Union[int, str]] = None,
         mount_points: Optional[List[MountPointTypeDef]] = None,
         volumes: Optional[List[VolumeTypeDef]] = None,
     ) -> None:
