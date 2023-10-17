@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from aibs_informatics_core.env import EnvBase
 from aws_cdk import aws_iam as iam
@@ -277,3 +277,16 @@ def sns_policty_statement(
             ),
         ],
     )
+
+
+def grant_managed_policies(
+    role: Optional[iam.IRole],
+    *managed_policies: Union[str, iam.ManagedPolicy],
+):
+    if not role:
+        return
+
+    for mp in managed_policies:
+        role.add_managed_policy(
+            iam.ManagedPolicy.from_aws_managed_policy_name(mp) if isinstance(mp, str) else mp
+        )

@@ -1,21 +1,9 @@
-# © 2021 Amazon Web Services, Inc. or its affiliates. All Rights Reserved.
-#
-# This AWS Content is provided subject to the terms of the AWS Customer
-# Agreement available at http://aws.amazon.com/agreement or other written
-# agreement between Customer and either Amazon Web Services, Inc. or
-# Amazon Web Services EMEA SARL or both.
-
-"""
-Secure S3 Bucket
-
-CDK Construct implementing common settings for a best practice secure
-bucket.
-"""
-from typing import Optional, Sequence
+from typing import Literal, Optional, Sequence
 
 import aws_cdk as cdk
 import constructs
 from aibs_informatics_core.env import EnvBase
+from aws_cdk import aws_iam as iam
 from aws_cdk import aws_s3 as s3
 
 from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstructMixins
@@ -27,7 +15,7 @@ class SecureS3Bucket(s3.Bucket, EnvBaseConstructMixins):
         scope: constructs.Construct,
         id: str,
         env_base: EnvBase,
-        bucket_name: str,
+        bucket_name: Optional[str],
         removal_policy: cdk.RemovalPolicy = cdk.RemovalPolicy.RETAIN,
         account_id: str = cdk.Aws.ACCOUNT_ID,
         region: str = cdk.Aws.REGION,
@@ -40,9 +28,11 @@ class SecureS3Bucket(s3.Bucket, EnvBaseConstructMixins):
         **kwargs,
     ):
         self.env_base = env_base
-        self._full_bucket_name = env_base.get_bucket_name(
-            base_name=bucket_name, account_id=account_id, region=region
-        )
+        self._full_bucket_name = bucket_name
+        if self._full_bucket_name is not None:
+            self._full_bucket_name = env_base.get_bucket_name(
+                base_name=bucket_name, account_id=account_id, region=region
+            )
         super().__init__(
             scope,
             id,
@@ -60,4 +50,27 @@ class SecureS3Bucket(s3.Bucket, EnvBaseConstructMixins):
 
     @property
     def bucket_name(self) -> str:
-        return self._full_bucket_name
+        return self._full_bucket_name or super().bucket_name
+
+    def grant_permissions(
+        self,
+        role: Optional[iam.IRole],
+        *permissions: Literal["rw", "r", "w", "d"],
+    ):
+        grant_bucket_access(self, role, *permissions)
+
+
+def grant_bucket_access(
+    bucket: s3.Bucket, role: Optional[iam.IRole], *permissions: Literal["rw", "r", "w", "d"]
+):
+    if not role:
+        return
+    for bucket_permission in permissions:
+        if bucket_permission == "rw":
+            bucket.grant_read_write(role)
+        elif bucket_permission == "r":
+            bucket.grant_read(role)
+        elif bucket_permission == "w":
+            bucket.grant_write(role)
+        elif bucket_permission == "d":
+            bucket.grant_delete(role)

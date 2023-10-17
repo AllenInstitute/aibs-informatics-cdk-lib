@@ -8,6 +8,8 @@ from aws_cdk import Stack
 from aws_cdk import aws_iam as iam
 from constructs import Construct
 
+from aibs_informatics_cdk_lib.common.aws.iam_utils import grant_managed_policies
+
 
 class EnvBaseConstructMixins(EnvBaseMixins):
     @property
@@ -64,8 +66,10 @@ class EnvBaseConstructMixins(EnvBaseMixins):
     def get_name_with_env(self, *names: str) -> str:
         return self.env_base.prefixed(*names)
 
-    def get_resource_name(self, name: ResourceNameBaseEnum) -> str:
-        return name.get_name(self.env_base)
+    def get_resource_name(self, name: Union[ResourceNameBaseEnum, str]) -> str:
+        if isinstance(name, ResourceNameBaseEnum):
+            return name.get_name(self.env_base)
+        return self.env_base.get_resource_name(name)
 
     def get_stack_of(self, construct: Construct) -> Optional[Stack]:
         try:
@@ -88,12 +92,7 @@ class EnvBaseConstructMixins(EnvBaseMixins):
     def add_managed_policies(
         cls, role: Optional[iam.IRole], *managed_policies: Union[str, iam.ManagedPolicy]
     ):
-        if not role:
-            return
-        for mp in managed_policies:
-            role.add_managed_policy(
-                iam.ManagedPolicy.from_aws_managed_policy_name(mp) if isinstance(mp, str) else mp
-            )
+        grant_managed_policies(role, *managed_policies)
 
 
 class EnvBaseConstruct(Construct, EnvBaseConstructMixins):

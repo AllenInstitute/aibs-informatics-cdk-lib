@@ -50,7 +50,7 @@ class BatchLaunchTemplateBuilder(IBatchLaunchTemplateBuilder["BatchLaunchTemplat
 
         user_data = ec2.UserData.custom(
             BatchLaunchTemplateUserData(
-                env_base=self.env_base, batch_env_name=batch_env_name.name
+                env_base=self.env_base, batch_env_name=str(batch_env_name)
             ).user_data_text
         )
 
@@ -93,7 +93,7 @@ class EbsBatchLaunchTemplateBuilder(IBatchLaunchTemplateBuilder["EbsBatchLaunchT
         user_data = ec2.UserData.custom(
             EbsBatchLaunchTemplateUserData(
                 env_base=self.env_base,
-                batch_env_name=batch_env_name.name,
+                batch_env_name=str(batch_env_name),
                 docker_volume_device_name=self.docker_volume_device_name,
             ).user_data_text
         )

@@ -8,7 +8,9 @@ from aibs_informatics_core.utils.hashing import sha256_hexdigest
 from aibs_informatics_core.utils.tools.dicttools import remove_null_values
 from aws_cdk import aws_batch_alpha as batch
 from aws_cdk import aws_ec2 as ec2
+from aws_cdk import aws_efs as efs
 from aws_cdk import aws_iam as iam
+from aws_cdk import aws_s3 as s3
 
 from aibs_informatics_cdk_lib.common.aws.iam_utils import (
     S3_READ_ONLY_ACCESS_ACTIONS,
@@ -18,8 +20,10 @@ from aibs_informatics_cdk_lib.common.aws.iam_utils import (
 from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstruct
 from aibs_informatics_cdk_lib.constructs_.batch.launch_template import IBatchLaunchTemplateBuilder
 from aibs_informatics_cdk_lib.constructs_.batch.types import BatchEnvironmentName
-from aibs_informatics_cdk_lib.constructs_.efs import EFSFileSystem
-from aibs_informatics_cdk_lib.constructs_.s3 import SecureS3Bucket
+from aibs_informatics_cdk_lib.constructs_.efs.file_system import (
+    grant_connectable_file_system_access,
+    grant_role_file_system_access,
+)
 
 
 class Batch(EnvBaseConstruct):
@@ -51,10 +55,6 @@ class Batch(EnvBaseConstruct):
         self.instance_role = self.create_instance_role()
         self.instance_profile = self.create_instance_profile()
         self.security_group = self.create_security_group()
-
-        self.batch_environments: Dict[str, BatchEnvironment] = {}
-        for _, batch_env in self.batch_environments.items():
-            batch_env.node.add_dependency(self.instance_profile)
 
     def create_instance_role(self) -> iam.Role:
         instance_role = iam.Role(
@@ -171,39 +171,39 @@ class Batch(EnvBaseConstruct):
 
     def grant_instance_role_permissions(
         self,
-        read_write_file_systems: Optional[Iterable[EFSFileSystem]] = None,
-        read_only_buckets: Optional[Iterable[SecureS3Bucket]] = None,
-        read_write_buckets: Optional[Iterable[SecureS3Bucket]] = None,
+        read_write_file_systems: Optional[Iterable[efs.FileSystem]] = None,
+        read_only_buckets: Optional[Iterable[s3.Bucket]] = None,
+        read_write_buckets: Optional[Iterable[s3.Bucket]] = None,
     ):
         if read_write_file_systems:
             for rw_fs in read_write_file_systems:
-                rw_fs.grant_role_access(self.instance_role)
+                grant_role_file_system_access(rw_fs, self.instance_role)
 
         if read_only_buckets is not None:
             for read_only_bucket in read_only_buckets:
-                read_only_bucket.s3_bucket.grant_read(self.instance_role)
+                read_only_bucket.grant_read(self.instance_role)
 
         if read_write_buckets is not None:
             for read_write_bucket in read_write_buckets:
-                read_write_bucket.s3_bucket.grant_read_write(self.instance_role)
+                read_write_bucket.grant_read_write(self.instance_role)
 
     def setup_batch_environment(
         self,
         batch_env_name: BatchEnvironmentName,
         batch_env_config: "BatchEnvironmentConfig",
-        file_system: Optional[EFSFileSystem] = None,
+        file_system: Optional[efs.FileSystem] = None,
         launch_template_builder: Optional[IBatchLaunchTemplateBuilder] = None,
     ):
         if launch_template_builder:
             launch_template_builder.grant_instance_role_permissions(self.instance_role)
 
         if file_system:
-            file_system.grant_role_access(self.instance_role)
+            grant_role_file_system_access(file_system, self.instance_role)
 
         # ---------------------------------------------------------------------
         # Batch Environments
         # ---------------------------------------------------------------------
-        self.batch_environments[str(batch_env_name)] = BatchEnvironment(
+        batch_env = BatchEnvironment(
             self,
             f"{batch_env_name}-batch-env",
             env_base=self.env_base,
@@ -215,6 +215,8 @@ class Batch(EnvBaseConstruct):
             file_system=file_system,
             launch_template_builder=launch_template_builder,
         )
+        batch_env.node.add_dependency(self.instance_profile)
+        self.batch_environments[str(batch_env_name)] = batch_env
 
 
 DEFAULT_MAXV_CPUS = 10240
@@ -260,7 +262,7 @@ class BatchEnvironment(EnvBaseConstruct):
         vpc: ec2.IVpc,
         instance_role: iam.IRole,
         security_group: ec2.SecurityGroup,
-        file_system: Optional[EFSFileSystem] = None,
+        file_system: Optional[efs.FileSystem] = None,
         launch_template_builder: Optional[IBatchLaunchTemplateBuilder] = None,
     ):
         super().__init__(scope, id, env_base)
@@ -277,7 +279,7 @@ class BatchEnvironment(EnvBaseConstruct):
             compute_environment=self.create_compute_environment(), order=1
         )
         if file_system and self.config.attach_file_system:
-            file_system.grant_connectable_access(compute_env.compute_environment)
+            grant_connectable_file_system_access(file_system, compute_env.compute_environment)
 
         job_queue = batch.JobQueue(
             self,
