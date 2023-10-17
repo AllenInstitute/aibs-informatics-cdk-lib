@@ -14,6 +14,46 @@ class S3Operation:
         key: str,
         body: Any,
     ) -> sfn.Chain:
+        """Create a chain to put a body of text to S3
+
+        This chain consists of two states:
+            1. Pass state (resolving references and resctructuring inputs)
+            2. API Call to put object.
+
+        The context at the end state of the chain should contain the following fields:
+            - Bucket
+            - Key
+
+        All parameters can be either a reference (e.g. $.path.to.my.value)
+        or an explicit value.
+
+        Examples:
+            Context:
+                {}
+            Definition:
+                S3Operation.put_object(..., bucket_name="bucket", key="key", body="body")
+            Result:
+                # text "body" is put at s3://bucket/key
+                {"Bucket": "bucket", "Key": "key"}
+
+            Context:
+                {"bucket": "woah", "key": "wait/what", "nested": {"a": "b"}}
+            Definition:
+                S3Operation.put_object(..., bucket_name="$.bucket", key="$.key", body="$.nested")
+            Result:
+                # text '{"a": "b"}' is put at s3://woah/wait/what
+                {"Bucket": "woah", "Key": "wait/what"}
+
+        Args:
+            scope (constructs.Construct): scope construct
+            id (str): An ID prefix
+            bucket_name (str): explicit or reference to name of bucket
+            key (str): explicit or reference to name of key
+            body (Any): explicit or reference to body to upload
+
+        Returns:
+            sfn.Chain
+        """
         init = sfn.Pass(
             scope,
             id + " PutObject Prep",
@@ -49,6 +89,46 @@ class S3Operation:
         bucket_name: str,
         key: str,
     ) -> sfn.Chain:
+        """Creates a chain to get a body of text from S3
+
+        This chain consists of two states:
+            1. Pass state (resolving references and resctructuring inputs)
+            2. API Call to get object.
+
+        The context at the end state of the chain should contain the following fields:
+            - Body
+            - Bucket
+            - Key
+
+        All parameters can be either a reference (e.g. $.path.to.my.value)
+        or an explicit value.
+
+        Examples:
+            Context:
+                {}
+            Definition:
+                S3Operation.get_object(..., bucket_name="bucket", key="key")
+            Result:
+                # text "body" is fetched from s3://bucket/key
+                {"Bucket": "bucket", "Key": "key", "Body": "body"}
+
+            Context:
+                {"bucket": "woah", "key": "wait/what"}
+            Definition:
+                S3Operation.get_object(..., bucket_name="$.bucket", key="$.key")
+            Result:
+                # text '{"a": "b"}' is fetched from s3://woah/wait/what
+                {"Bucket": "woah", "Key": "wait/what", , Body": {"a": "b"}}
+
+        Args:
+            scope (constructs.Construct): scope construct
+            id (str): An ID prefix
+            bucket_name (str): explicit or reference to name of bucket
+            key (str): explicit or reference to name of key
+
+        Returns:
+            sfn.Chain
+        """
         init = sfn.Pass(
             scope,
             id + " GetObject Prep",
@@ -65,8 +145,10 @@ class S3Operation:
                 "Bucket.$": "$.Bucket",
                 "Key.$": "$.Key",
             },
-            "ResultSelector": {"Body.$": "$.Body"},
-            "ResultPath": "$",
+            "ResultSelector": {
+                "Body.$": "$.Body",
+            },
+            "ResultPath": "$.",
         }
 
         get_object = sfn.CustomState(scope, id + " GetObject API Call", state_json=state_json)
@@ -83,15 +165,40 @@ class S3Operation:
     ) -> sfn.Chain:
         """Puts a payload to s3 and returns the location of the payload in s3
 
+
+
+        All parameters can be either a reference (e.g. $.path.to.my.value)
+        or an explicit value.
+
+        Examples:
+            Context:
+                {"a": "b"}
+            Definition:
+                S3Operation.put_payload(..., bucket_name="bucket", payload="$")
+            Result:
+                # text '{"a": "b"}' is written to s3://bucket/1234.../...1234
+                {"Bucket": "bucket", "Key": "1234.../...1234"}
+
+            Context:
+                {"bucket": "woah", "key": "wait/what", "data": {"a": "b"}}
+            Definition:
+                S3Operation.put_payload(..., bucket_name="$.bucket", payload="$.data")
+            Result:
+                # text '{"a": "b"}' is fetched from s3://woah/wait/what
+                {"Bucket": "woah", "Key": "wait/what"}
+
+
         Args:
             scope (constructs.Construct): cdk construct
             id (str): id
-            payload (str): payload
-            bucket_name (str): bucket name
-            key_prefix (Optional[str], optional): key prefix. Defaults to None.
+            payload (str): explicit value or reference path in the context object (e.g. "$", "$.path")
+            bucket_name (str): explicit value or reference path for bucket name
+            key (Optional[str], optional): explicit value or reference path for key.
+                If not provided, the following Key is generated:
+                    {$$.Execution.Name}/{UUID}
 
         Returns:
-            sfn.Parallel: parallel state
+            sfn.Chain
         """
 
         key = key or f"States.Format('{{}}/{{}}', $$.Execution.Name, States.UUID())"

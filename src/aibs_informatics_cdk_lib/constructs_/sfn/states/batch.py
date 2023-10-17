@@ -48,10 +48,41 @@ class BatchOperation:
         mount_points: Optional[List[MountPointTypeDef]] = None,
         volumes: Optional[List[VolumeTypeDef]] = None,
     ) -> sfn.Chain:
+        """Creates chain to register new job definition
 
-        job_definition_name = (
-            f"States.format('{{}}-{job_definition_name}-{{}}', $$.State.Name. $$.Execution.Name)"
-        )
+        Following parameters support reference paths:
+        - command
+        - image
+        - job_definition_name
+        - environment
+        - memory
+        - vcpus
+        - gpu
+
+        Args:
+            scope (constructs.Construct): scope
+            id (str): ID prefix
+            command (Union[List[str], str]): List of strings or string representing command to run
+                Supports reference paths (e.g. "$.foo.bar")
+            image (str): image URI or name.
+                Supports reference paths (e.g. "$.foo.bar")
+            job_definition_name (str): name of job definition.
+                Supports reference paths (e.g. "$.foo.bar")
+            environment (Optional[Union[Mapping[str, str], str]], optional): Optional environment variables.
+                Supports reference paths both as individual values as well as for the entire list of variables.
+                However, if a reference path is used for the entire list, the list must be a list of mappings with Name/Value keys".
+            memory (Optional[Union[int, str]], optional): Optionally specify memory.
+                Supports reference paths (e.g. "$.foo.bar")
+            vcpus (Optional[Union[int, str]], optional): Optionally specify . Defaults to None.
+            gpu (Optional[Union[int, str]], optional): _description_. Defaults to None.
+            mount_points (Optional[List[MountPointTypeDef]], optional): _description_. Defaults to None.
+            volumes (Optional[List[VolumeTypeDef]], optional): _description_. Defaults to None.
+
+        Returns:
+            sfn.Chain: _description_
+        """
+
+        job_definition_name = f"States.format('{{}}-{{}}-{{}}', $$.State.Name, job_definition_name, $$.Execution.Name)"
         if not isinstance(environment, str):
             environment_pairs = to_key_value_pairs(environment or {})
         else:
