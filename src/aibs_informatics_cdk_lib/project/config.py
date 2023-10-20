@@ -112,7 +112,7 @@ class GlobalConfig(pydantic.BaseModel):
 
 class StageConfig(pydantic.BaseModel):
     env: Env
-    pipeline: PipelineConfig
+    pipeline: Optional[PipelineConfig] = None
 
 
 DEFAULT_CONFIG_PATH = "configuration/project.yaml"

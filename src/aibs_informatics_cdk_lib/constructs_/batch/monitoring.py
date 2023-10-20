@@ -45,13 +45,20 @@ class BatchMonitoring(EnvBaseConstruct):
         self.dashboard_tools.add_text_widget(f"Elastic Container Service ({self.env_base})", 1)
 
         for batch_environment in batch_environments:
-            self.dashboard_tools.add_text_widget(f"Batch Environment {batch_environment.name}", 2)
-            builder = CloudWatchConfigBuilder(self.env_base, str(batch_environment.name))
+            self.dashboard_tools.add_text_widget(
+                f"Batch Environment {batch_environment.descriptor}", 2
+            )
+            builder = CloudWatchConfigBuilder(
+                self.env_base, batch_environment.descriptor.get_name()
+            )
             self.dashboard_tools.add_graphs(
                 grouped_metric_configs=builder.get_grouped_graph_metric_configs(),
                 namespace=builder.metric_namespace,
                 period=Duration.minutes(5),
-                alarm_id_discriminator=str(batch_environment.name),
+                alarm_id_discriminator=batch_environment.descriptor.get_name(),
                 alarm_topic=self.alarm_topic,
-                dimensions={"env_base": self.env_base, "batch_env_name": batch_environment.name},
+                dimensions={
+                    "env_base": self.env_base,
+                    "batch_env_name": batch_environment.descriptor.get_name(),
+                },
             )

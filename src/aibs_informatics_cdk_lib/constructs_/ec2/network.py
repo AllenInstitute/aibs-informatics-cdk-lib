@@ -4,13 +4,11 @@ import aws_cdk as cdk
 import constructs
 from aibs_informatics_core.env import EnvBase
 from aws_cdk import aws_ec2 as ec2
-from aws_cdk import aws_iam as iam
-from aws_cdk import aws_s3 as s3
 
 from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstructMixins
 
 
-class EnhancedVpc(ec2.Vpc, EnvBaseConstructMixins):
+class EnvBaseVpc(ec2.Vpc, EnvBaseConstructMixins):
     def __init__(
         self,
         scope: constructs.Construct,
@@ -75,7 +73,7 @@ class EnhancedVpc(ec2.Vpc, EnvBaseConstructMixins):
             scope,
             id,
             max_azs=max_azs,
-            cidr=ip_addresses,
+            ip_addresses=ip_addresses,
             subnet_configuration=subnet_configuration,
             gateway_endpoints=gateway_endpoints,
             flow_logs=flow_logs,
@@ -94,7 +92,7 @@ class EnhancedVpc(ec2.Vpc, EnvBaseConstructMixins):
                 service=ec2.InterfaceVpcEndpointAwsService.ECR_DOCKER,
             )
 
-        cdk.CfnOutput(self, "VpcId", value=self.vpc.vpc_id)
+        cdk.CfnOutput(self, "VpcId", value=self.vpc_id)
 
     def as_reference(self, scope: constructs.Construct, id: str) -> ec2.IVpc:
         """Generates a VPC reference"""

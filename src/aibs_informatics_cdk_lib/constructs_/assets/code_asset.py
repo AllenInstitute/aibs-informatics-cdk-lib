@@ -219,7 +219,7 @@ class CodeAsset:
                             "ssh -vT git@github.com || true",
                             # Must make sure that the package is not installing using --editable mode
                             "python3 -m pip install --upgrade pip --no-cache",
-                            "pip3 install --no-cache -r requirements-lambda.txt -t /asset-output",
+                            "pip3 install . --no-cache -t /asset-output",
                             # TODO: remove botocore and boto3 from asset output
                             # Must make asset output permissions accessible to lambda
                             "find /asset-output -type d -print0 | xargs -0 chmod 755",

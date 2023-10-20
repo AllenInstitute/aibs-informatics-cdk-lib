@@ -10,7 +10,7 @@ from aws_cdk import aws_s3_deployment as s3deployment
 from aws_cdk import aws_ssm as ssm
 
 from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstruct
-from aibs_informatics_cdk_lib.constructs_.s3 import SecureS3Bucket
+from aibs_informatics_cdk_lib.constructs_.s3 import EnvBaseBucket
 
 
 class SSMTools(EnvBaseConstruct):
@@ -23,7 +23,7 @@ class SSMTools(EnvBaseConstruct):
         self,
         asset_name: str,
         asset_source: s3deployment.ISource,
-        destination_bucket: SecureS3Bucket,
+        destination_bucket: EnvBaseBucket,
         destination_key_prefix: Optional[S3KeyPrefix] = None,
         param_name: Optional[str] = None,
     ) -> Tuple[ssm.StringParameter, str]:
@@ -61,7 +61,7 @@ class SSMTools(EnvBaseConstruct):
     def upload_file(
         self,
         path: Union[str, Path],
-        destination_bucket: SecureS3Bucket,
+        destination_bucket: EnvBaseBucket,
         destination_key_prefix: str,
     ) -> Tuple[ssm.StringParameter, str]:
 

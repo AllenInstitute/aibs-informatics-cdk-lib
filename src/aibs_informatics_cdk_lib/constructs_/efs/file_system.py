@@ -153,7 +153,7 @@ class EFSEcosystem(EnvBaseConstruct):
         super().__init__(scope, id, env_base)
         self._file_system = EnvBaseFileSystem(
             self,
-            f"{file_system_name + '-' if file_system_name else ''}fs",
+            "fs",
             env_base=self.env_base,
             file_system_name=self.get_name_with_env(file_system_name)
             if file_system_name

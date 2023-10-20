@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Mapping, Optional
+from typing import TYPE_CHECKING, List, Mapping, Optional, Union
 
 import constructs
 from aibs_informatics_aws_utils.constants.lambda_ import (
@@ -7,35 +7,18 @@ from aibs_informatics_aws_utils.constants.lambda_ import (
     AWS_LAMBDA_FUNCTION_HANDLER_KEY,
     AWS_LAMBDA_FUNCTION_NAME_KEY,
 )
-from aibs_informatics_aws_utils.constants.s3 import S3_SCRATCH_KEY_PREFIX, S3BucketName
+from aibs_informatics_aws_utils.constants.s3 import S3_SCRATCH_KEY_PREFIX
 from aibs_informatics_core.env import EnvBase
-from aibs_informatics_core.models.aws.s3 import S3URI
-from aibs_informatics_core.utils.tools.dicttools import remove_null_values
+from aws_cdk import aws_ecr_assets as ecr_assets
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_stepfunctions as sfn
 from aws_cdk import aws_stepfunctions_tasks as stepfn_tasks
 
-from aibs_informatics_cdk_lib.constructs_.batch.types import BatchEnvironmentName
 from aibs_informatics_cdk_lib.constructs_.sfn.fragments.base import EnvBaseStateMachineFragment
 from aibs_informatics_cdk_lib.constructs_.sfn.states.s3 import S3Operation
 
-if TYPE_CHECKING:
-    from mypy_boto3_batch.type_defs import (
-        KeyValuePairTypeDef,
-        MountPointTypeDef,
-        RegisterJobDefinitionRequestRequestTypeDef,
-        ResourceRequirementTypeDef,
-        VolumeTypeDef,
-    )
-else:
-    ResourceRequirementTypeDef = dict
-    MountPointTypeDef = dict
-    VolumeTypeDef = dict
-    KeyValuePairTypeDef = dict
-    RegisterJobDefinitionRequestRequestTypeDef = dict
 
-
-class LambdaFunctionStateMachine(EnvBaseStateMachineFragment):
+class LambdaFunctionFragment(EnvBaseStateMachineFragment):
     def __init__(
         self,
         scope: constructs.Construct,
@@ -66,4 +49,3 @@ class LambdaFunctionStateMachine(EnvBaseStateMachineFragment):
         )
 
         self.definition = sfn.Chain.start(lambda_task)
-        # fmt: on

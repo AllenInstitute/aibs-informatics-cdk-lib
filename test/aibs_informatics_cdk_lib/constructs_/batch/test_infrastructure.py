@@ -9,7 +9,7 @@ from aibs_informatics_cdk_lib.constructs_.batch.infrastructure import (
     Batch,
     BatchEnvironment,
     BatchEnvironmentConfig,
-    BatchEnvironmentName,
+    IBatchEnvironmentDescriptor,
 )
 
 
@@ -24,7 +24,7 @@ class MyBatchEnvironmentName(str, Enum):
     def get_compute_environment_name(self, env_base: EnvBase) -> str:
         return env_base.get_resource_name(self, "ce")
 
-    def __str__(self) -> str:
+    def get_name(self) -> str:
         return self.value
 
 
@@ -36,7 +36,6 @@ class BatchTests(CdkBaseTest):
             allocation_strategy=aws_batch_alpha.AllocationStrategy.SPOT_CAPACITY_OPTIMIZED,
             instance_types=["t2.micro"],
             use_public_subnets=False,
-            attach_file_system=False,
             use_spot=True,
         )
         batch_construct = Batch(
@@ -47,13 +46,13 @@ class BatchTests(CdkBaseTest):
         )
 
         batch_construct.setup_batch_environment(
-            batch_env_name=MyBatchEnvironmentName.A,
-            batch_env_config=config,
+            descriptor=MyBatchEnvironmentName.A,
+            config=config,
         )
 
         batch_construct.setup_batch_environment(
-            batch_env_name=MyBatchEnvironmentName.B,
-            batch_env_config=config,
+            descriptor=MyBatchEnvironmentName.B,
+            config=config,
         )
 
         template = self.get_template(stack)

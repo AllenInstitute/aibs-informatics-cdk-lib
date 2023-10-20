@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Mapping, Optional, cast
+from typing import Any, Optional
 
 import constructs
 from aws_cdk import aws_stepfunctions as sfn
@@ -165,8 +165,6 @@ class S3Operation:
     ) -> sfn.Chain:
         """Puts a payload to s3 and returns the location of the payload in s3
 
-
-
         All parameters can be either a reference (e.g. $.path.to.my.value)
         or an explicit value.
 
@@ -184,7 +182,7 @@ class S3Operation:
             Definition:
                 S3Operation.put_payload(..., bucket_name="$.bucket", payload="$.data")
             Result:
-                # text '{"a": "b"}' is fetched from s3://woah/wait/what
+                # text '{"a": "b"}' is written to s3://woah/wait/what
                 {"Bucket": "woah", "Key": "wait/what"}
 
 
@@ -215,6 +213,17 @@ class S3Operation:
         key: str,
     ) -> sfn.Chain:
         """Gets a payload from s3
+
+        This chain fetches object and then passes the body through a json parser
+
+        Example:
+            Context:
+                {"bucket": "woah", "key": "wait/what"}
+            Definition:
+                S3Operation.get_payload(..., bucket_name="$.bucket", key="$.key")
+            Result:
+                # text '{"a": "b"}' is fetched from s3://woah/wait/what
+                {"a": "b"}
 
         Args:
             scope (constructs.Construct): cdk construct

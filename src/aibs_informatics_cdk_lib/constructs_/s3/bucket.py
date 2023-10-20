@@ -1,4 +1,4 @@
-from typing import Literal, Optional, Sequence
+from typing import Literal, Optional, Sequence, Union
 
 import aws_cdk as cdk
 import constructs
@@ -9,7 +9,7 @@ from aws_cdk import aws_s3 as s3
 from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstructMixins
 
 
-class SecureS3Bucket(s3.Bucket, EnvBaseConstructMixins):
+class EnvBaseBucket(s3.Bucket, EnvBaseConstructMixins):
     def __init__(
         self,
         scope: constructs.Construct,
@@ -61,16 +61,19 @@ class SecureS3Bucket(s3.Bucket, EnvBaseConstructMixins):
 
 
 def grant_bucket_access(
-    bucket: s3.Bucket, role: Optional[iam.IRole], *permissions: Literal["rw", "r", "w", "d"]
+    bucket: Union[s3.Bucket, Sequence[s3.Bucket]],
+    role: Optional[iam.IRole],
+    *permissions: Literal["rw", "r", "w", "d"],
 ):
     if not role:
         return
-    for bucket_permission in permissions:
-        if bucket_permission == "rw":
-            bucket.grant_read_write(role)
-        elif bucket_permission == "r":
-            bucket.grant_read(role)
-        elif bucket_permission == "w":
-            bucket.grant_write(role)
-        elif bucket_permission == "d":
-            bucket.grant_delete(role)
+    for bucket in [bucket] if isinstance(bucket, s3.Bucket) else bucket:
+        for bucket_permission in permissions:
+            if bucket_permission == "rw":
+                bucket.grant_read_write(role)
+            elif bucket_permission == "r":
+                bucket.grant_read(role)
+            elif bucket_permission == "w":
+                bucket.grant_write(role)
+            elif bucket_permission == "d":
+                bucket.grant_delete(role)

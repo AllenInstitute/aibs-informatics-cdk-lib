@@ -16,7 +16,6 @@ LOW_PRIORITY_BATCH_ENV_CONFIG = BatchEnvironmentConfig(
     use_spot=True,
     use_fargate=False,
     use_public_subnets=False,
-    attach_file_system=True,
 )
 NORMAL_PRIORITY_BATCH_ENV_CONFIG = BatchEnvironmentConfig(
     allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
@@ -24,7 +23,6 @@ NORMAL_PRIORITY_BATCH_ENV_CONFIG = BatchEnvironmentConfig(
     use_spot=True,
     use_fargate=False,
     use_public_subnets=False,
-    attach_file_system=True,
 )
 HIGH_PRIORITY_BATCH_ENV_CONFIG = BatchEnvironmentConfig(
     allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
@@ -32,7 +30,6 @@ HIGH_PRIORITY_BATCH_ENV_CONFIG = BatchEnvironmentConfig(
     use_spot=False,
     use_fargate=False,
     use_public_subnets=False,
-    attach_file_system=True,
 )
 PUBLIC_SUBNET_BATCH_ENV_CONFIG = BatchEnvironmentConfig(
     allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
@@ -40,7 +37,6 @@ PUBLIC_SUBNET_BATCH_ENV_CONFIG = BatchEnvironmentConfig(
     use_spot=False,
     use_fargate=False,
     use_public_subnets=True,
-    attach_file_system=True,
 )
 
 LAMBDA_BATCH_ENV_CONFIG = BatchEnvironmentConfig(
@@ -53,7 +49,6 @@ LAMBDA_BATCH_ENV_CONFIG = BatchEnvironmentConfig(
     use_spot=False,
     use_fargate=False,
     use_public_subnets=False,
-    attach_file_system=True,
 )
 LAMBDA_SMALL_BATCH_ENV_CONFIG = BatchEnvironmentConfig(
     allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
@@ -61,7 +56,6 @@ LAMBDA_SMALL_BATCH_ENV_CONFIG = BatchEnvironmentConfig(
     use_spot=False,
     use_fargate=False,
     use_public_subnets=False,
-    attach_file_system=True,
 )
 LAMBDA_MEDIUM_BATCH_ENV_CONFIG = BatchEnvironmentConfig(
     allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
@@ -69,7 +63,6 @@ LAMBDA_MEDIUM_BATCH_ENV_CONFIG = BatchEnvironmentConfig(
     use_spot=False,
     use_fargate=False,
     use_public_subnets=False,
-    attach_file_system=True,
 )
 LAMBDA_LARGE_BATCH_ENV_CONFIG = BatchEnvironmentConfig(
     allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
@@ -77,5 +70,4 @@ LAMBDA_LARGE_BATCH_ENV_CONFIG = BatchEnvironmentConfig(
     use_spot=False,
     use_fargate=False,
     use_public_subnets=False,
-    attach_file_system=True,
 )

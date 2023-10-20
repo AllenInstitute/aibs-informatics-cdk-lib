@@ -13,13 +13,13 @@ from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_iam as iam
 
 from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstruct
-from aibs_informatics_cdk_lib.constructs_.batch.types import BatchEnvironmentName
+from aibs_informatics_cdk_lib.constructs_.batch.types import IBatchEnvironmentDescriptor
 from aibs_informatics_cdk_lib.constructs_.cw import (
     AlarmMetricConfig,
     GraphMetricConfig,
     GroupedGraphMetricConfig,
 )
-from aibs_informatics_cdk_lib.constructs_.s3 import SecureS3Bucket
+from aibs_informatics_cdk_lib.constructs_.s3 import EnvBaseBucket
 
 T = TypeVar("T", bound="BatchLaunchTemplateUserData")
 
@@ -31,7 +31,7 @@ class IBatchLaunchTemplateBuilder(EnvBaseConstruct, Generic[T]):
     @abstractmethod
     def create_launch_template(
         self,
-        batch_env_name: BatchEnvironmentName,
+        descriptor: IBatchEnvironmentDescriptor,
         security_group: Optional[ec2.SecurityGroup] = None,
     ) -> ec2.LaunchTemplate:
         raise NotImplementedError()
@@ -44,17 +44,17 @@ class BatchLaunchTemplateBuilder(IBatchLaunchTemplateBuilder["BatchLaunchTemplat
     @abstractmethod
     def create_launch_template(
         self,
-        batch_env_name: BatchEnvironmentName,
+        descriptor: IBatchEnvironmentDescriptor,
         security_group: Optional[ec2.SecurityGroup] = None,
     ) -> ec2.LaunchTemplate:
 
         user_data = ec2.UserData.custom(
             BatchLaunchTemplateUserData(
-                env_base=self.env_base, batch_env_name=str(batch_env_name)
+                env_base=self.env_base, batch_env_name=descriptor.get_name()
             ).user_data_text
         )
 
-        launch_template_name = f"{self.env_base}-{batch_env_name}-launch-template"
+        launch_template_name = f"{self.env_base}-{descriptor.get_name()}-launch-template"
 
         launch_template = ec2.LaunchTemplate(
             self,
@@ -73,7 +73,7 @@ class EbsBatchLaunchTemplateBuilder(IBatchLaunchTemplateBuilder["EbsBatchLaunchT
         scope: constructs.Construct,
         id: str,
         env_base: EnvBase,
-        assets_bucket: SecureS3Bucket,
+        assets_bucket: EnvBaseBucket,
     ) -> None:
         super().__init__(scope, id, env_base)
 
@@ -86,19 +86,19 @@ class EbsBatchLaunchTemplateBuilder(IBatchLaunchTemplateBuilder["EbsBatchLaunchT
 
     def create_launch_template(
         self,
-        batch_env_name: BatchEnvironmentName,
+        descriptor: IBatchEnvironmentDescriptor,
         security_group: Optional[ec2.SecurityGroup] = None,
     ) -> ec2.LaunchTemplate:
 
         user_data = ec2.UserData.custom(
             EbsBatchLaunchTemplateUserData(
                 env_base=self.env_base,
-                batch_env_name=str(batch_env_name),
+                batch_env_name=descriptor.get_name(),
                 docker_volume_device_name=self.docker_volume_device_name,
             ).user_data_text
         )
 
-        launch_template_name = f"{self.env_base}-{batch_env_name}-launch-template"
+        launch_template_name = f"{self.env_base}-{descriptor}-launch-template"
         launch_template = ec2.LaunchTemplate(
             self,
             launch_template_name,

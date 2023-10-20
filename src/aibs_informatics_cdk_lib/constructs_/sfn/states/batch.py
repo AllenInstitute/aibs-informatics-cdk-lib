@@ -18,17 +18,13 @@ from aws_cdk import aws_stepfunctions_tasks as stepfn_tasks
 if TYPE_CHECKING:
     from mypy_boto3_batch.type_defs import (
         ContainerOverridesTypeDef,
-        KeyValuePairTypeDef,
         MountPointTypeDef,
         RegisterJobDefinitionRequestRequestTypeDef,
-        ResourceRequirementTypeDef,
         VolumeTypeDef,
     )
 else:
-    ResourceRequirementTypeDef = dict
     MountPointTypeDef = dict
     VolumeTypeDef = dict
-    KeyValuePairTypeDef = dict
     RegisterJobDefinitionRequestRequestTypeDef = dict
 
 

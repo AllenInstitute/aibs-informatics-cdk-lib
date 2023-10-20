@@ -17,7 +17,9 @@ from aibs_informatics_core.env import (
     EnvBase,
     EnvType,
 )
-from aibs_informatics_core.utils.os_operations import get_env_var
+from aibs_informatics_core.utils.os_operations import get_env_var, set_env_var
+
+from aibs_informatics_cdk_lib.project.config import ConfigProvider, ProjectConfig, StageConfig
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +100,20 @@ def get_env_base(node: constructs.Node) -> EnvBase:
             f"Using env_type={env_type}, env_label={env_label}"
         )
         return EnvBase.from_type_and_label(env_type=env_type, env_label=env_label)
+
+
+def get_config(node: constructs.Node) -> StageConfig:
+
+    env_base = get_env_base(node)
+
+    set_env_var(EnvBase.ENV_BASE_KEY, env_base)
+    set_env_var(EnvBase.ENV_TYPE_KEY, env_base.env_type)
+    if env_base.env_label:
+        set_env_var(EnvBase.ENV_LABEL_KEY, env_base.env_label)
+
+    config = ConfigProvider.get_stage_config(env_type=env_base.env_type)
+    config.env.label = env_base.env_label
+    return config
 
 
 def _get_from_context(
