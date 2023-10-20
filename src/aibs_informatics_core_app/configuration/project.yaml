@@ -1,0 +1,32 @@
+global_config:
+  pipeline_name: core
+  stage_promotions:
+    dev: test
+    test: prod
+default_config:
+  env: 
+    env_type: dev
+    label: null
+    account: null
+    region: us-west-2
+  pipeline:
+    enable: false
+    build:
+      ssh_key_secret_name: "ssh-deploy-key"
+      docker_hub_credentials_secret_name: "docker-hub-credentials"
+    source:
+      repository: "AllenInstitute/aibs-informatics-cdk-lib"
+      branch: "main"
+      oauth_secret_name: "github-token"
+      codestar_connection: ""
+    notifications:
+      slack_channel_configuration_arn: null
+      notify_on_failure: true
+      notify_on_success: true
+default_config_overrides:
+  dev:
+    env: 
+      env_type: dev
+      account: ${CDK_DEFAULT_ACCOUNT} 
+      region: ${CDK_DEFAULT_REGION}
+
