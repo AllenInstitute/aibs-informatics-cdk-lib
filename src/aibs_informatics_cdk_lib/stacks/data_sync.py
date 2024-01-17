@@ -281,7 +281,7 @@ class DataSyncStack(EnvBaseStack):
                 self,
                 "Batch Data Sync Chain",
                 env_base=self.env_base,
-                image="aibs-informatics-aws-lambda:latest",
+                image=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/aibs-informatics-aws-lambda:latest",
                 name="batch-data-sync",
                 handler=self.batch_data_sync_fn_handler,
                 bucket_name=self._primary_bucket.bucket_name,
@@ -300,6 +300,127 @@ class DataSyncStack(EnvBaseStack):
                         },
                     )
                 ],
+                platform_capabilities=["FARGATE"]
+                if any(
+                    [
+                        isinstance(ce.compute_environment, batch.FargateComputeEnvironment)
+                        for ce in self._job_queue.compute_environments
+                    ]
+                )
+                else None,
+            )
+        )
+        # fmt: off
+        definition = (
+            start_pass_state
+            .next(prep_batch_sync_lambda_task)
+            .next(batch_sync_map_state)
+        )
+        # fmt: on
+
+        data_sync_state_machine_name = self.get_resource_name("data-sync")
+        self.data_sync_state_machine = sfn.StateMachine(
+            self,
+            self.env_base.get_construct_id("data-sync", "state-machine"),
+            state_machine_name=data_sync_state_machine_name,
+            logs=sfn.LogOptions(
+                destination=logs.LogGroup(
+                    self,
+                    self.get_construct_id(data_sync_state_machine_name, "state-loggroup"),
+                    log_group_name=self.env_base.get_state_machine_log_group_name("data-sync"),
+                    removal_policy=cdk.RemovalPolicy.DESTROY,
+                    retention=logs.RetentionDays.ONE_MONTH,
+                )
+            ),
+            role=iam.Role(
+                self,
+                self.env_base.get_construct_id(data_sync_state_machine_name, "role"),
+                assumed_by=iam.ServicePrincipal("states.amazonaws.com"),
+                managed_policies=[
+                    iam.ManagedPolicy.from_aws_managed_policy_name(
+                        "AmazonAPIGatewayInvokeFullAccess"
+                    ),
+                    iam.ManagedPolicy.from_aws_managed_policy_name("AWSStepFunctionsFullAccess"),
+                    iam.ManagedPolicy.from_aws_managed_policy_name("CloudWatchLogsFullAccess"),
+                    iam.ManagedPolicy.from_aws_managed_policy_name("CloudWatchEventsFullAccess"),
+                ],
+                inline_policies={
+                    "default": iam.PolicyDocument(
+                        statements=[
+                            batch_policy_statement(self.env_base),
+                            dynamodb_policy_statement(self.env_base),
+                            s3_policy_statement(self.env_base),
+                            lambda_policy_statement(self.env_base),
+                        ]
+                    ),
+                },
+            ),
+            definition_body=sfn.DefinitionBody.from_chainable(definition),
+            timeout=cdk.Duration.hours(12),
+        )
+
+    def create_rclone_step_function(self):
+
+        start_pass_state = sfn.Pass(
+            self,
+            "Rclone: Start",
+            parameters={
+                "request": sfn.JsonPath.string_at("$"),
+            },
+        )
+        default_args = {
+            "command": "sync",
+        }
+        default_rclone_image = "rclone/rclone:latest"
+        prep_batch_sync_task_name = "prep-batch-data-sync-requests"
+        prep_batch_sync_lambda_task = stepfn_tasks.LambdaInvoke(
+            self,
+            "Prep Batch Data Sync",
+            lambda_function=self.prepare_batch_data_sync_fn,
+            payload=sfn.TaskInput.from_json_path_at("$.request"),
+            payload_response_only=False,
+            result_path=f"$.tasks.{prep_batch_sync_task_name}.response",
+        )
+
+        batch_sync_map_state = sfn.Map(
+            self,
+            "Batch Data Sync: Map Start",
+            comment="Runs requests for batch sync in parallel",
+            items_path=f"$.tasks.{prep_batch_sync_task_name}.response.Payload.requests",
+            result_path=sfn.JsonPath.DISCARD,
+        )
+        batch_sync_map_state.iterator(
+            BatchInvokedLambdaFunction(
+                self,
+                "Batch Data Sync Chain",
+                env_base=self.env_base,
+                image=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/aibs-informatics-aws-lambda:latest",
+                name="batch-data-sync",
+                handler=self.batch_data_sync_fn_handler,
+                bucket_name=self._primary_bucket.bucket_name,
+                job_queue=self._job_queue.job_queue_name,
+                environment={EFS_MOUNT_PATH_VAR: EFS_MOUNT_PATH},
+                memory=2048,
+                vcpus=1,
+                mount_points=[to_mount_point(EFS_MOUNT_PATH, False, EFS_VOLUME_NAME)],
+                volumes=[
+                    to_volume(
+                        None,
+                        EFS_VOLUME_NAME,
+                        {
+                            "fileSystemId": self.file_system.file_system_id,
+                            "rootDirectory": "/",
+                        },
+                    )
+                ],
+                platform_capabilities=["FARGATE"]
+                if any(
+                    [
+                        isinstance(ce.compute_environment, batch.FargateComputeEnvironment)
+                        for ce in self._job_queue.compute_environments
+                    ]
+                )
+                else None,
             )
         )
         # fmt: off

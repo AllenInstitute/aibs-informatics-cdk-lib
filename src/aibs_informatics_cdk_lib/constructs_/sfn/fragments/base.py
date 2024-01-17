@@ -1,5 +1,6 @@
+import builtins
 from abc import abstractmethod
-from typing import Any, Dict, List, Mapping, Optional, TypeVar, cast
+from typing import Any, Dict, List, Mapping, Optional, Type, TypeVar, cast
 
 import aws_cdk as cdk
 import constructs
@@ -13,11 +14,14 @@ from aws_cdk import aws_stepfunctions as sfn
 from aibs_informatics_cdk_lib.common.aws.core_utils import build_lambda_arn
 from aibs_informatics_cdk_lib.common.aws.sfn_utils import JsonReferencePath
 from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstructMixins
+from aibs_informatics_cdk_lib.constructs_.sfn.utils import convert_reference_paths
 
 T = TypeVar("T", bound=ValidatedStr)
 
+F = TypeVar("F", bound="StateMachineFragment")
 
-class StateMachineFragmentMixins(EnvBaseConstructMixins):
+
+class StateMachineMixins(EnvBaseConstructMixins):
     def get_fn(self, function_name: str) -> lambda_.Function:
         cache_attr = "_function_cache"
         if not hasattr(self, cache_attr):
@@ -48,7 +52,64 @@ class StateMachineFragmentMixins(EnvBaseConstructMixins):
         return resource_cache[state_machine_name]
 
 
-class EnvBaseStateMachineFragment(sfn.StateMachineFragment, StateMachineFragmentMixins):
+class StateMachineFragment(sfn.StateMachineFragment):
+    @property
+    def definition(self) -> sfn.IChainable:
+        return self._definition
+
+    @definition.setter
+    def definition(self, value: sfn.IChainable):
+        self._definition = value
+
+    @property
+    def start_state(self) -> sfn.State:
+        return self.definition.start_state
+
+    @property
+    def end_states(self) -> List[sfn.INextable]:
+        return self.definition.end_states
+
+    @classmethod
+    def enclose(
+        cls: Type[F],
+        scope: constructs.Construct,
+        id: str,
+        definition: sfn.IChainable,
+        result_path: Optional[str] = None,
+    ) -> F:
+
+        chain = (
+            sfn.Chain.start(definition)
+            if not isinstance(definition, (sfn.Chain, sfn.StateMachineFragment))
+            else definition
+        )
+
+        pre = sfn.Pass(
+            scope, f"{id} Parallel Prep", parameters={"input": sfn.JsonPath.entire_payload}
+        )
+
+        parallel = chain.to_single_state(
+            id=f"{id} Parallel", input_path="$.input", result_path="$.result"
+        )
+        mod_result_path = JsonReferencePath("$.input")
+        if result_path and result_path != sfn.JsonPath.DISCARD:
+            mod_result_path = mod_result_path + result_path
+
+        post = sfn.Pass(
+            scope,
+            f"{id} Parallel Post",
+            input_path="$.result[0]",
+            result_path=mod_result_path.as_reference,
+            output_path="$.input",
+        )
+
+        new_definition = sfn.Chain.start(pre).next(parallel).next(post)
+        (self := cls(scope, id)).definition = new_definition
+
+        return self
+
+
+class EnvBaseStateMachineFragment(sfn.StateMachineFragment, StateMachineMixins):
     def __init__(
         self,
         scope: constructs.Construct,

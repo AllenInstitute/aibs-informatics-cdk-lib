@@ -1,5 +1,6 @@
 __all__ = [
     "get_package_root",
+    "resolve_repo_root",
     "get_env_base",
 ]
 
@@ -22,6 +23,22 @@ from aibs_informatics_core.utils.os_operations import get_env_var, set_env_var
 from aibs_informatics_cdk_lib.project.config import ConfigProvider, ProjectConfig, StageConfig
 
 logger = logging.getLogger(__name__)
+
+
+def resolve_repo_root() -> str:
+    """Find the root of the git repository
+
+    Returns:
+        str: Absolute root path
+    """
+    return str(
+        next(
+            filter(
+                lambda p: (p / ".git").is_dir(),  # type: ignore
+                pathlib.Path(__file__).absolute().parents,
+            )
+        )
+    )
 
 
 def get_package_root() -> str:

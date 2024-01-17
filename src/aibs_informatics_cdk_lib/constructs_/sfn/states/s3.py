@@ -3,6 +3,8 @@ from typing import Any, Optional
 import constructs
 from aws_cdk import aws_stepfunctions as sfn
 
+from aibs_informatics_cdk_lib.constructs_.sfn.utils import convert_reference_paths
+
 
 class S3Operation:
     @classmethod
@@ -13,6 +15,8 @@ class S3Operation:
         bucket_name: str,
         key: str,
         body: Any,
+        result_path: Optional[str] = "$",
+        output_path: Optional[str] = "$",
     ) -> sfn.Chain:
         """Create a chain to put a body of text to S3
 
@@ -57,29 +61,46 @@ class S3Operation:
         init = sfn.Pass(
             scope,
             id + " PutObject Prep",
-            parameters={
-                "Location": {
+            parameters=convert_reference_paths(
+                {
                     "Bucket": bucket_name,
                     "Key": key,
-                },
-                "Body": body,
-            },
+                    "Body": body,
+                }
+            ),
+            result_path=result_path or "$",
         )
 
         state_json = {
             "Type": "Task",
             "Resource": "arn:aws:states:::aws-sdk:s3:putObject",
             "Parameters": {
-                "Bucket.$": "$.Location.Bucket",
-                "Key.$": "$.Location.Key",
-                "Body.$": "$.Body",
+                "Bucket.$": f"{result_path or '$'}.Bucket",
+                "Key.$": f"{result_path or '$'}.Key",
+                "Body.$": f"{result_path or '$'}.Body",
             },
-            "ResultPath": None,
-            "OutputPath": "$.Location",
+            # "ResultSelector": {
+            #     "ETag.$": "$.Bucket",
+            #     "Key.$": "$.Key",
+            # },
+            "ResultPath": sfn.JsonPath.DISCARD,
         }
         put_object = sfn.CustomState(scope, id + " PutObject API Call", state_json=state_json)
 
-        return sfn.Chain.start(init).next(put_object)
+        end = sfn.Pass(
+            scope,
+            id + " PutObject Post",
+            parameters=convert_reference_paths(
+                {
+                    "Bucket": f"{result_path or '$'}.Bucket",
+                    "Key": f"{result_path or '$'}.Key",
+                }
+            ),
+            result_path=result_path,
+            output_path=output_path,
+        )
+
+        return sfn.Chain.start(init).next(put_object).next(end)
 
     @classmethod
     def get_object(
@@ -88,6 +109,8 @@ class S3Operation:
         id: str,
         bucket_name: str,
         key: str,
+        result_path: Optional[str] = "$",
+        output_path: Optional[str] = "$",
     ) -> sfn.Chain:
         """Creates a chain to get a body of text from S3
 
@@ -110,7 +133,7 @@ class S3Operation:
                 S3Operation.get_object(..., bucket_name="bucket", key="key")
             Result:
                 # text "body" is fetched from s3://bucket/key
-                {"Bucket": "bucket", "Key": "key", "Body": "body"}
+                {"Body": "body"}
 
             Context:
                 {"bucket": "woah", "key": "wait/what"}
@@ -118,7 +141,7 @@ class S3Operation:
                 S3Operation.get_object(..., bucket_name="$.bucket", key="$.key")
             Result:
                 # text '{"a": "b"}' is fetched from s3://woah/wait/what
-                {"Bucket": "woah", "Key": "wait/what", , Body": {"a": "b"}}
+                {"Body": '{"a": "b"}'}
 
         Args:
             scope (constructs.Construct): scope construct
@@ -132,15 +155,18 @@ class S3Operation:
         init = sfn.Pass(
             scope,
             id + " GetObject Prep",
-            parameters={
-                "Bucket": bucket_name,
-                "Key": key,
-            },
+            parameters=convert_reference_paths(
+                {
+                    "Bucket": bucket_name,
+                    "Key": key,
+                }
+            ),
+            result_path=result_path or "$",
         )
 
         state_json = {
             "Type": "Task",
-            "Resource": "arn:aws:states:::aws-sdk:s3:putObject",
+            "Resource": "arn:aws:states:::aws-sdk:s3:getObject",
             "Parameters": {
                 "Bucket.$": "$.Bucket",
                 "Key.$": "$.Key",
@@ -148,10 +174,12 @@ class S3Operation:
             "ResultSelector": {
                 "Body.$": "$.Body",
             },
-            "ResultPath": "$.",
+            "ResultPath": result_path,
+            "OutputPath": output_path,
         }
 
         get_object = sfn.CustomState(scope, id + " GetObject API Call", state_json=state_json)
+
         return sfn.Chain.start(init).next(get_object)
 
     @classmethod
@@ -162,6 +190,8 @@ class S3Operation:
         payload: str,
         bucket_name: str,
         key: Optional[str] = None,
+        result_path: Optional[str] = "$",
+        output_path: Optional[str] = "$",
     ) -> sfn.Chain:
         """Puts a payload to s3 and returns the location of the payload in s3
 
@@ -198,10 +228,13 @@ class S3Operation:
         Returns:
             sfn.Chain
         """
+        key = key or sfn.JsonPath.format(
+            f"{{}}/{{}}", sfn.JsonPath.execution_name, sfn.JsonPath.uuid()
+        )
 
-        key = key or f"States.Format('{{}}/{{}}', $$.Execution.Name, States.UUID())"
-
-        put_chain = S3Operation.put_object(scope, id, bucket_name, key, payload)
+        put_chain = S3Operation.put_object(
+            scope, id, bucket_name, key, payload, result_path, output_path
+        )
         return put_chain
 
     @classmethod
@@ -211,6 +244,8 @@ class S3Operation:
         id: str,
         bucket_name: str,
         key: str,
+        result_path: Optional[str] = "$",
+        output_path: Optional[str] = "$",
     ) -> sfn.Chain:
         """Gets a payload from s3
 
@@ -235,11 +270,12 @@ class S3Operation:
             sfn.Chain: chain
         """
 
-        get_chain = S3Operation.get_object(scope, id, bucket_name, key)
+        get_chain = S3Operation.get_object(scope, id, bucket_name, key, result_path, output_path)
         post = sfn.Pass(
             scope,
             id + " Post",
-            parameters={"Payload.$": "States.StringToJson($.Body)"},
+            parameters={"Payload": sfn.JsonPath.string_to_json("$.Body")},
+            result_path=result_path,
             output_path="$.Payload",
         )
         return get_chain.next(post)

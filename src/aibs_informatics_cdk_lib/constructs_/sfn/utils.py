@@ -1,26 +1,39 @@
 import re
 from functools import reduce
-from typing import Any, ClassVar, Dict, List, Mapping, Optional, Pattern, Union, cast
+from typing import Any, ClassVar, List, Pattern, Union, cast
 
 import aws_cdk as cdk
-import constructs
-from aibs_informatics_core.utils.tools.dicttools import remove_null_values
-from aws_cdk import aws_lambda as lambda_
+from aibs_informatics_core.utils.json import JSON
 from aws_cdk import aws_stepfunctions as sfn
-from aws_cdk import aws_stepfunctions_tasks as stepfn_tasks
 
 
-def sanitize_parameters(parameters: Dict[str, Any]) -> Dict[str, Any]:
-    new_parameters: Dict[str, Any] = {}
-    for k, v in parameters.items():
-        if isinstance(v, str):
-            if v.startswith("$") or v.startswith("States."):
-                new_parameters[f"{k}.$"] = v
-        elif isinstance(v, dict):
-            new_parameters[k] = sanitize_parameters(cast(Dict[str, Any], v))
+def convert_reference_paths(parameters: JSON) -> JSON:
+    if isinstance(parameters, dict):
+        return {k: convert_reference_paths(v) for k, v in parameters.items()}
+    elif isinstance(parameters, list):
+        return [convert_reference_paths(v) for v in parameters]
+    elif isinstance(parameters, str):
+        if (
+            parameters.startswith("$") or parameters.startswith("States.")
+        ) and not parameters.startswith("${Token"):
+            return sfn.JsonPath.string_at(parameters)
         else:
-            new_parameters[k] = v
-    return new_parameters
+            return parameters
+    else:
+        return parameters
+
+
+def enclosed_chain(
+    id: str, chain: sfn.Chain, result_path: str = "$", output_path: str = "$"
+) -> sfn.Chain:
+
+    pre = sfn.Pass(id + " Parallel Prep", result_path=result_path, output_path=output_path)
+    parallel = chain.to_single_state(
+        id=f"{id} Parallel", input_path=result_path, output_path="$[0]"
+    )
+    post = sfn.Pass(id + " Parallel Post", result_path=result_path, output_path=output_path)
+
+    return sfn.Chain.start(pre).next(parallel).next(post)
 
 
 class JsonReferencePath(str):

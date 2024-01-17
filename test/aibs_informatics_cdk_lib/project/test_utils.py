@@ -19,7 +19,6 @@ from aibs_informatics_cdk_lib.project.utils import (
     ENV_LABEL_KEYS,
     ENV_TYPE_KEYS,
     get_env_base,
-    get_package_root,
 )
 
 USER = "marmotdev"

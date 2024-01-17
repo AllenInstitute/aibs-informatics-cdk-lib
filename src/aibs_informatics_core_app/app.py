@@ -7,7 +7,7 @@ import aws_cdk as cdk
 from constructs import Construct
 
 from aibs_informatics_cdk_lib.project.config import StageConfig
-from aibs_informatics_cdk_lib.project.utils import get_config, get_package_root
+from aibs_informatics_cdk_lib.project.utils import get_config, resolve_repo_root
 from aibs_informatics_cdk_lib.stacks import data_sync
 from aibs_informatics_cdk_lib.stacks.core import ComputeStack, NetworkStack, StorageStack
 from aibs_informatics_cdk_lib.stacks.data_sync import DataSyncStack
@@ -27,21 +27,22 @@ class InfraStage(ConfigBasedStage):
             self.env_base,
             vpc=network.vpc,
             buckets=[storage.bucket],
-            file_system=[storage.file_system],
+            file_systems=[storage.file_system],
             env=self.env,
         )
-        data_sync = DataSyncStack(
-            self,
-            "DataSync",
-            self.env_base,
-            asset_directory=Path(get_package_root()) / "aibs-informatics-aws-lambda",
-            vpc=network.vpc,
-            primary_bucket=storage.bucket,
-            s3_buckets=[],
-            file_system=storage.file_system,
-            batch_job_queue=compute.fargate_batch_environment.job_queue,
-            env=self.env,
-        )
+
+        # data_sync = DataSyncStack(
+        #     self,
+        #     "DataSync",
+        #     self.env_base,
+        #     asset_directory=Path(resolve_repo_root()) / ".." / "aibs-informatics-aws-lambda",
+        #     vpc=network.vpc,
+        #     primary_bucket=storage.bucket,
+        #     s3_buckets=[],
+        #     file_system=storage.file_system,
+        #     batch_job_queue=compute.on_demand_batch_environment.job_queue,
+        #     env=self.env,
+        # )
 
 
 def main():

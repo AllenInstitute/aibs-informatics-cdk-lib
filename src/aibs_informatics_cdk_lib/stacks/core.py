@@ -1,12 +1,31 @@
+import json
 from typing import Iterable, List, Optional, Union
+from urllib import request
 
+import aws_cdk as cdk
+from aibs_informatics_aws_utils.batch import to_mount_point, to_volume
+from aibs_informatics_aws_utils.constants.efs import (
+    EFS_ROOT_ACCESS_POINT_TAG,
+    EFS_ROOT_PATH,
+    EFS_SCRATCH_ACCESS_POINT_TAG,
+    EFS_SCRATCH_PATH,
+    EFS_SHARED_ACCESS_POINT_TAG,
+    EFS_SHARED_PATH,
+    EFS_TMP_ACCESS_POINT_TAG,
+    EFS_TMP_PATH,
+)
 from aibs_informatics_core.env import EnvBase
 from aws_cdk import aws_batch_alpha as batch
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_efs as efs
+from aws_cdk import aws_iam as iam
+from aws_cdk import aws_lambda as lambda_
+from aws_cdk import aws_logs as logs
 from aws_cdk import aws_s3 as s3
+from aws_cdk import aws_stepfunctions as sfn
 from constructs import Construct
 
+from aibs_informatics_cdk_lib.common.aws.iam_utils import batch_policy_statement
 from aibs_informatics_cdk_lib.constructs_.batch.infrastructure import Batch, BatchEnvironmentConfig
 from aibs_informatics_cdk_lib.constructs_.batch.instance_types import (
     ON_DEMAND_INSTANCE_TYPES,
@@ -17,6 +36,7 @@ from aibs_informatics_cdk_lib.constructs_.batch.types import BatchEnvironmentDes
 from aibs_informatics_cdk_lib.constructs_.ec2 import EnvBaseVpc
 from aibs_informatics_cdk_lib.constructs_.efs.file_system import EFSEcosystem, EnvBaseFileSystem
 from aibs_informatics_cdk_lib.constructs_.s3 import EnvBaseBucket, LifecycleRuleGenerator
+from aibs_informatics_cdk_lib.constructs_.sfn.fragments.batch import SubmitJobFragment
 from aibs_informatics_cdk_lib.stacks.base import EnvBaseStack
 
 
@@ -58,6 +78,8 @@ class StorageStack(EnvBaseStack):
         self._efs_ecosystem = EFSEcosystem(self, "EFS", self.env_base, name, vpc=vpc)
         self._file_system = self._efs_ecosystem.file_system
 
+        # self.export_values()
+
     @property
     def bucket(self) -> EnvBaseBucket:
         return self._bucket
@@ -75,7 +97,7 @@ class ComputeStack(EnvBaseStack):
         env_base: EnvBase,
         vpc: ec2.Vpc,
         buckets: Optional[Iterable[s3.Bucket]] = None,
-        file_system: Optional[Iterable[efs.FileSystem]] = None,
+        file_systems: Optional[Iterable[efs.FileSystem]] = None,
         **kwargs,
     ) -> None:
         super().__init__(scope, id, env_base, **kwargs)
@@ -84,7 +106,15 @@ class ComputeStack(EnvBaseStack):
 
         self.create_batch_environments()
 
-        self.grant_storage_access(*list(buckets or []), *list(file_system or []))
+        bucket_list = list(buckets or [])
+
+        file_system_list = list(file_systems or [])
+
+        self.grant_storage_access(*bucket_list, *file_system_list)
+
+        self.create_step_functions(file_system=file_system_list[0] if file_system_list else None)
+
+        self.export_values()
 
     def grant_storage_access(self, *resources: Union[s3.Bucket, efs.FileSystem]):
         self.batch.grant_instance_role_permissions(read_write_resources=list(resources))
@@ -131,3 +161,99 @@ class ComputeStack(EnvBaseStack):
             ),
             launch_template_builder=lt_builder,
         )
+
+    def create_step_functions(self, file_system: Optional[efs.FileSystem] = None):
+
+        state_machine_core_name = "submit-job"
+        defaults = {}
+        defaults["command"] = []
+        defaults["job_queue"] = self.on_demand_batch_environment.job_queue.job_queue_arn
+        defaults["environment"] = []
+        defaults["memory"] = 1024
+        defaults["vcpus"] = 1
+        defaults["gpu"] = None
+        defaults["platform_capabilities"] = ["EC2"]
+
+        if file_system:
+            file_system.file_system_id
+            defaults["mount_points"] = [to_mount_point("/opt/efs", False, "efs-root-volume")]
+            defaults["volumes"] = [
+                to_volume(
+                    None,
+                    "efs-root-volume",
+                    {
+                        "fileSystemId": file_system.file_system_id,
+                        "rootDirectory": "/",
+                    },
+                )
+            ]
+
+        start = sfn.Pass(
+            self,
+            "Start",
+            parameters={
+                "input": sfn.JsonPath.string_at("$"),
+                "default": defaults,
+                "request": sfn.JsonPath.json_merge("$", json.dumps(defaults)),
+            },
+        )
+
+        submit_job = SubmitJobFragment(
+            self,
+            "SubmitJob",
+            env_base=self.env_base,
+            name="SubmitJobCore",
+            image=sfn.JsonPath.string_at("$.request.image"),
+            command=sfn.JsonPath.string_at("$.request.command"),
+            job_queue=sfn.JsonPath.string_at("$.request.job_queue"),
+            environment=sfn.JsonPath.string_at("$.request.environment"),
+            memory=sfn.JsonPath.string_at("$.request.memory"),
+            vcpus=sfn.JsonPath.string_at("$.request.vcpus"),
+            mount_points=sfn.JsonPath.string_at("$.request.mount_points"),
+            volumes=sfn.JsonPath.string_at("$.request.volumes"),
+            gpu=sfn.JsonPath.string_at("$.request.gpu"),
+            platform_capabilities=sfn.JsonPath.string_at("$.request.platform_capabilities"),
+        ).to_single_state()
+
+        definition = start.next(submit_job)
+
+        state_machine_name = self.get_resource_name(state_machine_core_name)
+        self.batch_submit_job_state_machine = sfn.StateMachine(
+            self,
+            self.env_base.get_construct_id(state_machine_name, "state-machine"),
+            state_machine_name=state_machine_name,
+            logs=sfn.LogOptions(
+                destination=logs.LogGroup(
+                    self,
+                    self.get_construct_id(state_machine_name, "state-loggroup"),
+                    log_group_name=self.env_base.get_state_machine_log_group_name("submit-job"),
+                    removal_policy=cdk.RemovalPolicy.DESTROY,
+                    retention=logs.RetentionDays.ONE_MONTH,
+                )
+            ),
+            role=iam.Role(
+                self,
+                self.env_base.get_construct_id(state_machine_name, "role"),
+                assumed_by=iam.ServicePrincipal("states.amazonaws.com"),
+                managed_policies=[
+                    iam.ManagedPolicy.from_aws_managed_policy_name(
+                        "AmazonAPIGatewayInvokeFullAccess"
+                    ),
+                    iam.ManagedPolicy.from_aws_managed_policy_name("AWSStepFunctionsFullAccess"),
+                    iam.ManagedPolicy.from_aws_managed_policy_name("CloudWatchLogsFullAccess"),
+                    iam.ManagedPolicy.from_aws_managed_policy_name("CloudWatchEventsFullAccess"),
+                ],
+                inline_policies={
+                    "default": iam.PolicyDocument(
+                        statements=[batch_policy_statement(self.env_base)]
+                    ),
+                },
+            ),
+            definition_body=sfn.DefinitionBody.from_chainable(definition),
+            timeout=cdk.Duration.hours(12),
+        )
+
+    def export_values(self) -> None:
+        self.export_value(self.on_demand_batch_environment.job_queue.job_queue_arn)
+        self.export_value(self.spot_batch_environment.job_queue.job_queue_arn)
+        self.export_value(self.fargate_batch_environment.job_queue.job_queue_arn)

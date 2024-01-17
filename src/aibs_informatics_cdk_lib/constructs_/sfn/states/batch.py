@@ -1,19 +1,17 @@
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Mapping, Optional, Union, cast
 
 import constructs
 from aibs_informatics_aws_utils.batch import (
     build_retry_strategy,
     to_key_value_pairs,
-    to_mount_point,
     to_resource_requirements,
-    to_volume,
 )
-from aibs_informatics_core.utils.tools.dicttools import convert_key_case, remove_null_values
+from aibs_informatics_core.utils.tools.dicttools import convert_key_case
 from aibs_informatics_core.utils.tools.strtools import pascalcase
-from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_stepfunctions as sfn
-from aws_cdk import aws_stepfunctions_tasks as stepfn_tasks
+
+from aibs_informatics_cdk_lib.constructs_.sfn.utils import convert_reference_paths
 
 if TYPE_CHECKING:
     from mypy_boto3_batch.type_defs import (
@@ -43,6 +41,9 @@ class BatchOperation:
         gpu: Optional[Union[int, str]] = None,
         mount_points: Optional[List[MountPointTypeDef]] = None,
         volumes: Optional[List[VolumeTypeDef]] = None,
+        platform_capabilities: Optional[List[Literal["EC2", "FARGATE"]]] = None,
+        result_path: Optional[str] = "$",
+        output_path: Optional[str] = "$",
     ) -> sfn.Chain:
         """Creates chain to register new job definition
 
@@ -78,7 +79,9 @@ class BatchOperation:
             sfn.Chain: _description_
         """
 
-        job_definition_name = f"States.format('{{}}-{{}}-{{}}', $$.State.Name, job_definition_name, $$.Execution.Name)"
+        job_definition_name = sfn.JsonPath.format(
+            f"{{}}-{{}}", job_definition_name, sfn.JsonPath.execution_name
+        )
         if not isinstance(environment, str):
             environment_pairs = to_key_value_pairs(environment or {})
         else:
@@ -97,23 +100,34 @@ class BatchOperation:
             },
             "retryStrategy": build_retry_strategy(include_default_evaluate_on_exit_configs=True),
         }
+        if platform_capabilities:
+            request["platformCapabilities"] = platform_capabilities
+
         parameters = convert_key_case(request, pascalcase)
 
-        start = sfn.Pass(scope, id + " RegisterJobDefinition Prep", parameters=parameters)
+        start = sfn.Pass(
+            scope,
+            id + " RegisterJobDefinition Prep",
+            parameters=convert_reference_paths(parameters),
+            result_path=result_path or "$",
+        )
         register = sfn.CustomState(
             scope,
             id + " RegisterJobDefinition API Call",
             state_json={
                 "Type": "Task",
                 "Resource": "arn:aws:states:::aws-sdk:batch:registerJobDefinition",
-                "Parameters": {f"{k}.$": f"$.{k}" for k in parameters.keys()},
+                "Parameters": {
+                    f"{k}.$": f"{result_path if result_path else '$'}.{k}"
+                    for k in parameters.keys()
+                },
                 "ResultSelector": {
                     "JobDefinitionArn.$": "$.JobDefinitionArn",
                     "JobDefinitionName.$": "$.JobDefinitionName",
                     "Revision.$": "$.Revision",
                 },
-                "ResultPath": "$",
-                "OutputPath": "$",
+                "ResultPath": result_path,
+                "OutputPath": output_path,
             },
         )
         return start.next(register)
@@ -132,9 +146,10 @@ class BatchOperation:
         memory: Optional[Union[int, str]] = None,
         vcpus: Optional[Union[int, str]] = None,
         gpu: Optional[Union[int, str]] = None,
+        result_path: Optional[str] = "$",
+        output_path: Optional[str] = "$",
     ) -> sfn.Chain:
-        job_name = f"States.format('{{}}-{job_name}-{{}}', $$.State.Name. $$.Execution.Name)"
-
+        job_name = sfn.JsonPath.format(f"{job_name}-{{}}", sfn.JsonPath.execution_name)
         if not isinstance(environment, str):
             environment_pairs = to_key_value_pairs(environment or {})
         else:
@@ -150,13 +165,17 @@ class BatchOperation:
             "JobName": job_name,
             "JobDefinition": job_definition,
             "JobQueue": job_queue,
-            "Parameters": parameters,
+            "Parameters": parameters or {},
             "ContainerOverrides": container_overrides,
         }
+
         start = sfn.Pass(
             scope,
             id + " SubmitJob Prep",
-            parameters=(parameters := convert_key_case(request, pascalcase)),
+            parameters=convert_reference_paths(
+                pass_params := convert_key_case(request, pascalcase)
+            ),
+            result_path=result_path or "$",
         )
 
         submit = sfn.CustomState(
@@ -165,28 +184,36 @@ class BatchOperation:
             state_json={
                 "Type": "Task",
                 "Resource": "arn:aws:states:::batch:submitJob.sync",
-                "Parameters": {f"{k}.$": f"$.{k}" for k in parameters.keys()},
+                "Parameters": {
+                    f"{k}.$": f"{result_path if result_path else '$'}.{k}"
+                    for k in pass_params.keys()
+                },
                 "ResultSelector": {
                     "JobName.$": "$.JobName",
                     "JobId.$": "$.JobId",
                     "JobArn.$": "$.JobArn",
-                    "JobQueue.$": "$.JobQueue",
                 },
-                "ResultPath": "$",
-                "OutputPath": "$",
+                "ResultPath": result_path,
+                "OutputPath": output_path,
             },
         )
         return start.next(submit)
 
     @classmethod
     def deregister_job_definition(
-        cls, scope: constructs.Construct, id: str, job_definition: str
+        cls,
+        scope: constructs.Construct,
+        id: str,
+        job_definition: str,
+        result_path: Optional[str] = "$",
+        output_path: Optional[str] = "$",
     ) -> sfn.Chain:
         request = {"jobDefinition": job_definition}
         start = sfn.Pass(
             scope,
             id + " DeregisterJobDefinition Prep",
             parameters=(parameters := convert_key_case(request, pascalcase)),
+            result_path=result_path or "$",
         )
         deregister = sfn.CustomState(
             scope,
@@ -194,8 +221,12 @@ class BatchOperation:
             state_json={
                 "Type": "Task",
                 "Resource": "arn:aws:states:::aws-sdk:batch:deregisterJobDefinition",
-                "Parameters": {f"{k}.$": f"$.{k}" for k in parameters.keys()},
-                "ResultPath": None,
+                "Parameters": {
+                    f"{k}.$": f"{result_path if result_path else '$'}.{k}"
+                    for k in parameters.keys()
+                },
+                "ResultPath": result_path,
+                "OutputPath": output_path,
             },
         )
         return start.next(deregister)
