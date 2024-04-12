@@ -33,9 +33,9 @@ class SubmitJobFragment(EnvBaseStateMachineFragment):
         memory: Optional[Union[int, str]] = None,
         vcpus: Optional[Union[int, str]] = None,
         gpu: Optional[Union[int, str]] = None,
-        mount_points: Optional[List[MountPointTypeDef]] = None,
-        volumes: Optional[List[VolumeTypeDef]] = None,
-        platform_capabilities: Optional[List[Literal["EC2", "FARGATE"]]] = None,
+        mount_points: Optional[Union[List[MountPointTypeDef], str]] = None,
+        volumes: Optional[Union[List[VolumeTypeDef], str]] = None,
+        platform_capabilities: Optional[Union[List[Literal["EC2", "FARGATE"]], str]] = None,
     ) -> None:
         super().__init__(scope, id, env_base)
 

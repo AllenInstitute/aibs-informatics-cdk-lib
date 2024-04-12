@@ -4,7 +4,7 @@ from typing import Literal, Optional, Tuple, TypeVar, Union
 import aws_cdk as cdk
 import constructs
 from aibs_informatics_aws_utils.constants.efs import (
-    EFS_MOUNT_PATH_VAR,
+    EFS_MOUNT_POINT_PATH_VAR,
     EFS_ROOT_ACCESS_POINT_TAG,
     EFS_ROOT_PATH,
     EFS_SCRATCH_ACCESS_POINT_TAG,
@@ -125,7 +125,7 @@ class EnvBaseFileSystem(efs.FileSystem, EnvBaseConstructMixins):
             self.get_construct_id(name, "access-point"),
             access_point_id=cfn_access_point.attr_access_point_id,
             file_system=self,
-        )
+        )  # type: ignore
 
     def as_lambda_file_system(
         self, access_point: Optional[efs.AccessPoint] = None
@@ -232,7 +232,7 @@ def create_access_point(
         f"{name}-access-point",
         access_point_id=cfn_access_point.attr_access_point_id,
         file_system=file_system,
-    )
+    )  # type: ignore
 
 
 def grant_connectable_file_system_access(

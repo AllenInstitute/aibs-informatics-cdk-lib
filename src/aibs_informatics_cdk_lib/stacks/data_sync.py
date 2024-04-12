@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, List, Mapping, Optional, Union, cast
 import aws_cdk as cdk
 import constructs
 from aibs_informatics_aws_utils.batch import to_mount_point, to_volume
-from aibs_informatics_aws_utils.efs import EFS_MOUNT_PATH_VAR
+from aibs_informatics_aws_utils.constants.efs import EFS_MOUNT_POINT_PATH_VAR
 from aibs_informatics_core.env import EnvBase, ResourceNameBaseEnum
 from aws_cdk import aws_batch_alpha as batch
 from aws_cdk import aws_ec2 as ec2
@@ -286,7 +286,7 @@ class DataSyncStack(EnvBaseStack):
                 handler=self.batch_data_sync_fn_handler,
                 bucket_name=self._primary_bucket.bucket_name,
                 job_queue=self._job_queue.job_queue_name,
-                environment={EFS_MOUNT_PATH_VAR: EFS_MOUNT_PATH},
+                environment={EFS_MOUNT_POINT_PATH_VAR: EFS_MOUNT_PATH},
                 memory=2048,
                 vcpus=1,
                 mount_points=[to_mount_point(EFS_MOUNT_PATH, False, EFS_VOLUME_NAME)],
@@ -399,7 +399,7 @@ class DataSyncStack(EnvBaseStack):
                 handler=self.batch_data_sync_fn_handler,
                 bucket_name=self._primary_bucket.bucket_name,
                 job_queue=self._job_queue.job_queue_name,
-                environment={EFS_MOUNT_PATH_VAR: EFS_MOUNT_PATH},
+                environment={EFS_MOUNT_POINT_PATH_VAR: EFS_MOUNT_PATH},
                 memory=2048,
                 vcpus=1,
                 mount_points=[to_mount_point(EFS_MOUNT_PATH, False, EFS_VOLUME_NAME)],

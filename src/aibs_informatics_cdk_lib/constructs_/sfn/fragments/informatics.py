@@ -42,34 +42,34 @@ class RcloneFragment(EnvBaseStateMachineFragment):
         volumes: Optional[List[VolumeTypeDef]] = None,
         platform_capabilities: Optional[List[Literal["EC2", "FARGATE"]]] = None,
     ) -> None:
-
-        submit_job = SubmitJobFragment(
-            self,
-            f"{id} Batch",
-            env_base=env_base,
-            name=name,
-            job_queue=job_queue,
-            command=command or [],
-            image=image,
-            environment={
-                **(environment if environment else {}),
-                AWS_LAMBDA_FUNCTION_NAME_KEY: name,
-                AWS_LAMBDA_FUNCTION_HANDLER_KEY: handler,
-                AWS_LAMBDA_EVENT_PAYLOAD_KEY: sfn.JsonPath.format(
-                    "s3://{}/{}",
-                    sfn.JsonPath.string_at("$.taskResult.put.Bucket"),
-                    sfn.JsonPath.string_at("$.taskResult.put.Key"),
-                ),
-                AWS_LAMBDA_EVENT_RESPONSE_LOCATION_KEY: sfn.JsonPath.format(
-                    "s3://{}/{}", bucket_name, response_key
-                ),
-            },
-            memory=memory,
-            vcpus=vcpus,
-            mount_points=mount_points or [],
-            volumes=volumes or [],
-            platform_capabilities=platform_capabilities,
-        )
+        pass
+        # submit_job = SubmitJobFragment(
+        #     self,
+        #     f"{id} Batch",
+        #     env_base=env_base,
+        #     name=name,
+        #     job_queue=job_queue,
+        #     command=command or [],
+        #     image=image,
+        #     environment={
+        #         **(environment if environment else {}),
+        #         AWS_LAMBDA_FUNCTION_NAME_KEY: name,
+        #         # AWS_LAMBDA_FUNCTION_HANDLER_KEY: handler,
+        #         AWS_LAMBDA_EVENT_PAYLOAD_KEY: sfn.JsonPath.format(
+        #             "s3://{}/{}",
+        #             sfn.JsonPath.string_at("$.taskResult.put.Bucket"),
+        #             sfn.JsonPath.string_at("$.taskResult.put.Key"),
+        #         ),
+        #         AWS_LAMBDA_EVENT_RESPONSE_LOCATION_KEY: sfn.JsonPath.format(
+        #             "s3://{}/{}", bucket_name, response_key
+        #         ),
+        #     },
+        #     memory=memory,
+        #     vcpus=vcpus,
+        #     mount_points=mount_points or [],
+        #     volumes=volumes or [],
+        #     platform_capabilities=platform_capabilities,
+        # )
 
 
 class BatchInvokedLambdaFunction(EnvBaseStateMachineFragment):

@@ -1,5 +1,5 @@
 import json
-from typing import Iterable, List, Optional, Union
+from typing import Any, Iterable, List, Optional, TypeVar, Union
 from urllib import request
 
 import aws_cdk as cdk
@@ -15,6 +15,8 @@ from aibs_informatics_aws_utils.constants.efs import (
     EFS_TMP_PATH,
 )
 from aibs_informatics_core.env import EnvBase
+from aibs_informatics_core.utils.tools.dicttools import convert_key_case
+from aibs_informatics_core.utils.tools.strtools import pascalcase
 from aws_cdk import aws_batch_alpha as batch
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_efs as efs
@@ -78,8 +80,6 @@ class StorageStack(EnvBaseStack):
         self._efs_ecosystem = EFSEcosystem(self, "EFS", self.env_base, name, vpc=vpc)
         self._file_system = self._efs_ecosystem.file_system
 
-        # self.export_values()
-
     @property
     def bucket(self) -> EnvBaseBucket:
         return self._bucket
@@ -130,7 +130,7 @@ class ComputeStack(EnvBaseStack):
             descriptor=BatchEnvironmentDescriptor("on-demand"),
             config=BatchEnvironmentConfig(
                 allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
-                instance_types=ON_DEMAND_INSTANCE_TYPES,
+                instance_types=list(map(ec2.InstanceType, ON_DEMAND_INSTANCE_TYPES)),
                 use_spot=False,
                 use_fargate=False,
                 use_public_subnets=False,
@@ -142,7 +142,7 @@ class ComputeStack(EnvBaseStack):
             descriptor=BatchEnvironmentDescriptor("spot"),
             config=BatchEnvironmentConfig(
                 allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
-                instance_types=SPOT_INSTANCE_TYPES,
+                instance_types=list(map(ec2.InstanceType, SPOT_INSTANCE_TYPES)),
                 use_spot=True,
                 use_fargate=False,
                 use_public_subnets=False,
@@ -165,26 +165,31 @@ class ComputeStack(EnvBaseStack):
     def create_step_functions(self, file_system: Optional[efs.FileSystem] = None):
 
         state_machine_core_name = "submit-job"
-        defaults = {}
+        defaults: dict[str, Any] = {}
         defaults["command"] = []
         defaults["job_queue"] = self.on_demand_batch_environment.job_queue.job_queue_arn
         defaults["environment"] = []
-        defaults["memory"] = 1024
-        defaults["vcpus"] = 1
-        defaults["gpu"] = None
+        defaults["memory"] = "1024"
+        defaults["vcpus"] = "1"
+        defaults["gpu"] = "0"
         defaults["platform_capabilities"] = ["EC2"]
 
         if file_system:
             file_system.file_system_id
-            defaults["mount_points"] = [to_mount_point("/opt/efs", False, "efs-root-volume")]
+            defaults["mount_points"] = [
+                convert_key_case(to_mount_point("/opt/efs", False, "efs-root-volume"), pascalcase)
+            ]
             defaults["volumes"] = [
-                to_volume(
-                    None,
-                    "efs-root-volume",
-                    {
-                        "fileSystemId": file_system.file_system_id,
-                        "rootDirectory": "/",
-                    },
+                convert_key_case(
+                    to_volume(
+                        None,
+                        "efs-root-volume",
+                        {
+                            "fileSystemId": file_system.file_system_id,
+                            "rootDirectory": "/",
+                        },
+                    ),
+                    pascalcase,
                 )
             ]
 
@@ -194,7 +199,16 @@ class ComputeStack(EnvBaseStack):
             parameters={
                 "input": sfn.JsonPath.string_at("$"),
                 "default": defaults,
-                "request": sfn.JsonPath.json_merge("$", json.dumps(defaults)),
+            },
+        )
+
+        merge = sfn.Pass(
+            self,
+            "Merge",
+            parameters={
+                "request": sfn.JsonPath.json_merge(
+                    sfn.JsonPath.object_at("$.input"), sfn.JsonPath.object_at("$.default")
+                ),
             },
         )
 
@@ -209,13 +223,16 @@ class ComputeStack(EnvBaseStack):
             environment=sfn.JsonPath.string_at("$.request.environment"),
             memory=sfn.JsonPath.string_at("$.request.memory"),
             vcpus=sfn.JsonPath.string_at("$.request.vcpus"),
+            # TODO: Handle GPU parameter better - right now, we cannot handle cases where it is
+            # not specified. Setting to zero causes issues with the Batch API.
+            # If it is set to zero, then the json list of resources are not properly set.
+            # gpu=sfn.JsonPath.string_at("$.request.gpu"),
             mount_points=sfn.JsonPath.string_at("$.request.mount_points"),
             volumes=sfn.JsonPath.string_at("$.request.volumes"),
-            gpu=sfn.JsonPath.string_at("$.request.gpu"),
             platform_capabilities=sfn.JsonPath.string_at("$.request.platform_capabilities"),
         ).to_single_state()
 
-        definition = start.next(submit_job)
+        definition = start.next(merge).next(submit_job)
 
         state_machine_name = self.get_resource_name(state_machine_core_name)
         self.batch_submit_job_state_machine = sfn.StateMachine(
@@ -234,7 +251,7 @@ class ComputeStack(EnvBaseStack):
             role=iam.Role(
                 self,
                 self.env_base.get_construct_id(state_machine_name, "role"),
-                assumed_by=iam.ServicePrincipal("states.amazonaws.com"),
+                assumed_by=iam.ServicePrincipal("states.amazonaws.com"),  # type: ignore
                 managed_policies=[
                     iam.ManagedPolicy.from_aws_managed_policy_name(
                         "AmazonAPIGatewayInvokeFullAccess"
@@ -250,7 +267,6 @@ class ComputeStack(EnvBaseStack):
                 },
             ),
             definition_body=sfn.DefinitionBody.from_chainable(definition),
-            timeout=cdk.Duration.hours(12),
         )
 
     def export_values(self) -> None:
