@@ -207,7 +207,7 @@ class ComputeStack(EnvBaseStack):
             "Merge",
             parameters={
                 "request": sfn.JsonPath.json_merge(
-                    sfn.JsonPath.object_at("$.input"), sfn.JsonPath.object_at("$.default")
+                    sfn.JsonPath.object_at("$.default"), sfn.JsonPath.object_at("$.input")
                 ),
             },
         )
