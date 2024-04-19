@@ -1,5 +1,15 @@
 from dataclasses import dataclass
-from typing import Iterable, List, Literal, Mapping, MutableMapping, Optional, Sequence, Union
+from typing import (
+    Iterable,
+    List,
+    Literal,
+    Mapping,
+    MutableMapping,
+    Optional,
+    Sequence,
+    Union,
+    cast,
+)
 
 import constructs
 from aibs_informatics_core.env import EnvBase
@@ -41,8 +51,8 @@ class Batch(EnvBaseConstruct):
         id: str,
         env_base: EnvBase,
         vpc: ec2.IVpc,
+        instance_role_policy_statements: Optional[List[iam.PolicyStatement]] = None,
     ) -> None:
-
         super().__init__(scope, id, env_base)
         self.vpc = vpc
 
@@ -52,7 +62,7 @@ class Batch(EnvBaseConstruct):
         #  - security group
         #  - launch template
         # ---------------------------------------------------------------------
-        self.instance_role = self.create_instance_role()
+        self.instance_role = self.create_instance_role(instance_role_policy_statements)
         self.instance_profile = self.create_instance_profile()
         self.security_group = self.create_security_group()
 
@@ -64,12 +74,14 @@ class Batch(EnvBaseConstruct):
             self._batch_environment_mapping.values(), key=lambda be: be.descriptor.get_name()
         )
 
-    def create_instance_role(self) -> iam.Role:
+    def create_instance_role(
+        self, statements: Optional[List[iam.PolicyStatement]] = None
+    ) -> iam.Role:
         instance_role = iam.Role(
             self,
             self.get_child_id(self, f"instance-role"),
             description="Role used by ec2 instance in batch compute environment",
-            assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"),
+            assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"),  # type: ignore  # Interface not inferred
         )
         managed_policy_names = [
             "service-role/AmazonEC2ContainerServiceforEC2Role",
@@ -100,7 +112,7 @@ class Batch(EnvBaseConstruct):
                     resources=["*"],
                 )
             ],
-            roles=[instance_role],
+            roles=[instance_role],  # type: ignore  # Role is not inferred as IRole
         )
 
         # Used for S3 / Lambda
@@ -155,8 +167,18 @@ class Batch(EnvBaseConstruct):
                     ],
                 ),
             ],
-            roles=[instance_role],
+            roles=[instance_role],  # type: ignore  # Role is not inferred as IRole
         )
+
+        # Custom policy
+        if statements:
+            iam.Policy(
+                self,
+                "custom-policy",
+                statements=statements,
+                roles=[instance_role],  # type: ignore  # Role is not inferred as IRole
+            )
+
         return instance_role
 
     def create_instance_profile(self) -> iam.CfnInstanceProfile:
@@ -179,14 +201,18 @@ class Batch(EnvBaseConstruct):
 
     def grant_instance_role_permissions(
         self,
-        read_write_resources: Optional[Iterable[Union[s3.Bucket, efs.FileSystem]]] = None,
-        read_only_resources: Optional[Iterable[Union[s3.Bucket, efs.FileSystem]]] = None,
+        read_write_resources: Optional[
+            Iterable[Union[s3.Bucket, efs.FileSystem, efs.IFileSystem]]
+        ] = None,
+        read_only_resources: Optional[
+            Iterable[Union[s3.Bucket, efs.FileSystem, efs.IFileSystem]]
+        ] = None,
     ):
         for resource in read_write_resources or []:
             if isinstance(resource, s3.Bucket):
                 resource.grant_read_write(self.instance_role)
             elif isinstance(resource, efs.FileSystem):
-                grant_role_file_system_access(resource, self.instance_role, "rw")
+                grant_role_file_system_access(resource, self.instance_role, "rw")  # type: ignore  # Role is not inferred as IRole
             else:
                 raise ValueError(f"Unsupported resource type: {resource}")
 
@@ -194,7 +220,7 @@ class Batch(EnvBaseConstruct):
             if isinstance(resource, s3.Bucket):
                 resource.grant_read(self.instance_role)
             elif isinstance(resource, efs.FileSystem):
-                grant_role_file_system_access(resource, self.instance_role, "r")
+                grant_role_file_system_access(resource, self.instance_role, "r")  # type: ignore  # Role is not inferred as IRole
             else:
                 raise ValueError(f"Unsupported resource type: {resource}")
 
@@ -217,7 +243,7 @@ class Batch(EnvBaseConstruct):
             descriptor=descriptor,
             config=config,
             vpc=self.vpc,
-            instance_role=self.instance_role,
+            instance_role=self.instance_role,  # type: ignore  # Role is not inferred as IRole
             security_group=self.security_group,
             launch_template_builder=launch_template_builder,
         )
@@ -241,8 +267,8 @@ class BatchEnvironmentConfig:
     minv_cpus: Optional[int] = DEFAULT_MINV_CPUS
 
     def __post_init__(self):
-        self.maxv_cpus = min(DEFAULT_MAXV_CPUS, max(1, self.maxv_cpus))
-        self.minv_cpus = min(1, max(0, self.minv_cpus))
+        self.maxv_cpus = min(DEFAULT_MAXV_CPUS, max(1, self.maxv_cpus or DEFAULT_MAXV_CPUS))
+        self.minv_cpus = min(1, max(0, self.minv_cpus or DEFAULT_MINV_CPUS))
         if self.use_fargate:
             # https://docs.aws.amazon.com/batch/latest/userguide/fargate.html
             self.minv_cpus = None
@@ -325,7 +351,7 @@ class BatchEnvironment(EnvBaseConstruct):
         return launch_template
 
     @property
-    def launch_template_user_data_hash(self) -> str:
+    def launch_template_user_data_hash(self) -> Optional[str]:
         lt = self.launch_template
         return sha256_hexdigest(lt.user_data.render()) if lt and lt.user_data else None
 
@@ -344,7 +370,7 @@ class BatchEnvironment(EnvBaseConstruct):
                     # Related: https://github.com/hashicorp/terraform-provider-aws/issues/15535
                     "launch_template_user_data_hash": self.launch_template_user_data_hash,
                 }
-            )
+            )  # type: ignore  # pyright complains about user data hash when none
         return None
 
     @property
@@ -389,7 +415,9 @@ class BatchEnvironment(EnvBaseConstruct):
                 ce.tags.set_tag(key=tag_key, value=tag_value)
         return ce
 
-    def grant_file_system_access(self, *file_systems: efs.FileSystem):
+    def grant_file_system_access(self, *file_systems: efs.IFileSystem):
         for file_system in file_systems:
             for ce in self.job_queue.compute_environments:
-                grant_connectable_file_system_access(file_system, ce.compute_environment)
+                grant_connectable_file_system_access(
+                    file_system, cast(ec2.IConnectable, ce.compute_environment)
+                )

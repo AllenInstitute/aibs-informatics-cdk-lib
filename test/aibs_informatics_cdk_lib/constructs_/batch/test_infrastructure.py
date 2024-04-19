@@ -14,7 +14,6 @@ from aibs_informatics_cdk_lib.constructs_.batch.infrastructure import (
 
 
 class MyBatchEnvironmentName(str, Enum):
-
     A = "a"
     B = "b"
 

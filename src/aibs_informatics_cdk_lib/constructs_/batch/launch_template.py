@@ -47,7 +47,6 @@ class BatchLaunchTemplateBuilder(IBatchLaunchTemplateBuilder["BatchLaunchTemplat
         descriptor: IBatchEnvironmentDescriptor,
         security_group: Optional[ec2.SecurityGroup] = None,
     ) -> ec2.LaunchTemplate:
-
         user_data = ec2.UserData.custom(
             BatchLaunchTemplateUserData(
                 env_base=self.env_base, batch_env_name=descriptor.get_name()
@@ -89,7 +88,6 @@ class EbsBatchLaunchTemplateBuilder(IBatchLaunchTemplateBuilder["EbsBatchLaunchT
         descriptor: IBatchEnvironmentDescriptor,
         security_group: Optional[ec2.SecurityGroup] = None,
     ) -> ec2.LaunchTemplate:
-
         user_data = ec2.UserData.custom(
             EbsBatchLaunchTemplateUserData(
                 env_base=self.env_base,
@@ -128,7 +126,6 @@ class BatchLaunchTemplateUserData:
     user_data_text: str = field(init=False)
 
     def __post_init__(self):
-
         self.user_data_text = DEFAULT_LAUNCH_TEMPLATE_USER_DATA.format(
             python_version="python3.9",
             config_json=self.config_builder.to_string(),
@@ -144,11 +141,9 @@ class BatchLaunchTemplateUserData:
 
 @dataclass
 class EbsBatchLaunchTemplateUserData(BatchLaunchTemplateUserData):
-
     docker_volume_device_name: str
 
     def __post_init__(self):
-
         self.user_data_text = EBS_AUTOSCALE_LAUNCH_TEMPLATE_USER_DATA.format(
             device_name=self.docker_volume_device_name,
             config_json=self.config_builder.to_string(),
@@ -270,7 +265,6 @@ class CloudWatchConfigBuilder:
         }
 
     def _get_metrics_collected(self) -> Dict[str, Any]:
-
         metrics_collected: Dict[str, Any] = {}
         # https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/metrics-collected-by-CloudWatch-agent.html
 

@@ -12,27 +12,25 @@ __all__ = [
 ]
 
 from pathlib import Path
-from typing import Dict, MutableMapping, Optional, Type, Union
+from typing import Annotated, Dict, MutableMapping, Optional, Type, Union
 
-import pydantic
 import yaml
 from aibs_informatics_core.collections import DeepChainMap
 from aibs_informatics_core.env import ENV_BASE_KEY, ENV_LABEL_KEY, ENV_TYPE_KEY, EnvBase, EnvType
 from aibs_informatics_core.models.unique_ids import UniqueID
 from aibs_informatics_core.utils.os_operations import expandvars
 from aibs_informatics_core.utils.tools.dicttools import remove_null_values
+from pydantic import BaseModel, PlainSerializer, PlainValidator
+
+UniqueIDType = Annotated[
+    UniqueID, PlainValidator(lambda x: UniqueID(x)), PlainSerializer(lambda x: str(x))
+]
 
 
 class EnvVarStr(str):
     @classmethod
     def __get_validators__(cls):
         yield cls.validate
-
-    @classmethod
-    def __modify_schema__(cls, field_schema):
-        field_schema.update(
-            examples=["prefix{USER}suffix", "{ENV_VAR2}"],
-        )
 
     @classmethod
     def validate(cls, v):
@@ -44,11 +42,11 @@ class EnvVarStr(str):
         return f"{self.__class__.__name__}({super().__repr__()})"
 
 
-class Env(pydantic.BaseModel):
+class Env(BaseModel):
     env_type: EnvType
-    label: Optional[EnvVarStr] = None
-    account: Optional[EnvVarStr] = None
-    region: Optional[EnvVarStr] = None
+    label: Annotated[Optional[str], PlainValidator(EnvVarStr.validate)] = None
+    account: Annotated[Optional[str], PlainValidator(EnvVarStr.validate)] = None
+    region: Annotated[Optional[str], PlainValidator(EnvVarStr.validate)] = None
 
     @property
     def env_name(self) -> str:
@@ -71,24 +69,24 @@ class Env(pydantic.BaseModel):
                     (ENV_LABEL_KEY, self.label),
                     (ENV_BASE_KEY, self.env_base),
                 ]
-            ),
+            ),  # type: ignore
             in_place=True,
         )
 
 
-class CodePipelineBuildConfig(pydantic.BaseModel):
+class CodePipelineBuildConfig(BaseModel):
     ssh_key_secret_name: str
     docker_hub_credentials_secret_name: str
 
 
-class CodePipelineSourceConfig(pydantic.BaseModel):
+class CodePipelineSourceConfig(BaseModel):
     repository: str
-    branch: EnvVarStr
-    codestar_connection: UniqueID
+    branch: Annotated[str, PlainValidator(EnvVarStr.validate)]
+    codestar_connection: UniqueIDType
     oauth_secret_name: str
 
 
-class CodePipelineNotificationsConfig(pydantic.BaseModel):
+class CodePipelineNotificationsConfig(BaseModel):
     slack_channel_configuration_arn: Optional[str]
     notify_on_failure: bool = False
     notify_on_success: bool = False
@@ -98,19 +96,19 @@ class CodePipelineNotificationsConfig(pydantic.BaseModel):
         return self.notify_on_failure or self.notify_on_success
 
 
-class PipelineConfig(pydantic.BaseModel):
+class PipelineConfig(BaseModel):
     enable: bool
     build: CodePipelineBuildConfig
     source: CodePipelineSourceConfig
     notifications: CodePipelineNotificationsConfig
 
 
-class GlobalConfig(pydantic.BaseModel):
+class GlobalConfig(BaseModel):
     pipeline_name: str
     stage_promotions: Dict[EnvType, EnvType]
 
 
-class StageConfig(pydantic.BaseModel):
+class StageConfig(BaseModel):
     env: Env
     pipeline: Optional[PipelineConfig] = None
 
@@ -118,7 +116,7 @@ class StageConfig(pydantic.BaseModel):
 DEFAULT_CONFIG_PATH = "configuration/project.yaml"
 
 
-class ProjectConfig(pydantic.BaseModel):
+class ProjectConfig(BaseModel):
     global_config: GlobalConfig
     default_config: StageConfig
     default_config_overrides: Dict[EnvType, dict]
@@ -127,11 +125,11 @@ class ProjectConfig(pydantic.BaseModel):
         """Get default config with `EnvType` overrides"""
 
         try:
-            return StageConfig.parse_obj(
+            return StageConfig.model_validate(
                 {
                     **DeepChainMap(
                         self.default_config_overrides[EnvType(env_type)],
-                        self.default_config.dict(exclude_unset=True),
+                        self.default_config.model_dump(mode="json", exclude_unset=True),
                     ),
                 }
             )
@@ -142,24 +140,13 @@ class ProjectConfig(pydantic.BaseModel):
     def parse_file(
         cls: Type["ProjectConfig"],
         path: Union[str, Path],
-        *,
-        content_type: str = None,
-        encoding: str = "utf8",
-        proto: pydantic.Protocol = None,
-        allow_pickle: bool = False,
     ) -> "ProjectConfig":
         path = Path(path)
 
         if path.suffix in (".yml", ".yaml"):
             with open(path, "r") as f:
-                return cls.parse_obj(yaml.safe_load(f))
-        return super().parse_file(
-            path,
-            content_type=content_type,
-            encoding=encoding,
-            proto=proto,
-            allow_pickle=allow_pickle,
-        )
+                return cls.model_validate(yaml.safe_load(f))
+        return cls.model_validate_json(json_data=path.read_text())
 
     @classmethod
     def load_config(cls, path: Union[str, Path] = DEFAULT_CONFIG_PATH) -> "ProjectConfig":
@@ -170,6 +157,6 @@ class ConfigProvider:
     @classmethod
     def get_stage_config(
         cls, env_type: Union[str, EnvType], path: Union[str, Path] = DEFAULT_CONFIG_PATH
-    ) -> "ProjectConfig":
-        proj_config = ProjectConfig.parse_file(path)
+    ) -> "StageConfig":
+        proj_config = ProjectConfig.load_config(path)
         return proj_config.get_stage_config(env_type=env_type)

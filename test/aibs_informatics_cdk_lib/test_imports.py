@@ -2,7 +2,6 @@ from aibs_informatics_core.utils.modules import load_all_modules_from_pkg
 
 
 def test_imports():
-
     import aibs_informatics_cdk_lib.constructs_.assets
     import aibs_informatics_cdk_lib.constructs_.base
     import aibs_informatics_cdk_lib.constructs_.batch

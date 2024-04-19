@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Mapping, Optional, Union
+from typing import TYPE_CHECKING, List, Mapping, Optional, Union, cast
 
 import constructs
 from aibs_informatics_aws_utils.constants.lambda_ import (
@@ -44,7 +44,7 @@ class LambdaFunctionFragment(EnvBaseStateMachineFragment):
         lambda_task = stepfn_tasks.LambdaInvoke(
             self,
             f"{lambda_function.function_name} Function Execution",
-            lambda_function=lambda_function,
+            lambda_function=cast(lambda_.IFunction, lambda_function),
             payload_response_only=True,
         )
 

@@ -1,8 +1,11 @@
 import logging
-from typing import Literal, Optional, Tuple, TypeVar, Union
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Literal, Optional, Tuple, TypeVar, Union
 
 import aws_cdk as cdk
 import constructs
+from aibs_informatics_aws_utils.batch import to_mount_point, to_volume
 from aibs_informatics_aws_utils.constants.efs import (
     EFS_MOUNT_POINT_PATH_VAR,
     EFS_ROOT_ACCESS_POINT_TAG,
@@ -181,9 +184,97 @@ class EFSEcosystem(EnvBaseConstruct):
         return self.file_system.as_lambda_file_system()
 
 
+@dataclass
+class MountPointConfiguration:
+    file_system: Optional[Union[efs.FileSystem, efs.IFileSystem]]
+    access_point: Optional[Union[efs.AccessPoint, efs.IAccessPoint]]
+    mount_point: str
+    root_directory: Optional[str] = None
+    read_only: bool = False
+
+    def __post_init__(self):
+        if not self.access_point and not self.file_system:
+            raise ValueError("Must provide either file system or access point")
+        if (
+            self.access_point
+            and self.file_system
+            and self.access_point.file_system.file_system_id != self.file_system.file_system_id
+        ):
+            raise ValueError("File system of Access point and file system must be the same")
+        if not self.mount_point.startswith("/"):
+            raise ValueError("Mount point must start with /")
+
+    @classmethod
+    def from_file_system(
+        cls,
+        file_system: Union[efs.FileSystem, efs.IFileSystem],
+        root_directory: Optional[str] = None,
+        mount_point: Optional[str] = None,
+        read_only: bool = False,
+    ) -> "MountPointConfiguration":
+        if not root_directory:
+            root_directory = "/"
+        if not mount_point:
+            mount_point = f"/opt/efs/{file_system.file_system_id}"
+        return cls(
+            mount_point=mount_point,
+            file_system=file_system,
+            access_point=None,
+            root_directory=root_directory,
+            read_only=read_only,
+        )
+
+    @classmethod
+    def from_access_point(
+        cls,
+        access_point: Union[efs.AccessPoint, efs.IAccessPoint],
+        mount_point: Optional[str] = None,
+        read_only: bool = False,
+    ) -> "MountPointConfiguration":
+        if not mount_point:
+            mount_point = f"/opt/efs/{access_point.access_point_id}"
+        return cls(
+            mount_point=mount_point,
+            access_point=access_point,
+            file_system=None,
+            root_directory=None,
+            read_only=read_only,
+        )
+
+    @property
+    def file_system_id(self) -> str:
+        if self.access_point:
+            return self.access_point.file_system.file_system_id
+        elif self.file_system:
+            return self.file_system.file_system_id
+        else:
+            raise ValueError("No file system or access point provided")
+
+    def to_batch_mount_point(self, name: str) -> dict[str, Any]:
+        return to_mount_point(self.mount_point, self.read_only, source_volume=name)  # type: ignore
+
+    def to_batch_volume(self, name: str) -> dict[str, Any]:
+        efs_volume_configuration: dict[str, Any] = {
+            "fileSystemId": self.file_system_id,
+        }
+        if self.access_point:
+            efs_volume_configuration["transitEncryption"] = "ENABLED"
+            efs_volume_configuration["authorizationConfig"] = {
+                "accessPointId": self.access_point.access_point_id,
+                "iam": "ENABLED",
+            }
+        else:
+            efs_volume_configuration["rootDirectory"] = self.root_directory or "/"
+        return to_volume(
+            None,
+            name=name,
+            efs_volume_configuration=efs_volume_configuration,  # type: ignore
+        )  # type: ignore
+
+
 def create_access_point(
     scope: constructs.Construct,
-    file_system: efs.FileSystem,
+    file_system: Union[efs.FileSystem, efs.IFileSystem],
     name: str,
     path: str,
     *tags: Union[EFSTag, Tuple[str, str]],
@@ -236,7 +327,7 @@ def create_access_point(
 
 
 def grant_connectable_file_system_access(
-    file_system: efs.FileSystem,
+    file_system: Union[efs.IFileSystem, efs.FileSystem],
     connectable: ec2.IConnectable,
     permissions: Literal["r", "rw"] = "rw",
 ):
@@ -245,7 +336,9 @@ def grant_connectable_file_system_access(
 
 
 def grant_role_file_system_access(
-    file_system: efs.FileSystem, role: Optional[iam.IRole], permissions: Literal["r", "rw"] = "rw"
+    file_system: Union[efs.IFileSystem, efs.FileSystem],
+    role: Optional[iam.IRole],
+    permissions: Literal["r", "rw"] = "rw",
 ):
     grant_managed_policies(role, "AmazonElasticFileSystemReadOnlyAccess")
     if "w" in permissions:
@@ -253,7 +346,9 @@ def grant_role_file_system_access(
 
 
 def grant_grantable_file_system_access(
-    file_system: efs.FileSystem, grantable: iam.IGrantable, permissions: Literal["r", "rw"] = "rw"
+    file_system: Union[efs.IFileSystem, efs.FileSystem],
+    grantable: iam.IGrantable,
+    permissions: Literal["r", "rw"] = "rw",
 ):
     actions = []
     if "w" in permissions:
@@ -261,13 +356,17 @@ def grant_grantable_file_system_access(
     file_system.grant(grantable, *actions)
 
 
-def grant_file_system_access(file_system: efs.FileSystem, resource: lambda_.Function):
+def grant_file_system_access(
+    file_system: Union[efs.IFileSystem, efs.FileSystem], resource: lambda_.Function
+):
     grant_grantable_file_system_access(file_system, resource)
     grant_role_file_system_access(file_system, resource.role)
     grant_connectable_file_system_access(file_system, resource)
 
 
-def repair_connectable_efs_dependency(file_system: efs.FileSystem, connectable: ec2.IConnectable):
+def repair_connectable_efs_dependency(
+    file_system: Union[efs.IFileSystem, efs.FileSystem], connectable: ec2.IConnectable
+):
     """Repairs cyclical dependency between EFS and dependent connectable
 
     Reusing code written in this comment

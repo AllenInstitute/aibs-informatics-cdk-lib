@@ -46,6 +46,7 @@ PYTHON_REGEX_EXCLUDES = [
     r".*/test/.*",
 ]
 
+
 # TODO: rename to CodeAsset and move to separate file
 @dataclass
 class CodeAsset:

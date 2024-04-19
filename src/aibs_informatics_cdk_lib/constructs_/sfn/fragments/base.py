@@ -22,11 +22,11 @@ F = TypeVar("F", bound="StateMachineFragment")
 
 
 class StateMachineMixins(EnvBaseConstructMixins):
-    def get_fn(self, function_name: str) -> lambda_.Function:
+    def get_fn(self, function_name: str) -> lambda_.IFunction:
         cache_attr = "_function_cache"
         if not hasattr(self, cache_attr):
             setattr(self, cache_attr, {})
-        resource_cache = cast(Dict[str, lambda_.Function], getattr(self, cache_attr))
+        resource_cache = cast(Dict[str, lambda_.IFunction], getattr(self, cache_attr))
         if function_name not in resource_cache:
             resource_cache[function_name] = lambda_.Function.from_function_arn(
                 scope=self,
@@ -38,11 +38,11 @@ class StateMachineMixins(EnvBaseConstructMixins):
             )
         return resource_cache[function_name]
 
-    def get_state_machine_from_name(self, state_machine_name: str) -> sfn.StateMachine:
+    def get_state_machine_from_name(self, state_machine_name: str) -> sfn.IStateMachine:
         cache_attr = "_state_machine_cache"
         if not hasattr(self, cache_attr):
             setattr(self, cache_attr, {})
-        resource_cache = cast(Dict[str, sfn.StateMachine], getattr(self, cache_attr))
+        resource_cache = cast(Dict[str, sfn.IStateMachine], getattr(self, cache_attr))
         if state_machine_name not in resource_cache:
             resource_cache[state_machine_name] = sfn.StateMachine.from_state_machine_name(
                 scope=self,
@@ -77,7 +77,6 @@ class StateMachineFragment(sfn.StateMachineFragment):
         definition: sfn.IChainable,
         result_path: Optional[str] = None,
     ) -> F:
-
         chain = (
             sfn.Chain.start(definition)
             if not isinstance(definition, (sfn.Chain, sfn.StateMachineFragment))
@@ -181,7 +180,7 @@ class EnvBaseStateMachineFragment(sfn.StateMachineFragment, StateMachineMixins):
                     )
                 )
             ),
-            role=role,
+            role=cast(iam.IRole, role),
             definition_body=sfn.DefinitionBody.from_chainable(self.definition),
             timeout=timeout,
         )
@@ -236,7 +235,6 @@ class TaskWithPrePostStatus(LazyLoadStateMachineFragment):
         self._task_name = value
 
     def build_definition(self) -> sfn.IChainable:
-
         # Should only evaluate once, otherwise errors for duplicate construct will be raised\
         task__augment_input = self.task__augment_input
         task__status_started = self.task__status_started

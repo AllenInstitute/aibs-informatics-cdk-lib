@@ -192,7 +192,6 @@ class MonitoringConstruct(EnvBaseConstruct):
         self.dashboard_tools.add_text_widget(f"{group_name} State Machines", 1)
 
         for sub_group_name, raw_state_machine_names in grouped_state_machine_names:
-
             grouped_invocation_metrics: List[GraphMetricConfig] = []
             grouped_error_metrics: List[GraphMetricConfig] = []
             grouped_timing_metrics: List[GraphMetricConfig] = []

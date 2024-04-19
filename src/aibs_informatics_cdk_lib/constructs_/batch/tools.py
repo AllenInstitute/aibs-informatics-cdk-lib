@@ -27,12 +27,11 @@ class BatchTools(EnvBaseConstruct):
         vcpus: int = 1,
         mount_points: Optional[List[ecs.MountPoint]] = None,
         volumes: Optional[List[ecs.Volume]] = None,
-        **kwargs
+        **kwargs,
     ) -> batch.IJobDefinition:
         job_definition_name = self.get_job_definition_name(container_name)
         cache_key = job_definition_name
         if cache_key not in self._job_def_cache:
-
             jobdef_container = batch.EcsEc2ContainerDefinition(
                 image=self.get_ecr_image(container_name, container_tag),
                 command=command,
@@ -40,7 +39,7 @@ class BatchTools(EnvBaseConstruct):
                 vcpus=vcpus,
                 mount_points=mount_points,
                 volumes=volumes,
-                **kwargs
+                **kwargs,
             )
             # TODO: We should use CfnJobDefinition instead because we have more
             #       granular control over the configurations (such as defining a more
@@ -58,7 +57,6 @@ class BatchTools(EnvBaseConstruct):
         job_definition_name = self.get_job_definition_name(container_name)
         cache_key = job_definition_name
         if cache_key not in self._job_def_cache:
-
             self._job_def_cache[cache_key] = batch.EcsJobDefinition.from_job_definition_arn(
                 self, job_definition_name, job_definition_name=job_definition_name
             )

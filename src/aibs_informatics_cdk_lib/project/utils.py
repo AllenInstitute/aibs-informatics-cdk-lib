@@ -120,7 +120,6 @@ def get_env_base(node: constructs.Node) -> EnvBase:
 
 
 def get_config(node: constructs.Node) -> StageConfig:
-
     env_base = get_env_base(node)
 
     set_env_var(EnvBase.ENV_BASE_KEY, env_base)
@@ -134,7 +133,7 @@ def get_config(node: constructs.Node) -> StageConfig:
 
 
 def _get_from_context(
-    node: constructs.Node, keys: List[str], default: str = None
+    node: constructs.Node, keys: List[str], default: Optional[str] = None
 ) -> Optional[str]:
     for key in keys:
         value = node.try_get_context(key)

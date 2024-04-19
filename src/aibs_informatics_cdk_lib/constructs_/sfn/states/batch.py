@@ -1,5 +1,4 @@
-import re
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Mapping, Optional, Union, cast
+from typing import TYPE_CHECKING, List, Literal, Mapping, Optional, Union
 
 import constructs
 from aibs_informatics_aws_utils.batch import (
@@ -86,7 +85,7 @@ class BatchOperation:
             f"{{}}-{{}}", job_definition_name, sfn.JsonPath.execution_name
         )
         if not isinstance(environment, str):
-            environment_pairs = to_key_value_pairs(environment or {})
+            environment_pairs = to_key_value_pairs(dict(environment or {}))
         else:
             environment_pairs = environment
 
@@ -97,12 +96,12 @@ class BatchOperation:
                 "image": image,
                 "command": command,
                 "environment": environment_pairs,
-                "resourceRequirements": to_resource_requirements(gpu, memory, vcpus),
+                "resourceRequirements": to_resource_requirements(gpu, memory, vcpus),  # type: ignore # must be string
                 "mountPoints": mount_points,
                 "volumes": volumes,
             },
             "retryStrategy": build_retry_strategy(include_default_evaluate_on_exit_configs=True),
-        }
+        }  # type: ignore
         if platform_capabilities:
             request["platformCapabilities"] = platform_capabilities
 
@@ -111,7 +110,7 @@ class BatchOperation:
         start = sfn.Pass(
             scope,
             id + " RegisterJobDefinition Prep",
-            parameters=convert_reference_paths(parameters),
+            parameters=convert_reference_paths(parameters),  # type: ignore  # misundertands type
             result_path=result_path or "$",
         )
         register = sfn.CustomState(
@@ -144,7 +143,7 @@ class BatchOperation:
         job_definition: str,
         job_queue: str,
         parameters: Optional[Mapping[str, str]] = None,
-        command: Union[List[str], str] = None,
+        command: Optional[Union[List[str], str]] = None,
         environment: Optional[Union[Mapping[str, str], str]] = None,
         memory: Optional[Union[int, str]] = None,
         vcpus: Optional[Union[int, str]] = None,
@@ -154,15 +153,15 @@ class BatchOperation:
     ) -> sfn.Chain:
         job_name = sfn.JsonPath.format(f"{job_name}-{{}}", sfn.JsonPath.execution_name)
         if not isinstance(environment, str):
-            environment_pairs = to_key_value_pairs(environment or {})
+            environment_pairs = to_key_value_pairs(dict(environment or {}))
         else:
             environment_pairs = environment
 
         container_overrides: ContainerOverridesTypeDef = {
             "command": command,
             "environment": environment_pairs,
-            "resourceRequirements": to_resource_requirements(gpu, memory, vcpus),
-        }
+            "resourceRequirements": to_resource_requirements(gpu, memory, vcpus),  # type: ignore # must be string
+        }  # type: ignore
 
         request = {
             "JobName": job_name,
@@ -177,7 +176,7 @@ class BatchOperation:
             id + " SubmitJob Prep",
             parameters=convert_reference_paths(
                 pass_params := convert_key_case(request, pascalcase)
-            ),
+            ),  # type: ignore  # misundertands type
             result_path=result_path or "$",
         )
 

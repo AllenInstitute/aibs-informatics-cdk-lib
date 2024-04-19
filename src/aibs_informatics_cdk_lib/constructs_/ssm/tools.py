@@ -27,7 +27,6 @@ class SSMTools(EnvBaseConstruct):
         destination_key_prefix: Optional[S3KeyPrefix] = None,
         param_name: Optional[str] = None,
     ) -> Tuple[ssm.StringParameter, str]:
-
         param_name_components = [self.CODE_ASSETS_PREFIX, asset_name]
         if destination_key_prefix is None:
             destination_key_prefix = S3KeyPrefix(self.CODE_ASSETS_PREFIX)
@@ -39,7 +38,7 @@ class SSMTools(EnvBaseConstruct):
             self,
             "-".join([*param_name_components, "s3-deployment"]),
             sources=[asset_source],
-            destination_bucket=destination_bucket.s3_bucket,
+            destination_bucket=destination_bucket,
             destination_key_prefix=destination_key_prefix + "/",
             retain_on_delete=False,
         )
@@ -49,7 +48,7 @@ class SSMTools(EnvBaseConstruct):
             "-".join([*param_name_components, "ssm-parameter"]),
             # Store the S3 URI location in an SSM parameter
             string_value=S3URI.build(
-                bucket_name=destination_bucket.s3_bucket.bucket_name,
+                bucket_name=destination_bucket.bucket_name,
                 key=f"{destination_key_prefix}/{filename}",
                 full_validate=False,
             ),
@@ -64,7 +63,6 @@ class SSMTools(EnvBaseConstruct):
         destination_bucket: EnvBaseBucket,
         destination_key_prefix: str,
     ) -> Tuple[ssm.StringParameter, str]:
-
         if not os.path.isfile(path):
             raise ValueError(
                 f"Cannot upload file and create SSM reference for {path}. Must be a valid file"
@@ -82,13 +80,13 @@ class SSMTools(EnvBaseConstruct):
             self,
             "-".join([name, "s3-deployment"]),
             sources=[s3deployment.Source.asset(os.path.dirname(path))],
-            destination_bucket=destination_bucket.s3_bucket,
+            destination_bucket=destination_bucket,
             destination_key_prefix=destination_key_prefix,
         )
 
         # Store the S3 URI location in an SSM parameter
         s3_uri = S3URI.build(
-            destination_bucket.s3_bucket.bucket_name, destination_key, full_validate=False
+            destination_bucket.bucket_name, destination_key, full_validate=False
         )
 
         parameter_name = self.env_base.get_ssm_param_name(*param_name_components)

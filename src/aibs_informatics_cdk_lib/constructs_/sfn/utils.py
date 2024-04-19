@@ -26,12 +26,11 @@ def convert_reference_paths(parameters: JSON) -> JSON:
 def enclosed_chain(
     id: str, chain: sfn.Chain, result_path: str = "$", output_path: str = "$"
 ) -> sfn.Chain:
-
-    pre = sfn.Pass(id + " Parallel Prep", result_path=result_path, output_path=output_path)
+    pre = sfn.Pass(id + " Parallel Prep", result_path=result_path, output_path=output_path)  # type: ignore
     parallel = chain.to_single_state(
         id=f"{id} Parallel", input_path=result_path, output_path="$[0]"
     )
-    post = sfn.Pass(id + " Parallel Post", result_path=result_path, output_path=output_path)
+    post = sfn.Pass(id + " Parallel Post", result_path=result_path, output_path=output_path)  # type: ignore
 
     return sfn.Chain.start(pre).next(parallel).next(post)
 
