@@ -155,7 +155,6 @@ class DataSyncStack(EnvBaseStack):
         return self._code_asset
 
     def create_lambda_functions(self) -> None:
-
         # ----------------------------------------------------------
         # Data Transfer functions
         # ----------------------------------------------------------
@@ -251,7 +250,6 @@ class DataSyncStack(EnvBaseStack):
         self.add_managed_policies(self.prepare_batch_data_sync_fn.role, "AmazonS3ReadOnlyAccess")
 
     def create_step_functions(self):
-
         start_pass_state = sfn.Pass(
             self,
             "Data Sync: Start",
@@ -300,14 +298,16 @@ class DataSyncStack(EnvBaseStack):
                         },
                     )
                 ],
-                platform_capabilities=["FARGATE"]
-                if any(
-                    [
-                        isinstance(ce.compute_environment, batch.FargateComputeEnvironment)
-                        for ce in self._job_queue.compute_environments
-                    ]
-                )
-                else None,
+                platform_capabilities=(
+                    ["FARGATE"]
+                    if any(
+                        [
+                            isinstance(ce.compute_environment, batch.FargateComputeEnvironment)
+                            for ce in self._job_queue.compute_environments
+                        ]
+                    )
+                    else None
+                ),
             )
         )
         # fmt: off
@@ -360,7 +360,6 @@ class DataSyncStack(EnvBaseStack):
         )
 
     def create_rclone_step_function(self):
-
         start_pass_state = sfn.Pass(
             self,
             "Rclone: Start",
@@ -413,14 +412,16 @@ class DataSyncStack(EnvBaseStack):
                         },
                     )
                 ],
-                platform_capabilities=["FARGATE"]
-                if any(
-                    [
-                        isinstance(ce.compute_environment, batch.FargateComputeEnvironment)
-                        for ce in self._job_queue.compute_environments
-                    ]
-                )
-                else None,
+                platform_capabilities=(
+                    ["FARGATE"]
+                    if any(
+                        [
+                            isinstance(ce.compute_environment, batch.FargateComputeEnvironment)
+                            for ce in self._job_queue.compute_environments
+                        ]
+                    )
+                    else None
+                ),
             )
         )
         # fmt: off

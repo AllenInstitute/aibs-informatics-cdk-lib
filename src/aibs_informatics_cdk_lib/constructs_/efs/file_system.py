@@ -61,9 +61,9 @@ class EnvBaseFileSystem(efs.FileSystem, EnvBaseConstructMixins):
             scope,
             id,
             vpc=vpc,
-            file_system_name=self.get_name_with_env(file_system_name)
-            if file_system_name
-            else None,
+            file_system_name=(
+                self.get_name_with_env(file_system_name) if file_system_name else None
+            ),
             allow_anonymous_access=allow_anonymous_access,
             enable_automatic_backups=enable_automatic_backups,
             encrypted=encrypted,
@@ -158,9 +158,9 @@ class EFSEcosystem(EnvBaseConstruct):
             self,
             "fs",
             env_base=self.env_base,
-            file_system_name=self.get_name_with_env(file_system_name)
-            if file_system_name
-            else None,
+            file_system_name=(
+                self.get_name_with_env(file_system_name) if file_system_name else None
+            ),
             lifecycle_policy=efs.LifecyclePolicy.AFTER_7_DAYS,
             out_of_infrequent_access_policy=efs.OutOfInfrequentAccessPolicy.AFTER_1_ACCESS,
             enable_automatic_backups=False,

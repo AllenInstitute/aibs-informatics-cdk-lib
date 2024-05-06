@@ -85,9 +85,7 @@ class SSMTools(EnvBaseConstruct):
         )
 
         # Store the S3 URI location in an SSM parameter
-        s3_uri = S3URI.build(
-            destination_bucket.bucket_name, destination_key, full_validate=False
-        )
+        s3_uri = S3URI.build(destination_bucket.bucket_name, destination_key, full_validate=False)
 
         parameter_name = self.env_base.get_ssm_param_name(*param_name_components)
         cmd_wrapper_param = ssm.StringParameter(

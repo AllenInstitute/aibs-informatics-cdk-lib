@@ -116,7 +116,7 @@ unlink-packages: ## Unlink local packages from virtualenv
 #######################
 
 lint-black: $(INSTALL_STAMP) ## Run black (check only)
-	$(VENV_BIN)/black ./ --check
+	$(VENV_BIN)/black ./ --diff --check
 
 lint-isort: $(INSTALL_STAMP) ## Run isort (check only) 
 	$(VENV_BIN)/isort ./ --check
