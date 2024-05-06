@@ -78,9 +78,11 @@ class MonitoringConstruct(EnvBaseConstruct):
         self.dashboard_tools.add_text_widget(f"{group_name} Lambda Functions", 1)
 
         function_names_groups: List[Tuple[str, List[str]]] = [
-            cast(Tuple[str, List[str]], _)
-            if isinstance(_, tuple) and len(_) == 2 and isinstance(_[-1], list)
-            else ("/".join(_), _)
+            (
+                cast(Tuple[str, List[str]], _)
+                if isinstance(_, tuple) and len(_) == 2 and isinstance(_[-1], list)
+                else ("/".join(_), _)
+            )
             for _ in function_names_groups
         ]
 
@@ -184,9 +186,11 @@ class MonitoringConstruct(EnvBaseConstruct):
         *grouped_state_machine_names: Union[Tuple[str, List[str]], List[str]],
     ):
         grouped_state_machine_names: List[Tuple[str, List[str]]] = [
-            cast(Tuple[str, List[str]], _)
-            if isinstance(_, tuple) and len(_) == 2 and isinstance(_[-1], list)
-            else ("/".join(_), _)
+            (
+                cast(Tuple[str, List[str]], _)
+                if isinstance(_, tuple) and len(_) == 2 and isinstance(_[-1], list)
+                else ("/".join(_), _)
+            )
             for _ in grouped_state_machine_names
         ]
         self.dashboard_tools.add_text_widget(f"{group_name} State Machines", 1)
