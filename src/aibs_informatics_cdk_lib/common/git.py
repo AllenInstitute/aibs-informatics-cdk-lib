@@ -5,11 +5,9 @@ import subprocess
 import tempfile
 from pathlib import Path
 from typing import ClassVar, Optional, Union
-from urllib.parse import urlparse
 
 from aibs_informatics_core.collections import ValidatedStr
 from aibs_informatics_core.utils.file_operations import remove_path
-from libvcs.url.git import GitURL
 
 logger = logging.getLogger(__name__)
 
@@ -211,7 +209,7 @@ def clone_repo(
     try:
         # Clone the repository into the target directory
         base_url, branch = get_repo_url_components(repo_url)
-        cmd = ["git", "clone", base_url, target_path, "--single-branch"]
+        cmd: list[str] = ["git", "clone", base_url, target_path.as_posix(), "--single-branch"]
         if branch:
             cmd.extend(["--branch", branch])
         subprocess.check_call(cmd)
