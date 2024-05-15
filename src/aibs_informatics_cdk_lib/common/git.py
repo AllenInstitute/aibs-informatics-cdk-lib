@@ -175,6 +175,19 @@ def construct_repo_path(repo_url: str, target_dir: Optional[Union[str, Path]] = 
 def clone_repo(
     repo_url: str, target_dir: Optional[Union[str, Path]] = None, skip_if_exists: bool = True
 ) -> Path:
+    """Clone a Git repository into a target directory.
+
+    Args:
+        repo_url (str): The URL of the Git repository.
+        target_dir (Optional[Union[str, Path]], optional): Target prefix to store repo under.
+            The repo will be written to a subdirectory. Defaults to None (defaut tmp dir used).
+        skip_if_exists (bool, optional): Skip cloning if the target directory already exists.
+            If the target directory exists and the commit hash matches, the function will return
+            the existing path. Defaults to True.
+
+    Returns:
+        Path: The path to the cloned repository.
+    """
     target_path = construct_repo_path(repo_url, target_dir)
 
     if target_path.exists():
