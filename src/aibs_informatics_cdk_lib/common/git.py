@@ -178,7 +178,7 @@ def clone_repo(
     target_path = construct_repo_path(repo_url, target_dir)
 
     if target_path.exists():
-        if skip_if_exists:
+        if skip_if_exists and get_commit_hash(target_path) == get_commit_hash(repo_url):
             logger.info(
                 f"Skipping cloning of repository as target path already exists: {target_path}"
             )
