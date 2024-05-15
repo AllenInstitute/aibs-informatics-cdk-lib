@@ -16,7 +16,7 @@ from aibs_informatics_cdk_lib.project.config import (
 
 
 class EnvTests(BaseTest):
-    def test__parse_obj__parses_simple_dict(self):
+    def test__model_validate__parses_simple_dict(self):
         env_dict = {
             "env_type": "prod",
             "label": "marmot",
@@ -29,10 +29,10 @@ class EnvTests(BaseTest):
             account="12345678910",
             region="us-west-2",
         )
-        parsed_env = Env.parse_obj(env_dict)
+        parsed_env = Env.model_validate(env_dict)
         self.assertEqual(expected_env, parsed_env)
 
-    def test__parse_obj__parses_dict_with_env_fields(self):
+    def test__model_validate__parses_dict_with_env_fields(self):
         self.set_env_vars(
             *list(dict(CUSTOM_LABEL="marmot", CUSTOM_ACCOUNT_ID="123123123").items())
         )
@@ -49,12 +49,12 @@ class EnvTests(BaseTest):
             account="123123123",
             region="{CUSTOM_REGION}",
         )
-        parsed_env = Env.parse_obj(env_dict)
+        parsed_env = Env.model_validate(env_dict)
         self.assertEqual(expected_env, parsed_env)
 
-    def test__parse_obj__invalid_dict__FAILS(self):
+    def test__model_validate__invalid_dict__FAILS(self):
         with self.assertRaises(Exception):
-            Env.parse_obj({"env_type": "not_valid"})
+            Env.model_validate({"env_type": "not_valid"})
 
     def test__env_base__includes_label_when_present_and_not_otherwise(self):
         env_with_label = Env(env_type=EnvType.PROD, label="marmot")
@@ -120,9 +120,9 @@ class ProjectConfigTests(BaseTest):
             default_config_overrides=default_config_overrides,
         )
 
-        expected_config = StageConfig.parse_obj(
+        expected_config = StageConfig.model_validate(
             {
-                **default_config.copy().dict(exclude_unset=True),
+                **default_config.model_copy().model_dump(exclude_unset=True),
             }
         )
         expected_config.env.env_type = EnvType.DEV
@@ -141,7 +141,7 @@ class ProjectConfigTests(BaseTest):
             default_config_overrides={},
         )
         proj_config_json_path = self.tmp_path() / "project.json"
-        proj_config_json_path.write_text(proj_config.json())
+        proj_config_json_path.write_text(proj_config.model_dump_json())
         another_proj_config = ProjectConfig.load_config(proj_config_json_path)
         self.assertEqual(proj_config, another_proj_config)
 
@@ -154,7 +154,7 @@ class ConfigProviderTests(BaseTest):
             default_config_overrides={EnvType.DEV: {}, EnvType.TEST: {}},
         )
         proj_config_json_path = self.tmp_path() / "project.json"
-        proj_config_json_path.write_text(proj_config.json())
+        proj_config_json_path.write_text(proj_config.model_dump_json())
 
         with self.assertRaises(ValueError):
             ConfigProvider.get_stage_config("invalid", proj_config_json_path)
@@ -166,7 +166,7 @@ class ConfigProviderTests(BaseTest):
             default_config_overrides={EnvType.DEV: {}, EnvType.TEST: {}},
         )
         proj_config_json_path = self.tmp_path() / "project.json"
-        proj_config_json_path.write_text(proj_config.json())
+        proj_config_json_path.write_text(proj_config.model_dump_json())
 
         # no overrides means they should be equal
         self.assertEqual(

@@ -47,7 +47,6 @@ PYTHON_REGEX_EXCLUDES = [
 ]
 
 
-# TODO: rename to CodeAsset and move to separate file
 @dataclass
 class CodeAsset:
     asset_name: str
@@ -103,7 +102,7 @@ class CodeAsset:
             exclude=self.asset_props.exclude,
             follow_symlinks=self.asset_props.follow_symlinks,
             ignore_mode=self.asset_props.ignore_mode,
-        )
+        )  # type: ignore
 
     def get_source_zip(self, archive_filename: str) -> aws_s3_deployment.Source:
         if not self.asset_props.bundling:
@@ -147,7 +146,7 @@ class CodeAsset:
             follow_symlinks=self.asset_props.follow_symlinks,
             exclude=self.asset_props.exclude,
             ignore_mode=self.asset_props.ignore_mode,
-        )
+        )  # type: ignore
 
     def get_code(self) -> lambda_.AssetCode:
         return lambda_.Code.from_asset(
@@ -186,7 +185,7 @@ class CodeAsset:
 
         asset_hash = generate_path_hash(
             path=str(context_path.resolve()),
-            includes=includes,
+            includes=list(includes) if includes else None,
             excludes=[*(excludes or []), *PYTHON_REGEX_EXCLUDES],
         )
         host_ssh_dir = str(Path.home() / ".ssh")

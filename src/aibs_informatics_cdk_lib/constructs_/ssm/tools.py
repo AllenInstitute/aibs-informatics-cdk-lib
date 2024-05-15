@@ -31,7 +31,11 @@ class SSMTools(EnvBaseConstruct):
         if destination_key_prefix is None:
             destination_key_prefix = S3KeyPrefix(self.CODE_ASSETS_PREFIX)
 
-        parameter_name = self.env_base.get_ssm_param_name(param_name)
+        if param_name:
+            parameter_name = self.env_base.get_ssm_param_name(param_name)
+        else:
+            parameter_name = self.env_base.get_ssm_param_name(*param_name_components)
+
         filename = f"{asset_name}-asset.zip"
 
         s3deployment.BucketDeployment(
