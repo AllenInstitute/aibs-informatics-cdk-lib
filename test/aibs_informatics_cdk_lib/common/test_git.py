@@ -102,10 +102,10 @@ class GitTests(BaseTest):
         assert not is_repo_url(self.tmp_path().as_posix())
 
     def test__is_local_repo(self):
-        assert not is_local_repo(self.GIT_URL_HTTPS)
-        p = self.tmp_path()
-        (p / ".git").mkdir()
+        p = clone_repo(self.GIT_URL_HTTPS, self.tmp_path())
         assert is_local_repo(p.as_posix())
+        assert not is_local_repo(p.parent.as_posix())
+        assert not is_local_repo(self.GIT_URL_HTTPS)
 
     def test__get_repo_name__works_for_url(self):
         repo_name = get_repo_name(self.GIT_URL_HTTPS)

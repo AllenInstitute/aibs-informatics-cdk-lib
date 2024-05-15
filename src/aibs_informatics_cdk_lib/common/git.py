@@ -57,7 +57,11 @@ def is_local_repo(repo_path: Union[str, Path]) -> bool:
     bool: True if the path is a local Git repository, False otherwise.
     """
     repo_path = Path(repo_path)
-    return (repo_path / ".git").is_dir()
+    try:
+        subprocess.check_output(["git", "-C", repo_path, "rev-parse", "--is-inside-work-tree"])
+        return True
+    except subprocess.CalledProcessError:
+        return False
 
 
 def get_commit_hash(repo_url_or_path: Union[str, Path]) -> str:
@@ -127,64 +131,39 @@ def get_repo_name(repo_url_or_path: Union[str, Path]) -> str:
     str: The name of the repository.
     """
     if isinstance(repo_url_or_path, str) and is_repo_url(repo_url_or_path):
-        return get_repo_name_from_url(repo_url_or_path)
+        return GitUrl(repo_url_or_path).repo_name
     elif is_local_repo(repo_url_or_path):
         repo_path = Path(repo_url_or_path)
-        return get_repo_name_from_local(repo_path)
+        try:
+            # Get the remote URL of the 'origin' remote (commonly used name for the default remote)
+            remote_url = (
+                subprocess.check_output(
+                    ["git", "config", "--get", "remote.origin.url"], cwd=repo_path
+                )
+                .decode("utf-8")
+                .strip()
+            )
+
+            # Strip trailing slashes or .git if present
+            remote_url = remote_url.rstrip("/").rstrip(".git")
+
+            # Extract the repository name
+            repo_name = os.path.basename(remote_url)
+
+            return repo_name
+        except subprocess.CalledProcessError as e:
+            logger.error(f"An error occurred: {e}")
+            raise e
+
     else:
         raise ValueError("The input must be a string or a Path object.")
-
-
-def get_repo_name_from_url(repo_url: str) -> str:
-    """
-    Extracts the repository name from a Git repository URL.
-
-    Args:
-        repo_url (str): The URL of the Git repository.
-
-    Returns:
-    str: The name of the repository.
-    """
-
-    # Extract the repository name
-    return GitUrl(repo_url).repo_name
-
-
-def get_repo_name_from_local(repo_path: Union[str, Path]) -> str:
-    """
-    Extracts the repository name from a local Git repository clone.
-
-    Args:
-    repo_path (Path): The file system path to the local Git repository.
-
-    Returns:
-    str: The name of the repository, or None if it cannot be determined.
-    """
-    try:
-        # Get the remote URL of the 'origin' remote (commonly used name for the default remote)
-        remote_url = (
-            subprocess.check_output(["git", "config", "--get", "remote.origin.url"], cwd=repo_path)
-            .decode("utf-8")
-            .strip()
-        )
-
-        # Strip trailing slashes or .git if present
-        remote_url = remote_url.rstrip("/").rstrip(".git")
-
-        # Extract the repository name
-        repo_name = os.path.basename(remote_url)
-
-        return repo_name
-    except subprocess.CalledProcessError as e:
-        logger.error(f"An error occurred: {e}")
-        raise e
 
 
 def construct_repo_path(repo_url: str, target_dir: Optional[Union[str, Path]] = None) -> Path:
     target_dir = Path(target_dir) if target_dir else Path(tempfile.gettempdir())
 
-    repo_name = get_repo_name_from_url(repo_url)
-    repo_commit_hash = get_commit_hash_from_url(repo_url)
+    repo_name = get_repo_name(repo_url)
+    repo_commit_hash = get_commit_hash(repo_url)
 
     target_base_name = f"{repo_name}_{repo_commit_hash}"
 

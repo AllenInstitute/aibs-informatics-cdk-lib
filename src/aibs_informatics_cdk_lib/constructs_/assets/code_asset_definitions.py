@@ -75,10 +75,7 @@ class AIBSInformaticsCodeAssets(constructs.Construct):
                 *PYTHON_GLOB_EXCLUDES,
                 "**/cdk.out/",
                 "**/scripts/**",
-                "gcs-docker-tools/**",
-                "gcs-cli",
             ],
-            # ignore_mode=cdk.IgnoreMode.GIT,
             bundling=cdk.BundlingOptions(
                 image=bundling_image,
                 working_directory=f"/asset-input",
