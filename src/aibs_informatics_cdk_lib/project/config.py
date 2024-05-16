@@ -139,11 +139,11 @@ class BaseProjectConfig(BaseModel, Generic[G, S]):
 
     @classmethod
     def get_global_config_cls(cls) -> Type[G]:
-        return cls.model_fields["global_config"].annotation
+        return cls.model_fields["global_config"].annotation  # type: ignore
 
     @classmethod
     def get_stage_config_cls(cls) -> Type[S]:
-        return cls.model_fields["default_config"].annotation
+        return cls.model_fields["default_config"].annotation  # type: ignore
 
     def get_stage_config(self, env_type: Union[str, EnvType]) -> S:
         """Get default config with `EnvType` overrides"""
