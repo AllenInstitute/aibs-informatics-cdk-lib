@@ -32,6 +32,9 @@ dev = [
 [tool.setuptools.dynamic]
 version = {attr = "aibs_informatics_cdk_lib._version.__version__"}
 
+[tool.setuptools.package-data]
+"*" = ['py.typed']
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
