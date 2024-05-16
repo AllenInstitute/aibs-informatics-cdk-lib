@@ -189,9 +189,6 @@ class BaseProjectConfig(BaseModel, Generic[G, S]):
         return proj_config.get_stage_config(env_type=env_type)
 
 
-# ProjectConfig = BaseProjectConfig[GlobalConfig, StageConfig]
-
-
 class ProjectConfig(BaseProjectConfig[GlobalConfig, StageConfig]):
     pass
 
@@ -203,6 +200,6 @@ class ConfigProvider:
         env_type: Union[str, EnvType],
         path: Optional[Union[str, Path]] = None,
         project_config_cls: Type[BaseProjectConfig[G, S]] = ProjectConfig,
-    ) -> StageConfig:
+    ) -> S:
         proj_config = project_config_cls.load_config(path)
         return proj_config.get_stage_config(env_type=env_type)
