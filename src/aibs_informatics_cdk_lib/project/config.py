@@ -12,12 +12,23 @@ __all__ = [
 ]
 
 from pathlib import Path
-from typing import Annotated, Dict, MutableMapping, Optional, Type, Union
+from typing import (
+    Annotated,
+    Dict,
+    Generic,
+    MutableMapping,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+    get_args,
+)
 
 import yaml
 from aibs_informatics_core.collections import DeepChainMap
 from aibs_informatics_core.env import ENV_BASE_KEY, ENV_LABEL_KEY, ENV_TYPE_KEY, EnvBase, EnvType
 from aibs_informatics_core.models.unique_ids import UniqueID
+from aibs_informatics_core.utils.file_operations import find_paths
 from aibs_informatics_core.utils.os_operations import expandvars
 from aibs_informatics_core.utils.tools.dicttools import remove_null_values
 from pydantic import BaseModel, PlainSerializer, PlainValidator
@@ -116,16 +127,29 @@ class StageConfig(BaseModel):
 DEFAULT_CONFIG_PATH = "configuration/project.yaml"
 
 
-class ProjectConfig(BaseModel):
-    global_config: GlobalConfig
-    default_config: StageConfig
+G = TypeVar("G", bound=GlobalConfig)
+S = TypeVar("S", bound=StageConfig)
+P = TypeVar("P", bound="BaseProjectConfig")
+
+
+class BaseProjectConfig(BaseModel, Generic[G, S]):
+    global_config: G
+    default_config: S
     default_config_overrides: Dict[EnvType, dict]
 
-    def get_stage_config(self, env_type: Union[str, EnvType]) -> StageConfig:
+    @classmethod
+    def get_global_config_cls(cls) -> Type[G]:
+        return cls.model_fields["global_config"].annotation
+
+    @classmethod
+    def get_stage_config_cls(cls) -> Type[S]:
+        return cls.model_fields["default_config"].annotation
+
+    def get_stage_config(self, env_type: Union[str, EnvType]) -> S:
         """Get default config with `EnvType` overrides"""
 
         try:
-            return StageConfig.model_validate(
+            return self.get_stage_config_cls().model_validate(
                 {
                     **DeepChainMap(
                         self.default_config_overrides[EnvType(env_type)],
@@ -137,10 +161,7 @@ class ProjectConfig(BaseModel):
             raise e
 
     @classmethod
-    def parse_file(
-        cls: Type["ProjectConfig"],
-        path: Union[str, Path],
-    ) -> "ProjectConfig":
+    def parse_file(cls: Type[P], path: Union[str, Path]) -> P:
         path = Path(path)
 
         if path.suffix in (".yml", ".yaml"):
@@ -149,14 +170,39 @@ class ProjectConfig(BaseModel):
         return cls.model_validate_json(json_data=path.read_text())
 
     @classmethod
-    def load_config(cls, path: Union[str, Path] = DEFAULT_CONFIG_PATH) -> "ProjectConfig":
+    def load_config(cls: Type[P], path: Optional[Union[str, Path]] = None) -> P:
+        if path is None:
+            paths = find_paths(
+                Path.cwd(), include_dirs=False, include_files=True, includes=[r".*/project.yaml"]
+            )
+            assert (
+                len(paths) == 1
+            ), f"Expected to find exactly one project.yaml file, but found {len(paths)}: {paths}"
+            path = paths[0]
         return cls.parse_file(path=path)
+
+    @classmethod
+    def load_stage_config(
+        cls, env_type: Union[str, EnvType], path: Optional[Union[str, Path]] = None
+    ) -> "StageConfig":
+        proj_config = ProjectConfig.load_config(path)
+        return proj_config.get_stage_config(env_type=env_type)
+
+
+# ProjectConfig = BaseProjectConfig[GlobalConfig, StageConfig]
+
+
+class ProjectConfig(BaseProjectConfig[GlobalConfig, StageConfig]):
+    pass
 
 
 class ConfigProvider:
     @classmethod
     def get_stage_config(
-        cls, env_type: Union[str, EnvType], path: Union[str, Path] = DEFAULT_CONFIG_PATH
-    ) -> "StageConfig":
-        proj_config = ProjectConfig.load_config(path)
+        cls,
+        env_type: Union[str, EnvType],
+        path: Optional[Union[str, Path]] = None,
+        project_config_cls: Type[BaseProjectConfig[G, S]] = ProjectConfig,
+    ) -> StageConfig:
+        proj_config = project_config_cls.load_config(path)
         return proj_config.get_stage_config(env_type=env_type)

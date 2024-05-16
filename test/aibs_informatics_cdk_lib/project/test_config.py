@@ -1,6 +1,8 @@
 from aibs_informatics_test_resources import BaseTest
 
 from aibs_informatics_cdk_lib.project.config import (
+    BaseModel,
+    BaseProjectConfig,
     CodePipelineBuildConfig,
     CodePipelineNotificationsConfig,
     CodePipelineSourceConfig,
@@ -100,6 +102,18 @@ def create_stage_config() -> StageConfig:
     )
 
 
+class MyStageServiceConfig(BaseModel):
+    service_name: str
+
+
+class ExtendedStageConfig(StageConfig):
+    service: MyStageServiceConfig
+
+
+class ExtendedProjectConfig(BaseProjectConfig[GlobalConfig, ExtendedStageConfig]):
+    pass
+
+
 class ProjectConfigTests(BaseTest):
     def test__get_stage_config__simple_override(self):
         global_config = create_global_config()
@@ -159,7 +173,7 @@ class ConfigProviderTests(BaseTest):
         with self.assertRaises(ValueError):
             ConfigProvider.get_stage_config("invalid", proj_config_json_path)
 
-    def test__get_config__simple_check(self):
+    def test__get_stage_config__simple_check(self):
         proj_config = ProjectConfig(
             global_config=create_global_config(),
             default_config=create_stage_config(),
@@ -173,3 +187,21 @@ class ConfigProviderTests(BaseTest):
             ConfigProvider.get_stage_config("dev", path=proj_config_json_path),
             ConfigProvider.get_stage_config("test", path=proj_config_json_path),
         )
+
+    def test__get_stage_config__override_default_project_config_cls(self):
+        extended_stage_config = ExtendedStageConfig(
+            **create_stage_config().model_dump(exclude_unset=True),
+            service=MyStageServiceConfig(service_name="my-service"),
+        )
+        proj_config = ExtendedProjectConfig(
+            global_config=create_global_config(),
+            default_config=extended_stage_config,
+            default_config_overrides={EnvType.DEV: {}, EnvType.TEST: {}},
+        )
+        proj_config_json_path = self.tmp_path() / "project.json"
+        proj_config_json_path.write_text(proj_config.model_dump_json())
+
+        stage_config = ConfigProvider.get_stage_config(
+            "dev", path=proj_config_json_path, project_config_cls=ExtendedProjectConfig
+        )
+        self.assertEqual(stage_config.service.service_name, "my-service")
