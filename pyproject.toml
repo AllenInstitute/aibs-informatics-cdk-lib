@@ -15,12 +15,12 @@ dynamic = [
     "version",
 ]
 dependencies = [
+    "aibs-informatics-aws-utils @ git+ssh://git@github.com/AllenInstitute/aibs-informatics-aws-utils.git@main",
+    "aibs-informatics-core @ git+ssh://git@github.com/AllenInstitute/aibs-informatics-core.git@main",
     "aws-cdk-lib>=2.90.0",
     "aws-cdk.aws-batch-alpha>=2.90.0a",
     "constructs>=10.0.0",
-    "aibs-informatics-aws-utils @ git+ssh://git@github.com/AllenInstitute/aibs-informatics-aws-utils.git@main",
-    "aibs-informatics-core @ git+ssh://git@github.com/AllenInstitute/aibs-informatics-core.git@main",
-    "pydantic>=2.0.3",
+    "pydantic~=2.0",
 ]
 
 [project.optional-dependencies]
