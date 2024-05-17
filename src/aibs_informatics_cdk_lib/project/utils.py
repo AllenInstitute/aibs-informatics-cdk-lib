@@ -2,6 +2,7 @@ __all__ = [
     "get_package_root",
     "resolve_repo_root",
     "get_env_base",
+    "get_config",
 ]
 
 import logging
@@ -20,14 +21,7 @@ from aibs_informatics_core.env import (
 )
 from aibs_informatics_core.utils.os_operations import get_env_var, set_env_var
 
-from aibs_informatics_cdk_lib.project.config import (
-    BaseProjectConfig,
-    ConfigProvider,
-    G,
-    ProjectConfig,
-    S,
-    StageConfig,
-)
+from aibs_informatics_cdk_lib.project.config import BaseProjectConfig, G, ProjectConfig, S
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +130,7 @@ def get_config(
     if env_base.env_label:
         set_env_var(EnvBase.ENV_LABEL_KEY, env_base.env_label)
 
-    config = project_config_cls.load_stage_config(env_type=env_base.env_type)
+    config: S = project_config_cls.load_stage_config(env_type=env_base.env_type)
     config.env.label = env_base.env_label
     return config
 

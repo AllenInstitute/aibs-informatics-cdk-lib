@@ -7,22 +7,13 @@ __all__ = [
     "GlobalConfig",
     "StageConfig",
     "PipelineConfig",
+    "BaseProjectConfig",
     "ProjectConfig",
     "ConfigProvider",
 ]
 
 from pathlib import Path
-from typing import (
-    Annotated,
-    Dict,
-    Generic,
-    MutableMapping,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-    get_args,
-)
+from typing import Annotated, Dict, Generic, MutableMapping, Optional, Type, TypeVar, Union
 
 import yaml
 from aibs_informatics_core.collections import DeepChainMap
@@ -183,9 +174,11 @@ class BaseProjectConfig(BaseModel, Generic[G, S]):
 
     @classmethod
     def load_stage_config(
-        cls, env_type: Union[str, EnvType], path: Optional[Union[str, Path]] = None
-    ) -> "StageConfig":
-        proj_config = ProjectConfig.load_config(path)
+        cls: Type["BaseProjectConfig[G, S]"],
+        env_type: Union[str, EnvType],
+        path: Optional[Union[str, Path]] = None,
+    ) -> S:
+        proj_config = cls.load_config(path)
         return proj_config.get_stage_config(env_type=env_type)
 
 
