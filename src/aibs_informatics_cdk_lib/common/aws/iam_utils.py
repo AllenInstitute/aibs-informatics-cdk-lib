@@ -235,7 +235,7 @@ def s3_policy_statement(
     )
 
 
-def ses_policty_statement(
+def ses_policy_statement(
     actions: List[str] = SES_FULL_ACCESS_ACTIONS,
     sid: str = "SESFullAccess",
 ) -> iam.PolicyStatement:
@@ -269,7 +269,7 @@ def sfn_policy_statement(
     )
 
 
-def sns_policty_statement(
+def sns_policy_statement(
     actions: List[str] = SNS_FULL_ACCESS_ACTIONS,
     sid: str = "SNSFullAccess",
 ) -> iam.PolicyStatement:
