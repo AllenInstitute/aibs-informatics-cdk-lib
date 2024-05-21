@@ -118,6 +118,12 @@ SFN_STATES_EXECUTION_ACTIONS = [
 
 SNS_FULL_ACCESS_ACTIONS = ["sns:*"]
 
+SSM_READ_ACTIONS = [
+    "ssm:GetParameter",
+    "ssm:GetParameters",
+    "ssm:GetParametersByPath",
+]
+
 
 def batch_policy_statement(
     env_base: Optional[EnvBase] = None,
@@ -229,7 +235,7 @@ def s3_policy_statement(
     )
 
 
-def ses_policty_statement(
+def ses_policy_statement(
     actions: List[str] = SES_FULL_ACCESS_ACTIONS,
     sid: str = "SESFullAccess",
 ) -> iam.PolicyStatement:
@@ -263,7 +269,7 @@ def sfn_policy_statement(
     )
 
 
-def sns_policty_statement(
+def sns_policy_statement(
     actions: List[str] = SNS_FULL_ACCESS_ACTIONS,
     sid: str = "SNSFullAccess",
 ) -> iam.PolicyStatement:
@@ -276,6 +282,14 @@ def sns_policty_statement(
                 service="sns",
             ),
         ],
+    )
+
+
+def ssm_policy_statement(
+    actions: List[str] = SSM_READ_ACTIONS, sid: str = "SSMParamReadActions"
+) -> iam.PolicyStatement:
+    return iam.PolicyStatement(
+        sid=sid, actions=actions, effect=iam.Effect.ALLOW, resources=[build_arn(service="ssm")]
     )
 
 
