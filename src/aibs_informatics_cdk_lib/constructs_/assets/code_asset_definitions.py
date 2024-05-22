@@ -29,6 +29,23 @@ logger = logging.getLogger(__name__)
 class AssetsMixin:
     @classmethod
     def resolve_repo_path(cls, repo_url: str, repo_path_env_var: Optional[str]) -> Path:
+        """Resolves the repo path from the environment or clones the repo from the url
+
+        This method is useful to quickly swapping between locally modified changes and the remote repo.
+
+        This should typically be used in the context of defining a code asset for a static name
+        (e.g. AIBS_INFORMATICS_AWS_LAMBDA). You can then use the env var option to point to a local
+        repo path for development.
+
+        Args:
+            repo_url (str): The git repo url. This is required.
+                If the repo path is not in the environment, the repo will be cloned from this url.
+            repo_path_env_var (Optional[str]): The environment variable that contains the repo path.
+                This is optional. This is useful for local development.
+
+        Returns:
+            Path: The path to the repo
+        """
         if repo_path_env_var and (repo_path := os.getenv(repo_path_env_var)) is not None:
             logger.info(f"Using {repo_path_env_var} from environment")
             if not is_local_repo(repo_path):

@@ -142,11 +142,9 @@ class BatchInvokedLambdaFunction(EnvBaseStateMachineFragment, AWSBatchMixins):
             f"{id}",
             bucket_name=bucket_name,
             key=response_key,
-            result_path="$.taskResult.get",
         ).to_single_state(
             "Get Response from S3",
             output_path="$[0]",
-            result_path="$.taskResult.get",
         )
 
         self.definition = put_payload.next(submit_job).next(get_response)
@@ -266,11 +264,9 @@ class BatchInvokedExecutorFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
             f"{id}",
             bucket_name=bucket_name,
             key=response_key,
-            result_path="$.taskResult.get",
         ).to_single_state(
             "Get Response from S3",
             output_path="$[0]",
-            result_path="$.taskResult.get",
         )
 
         self.definition = put_payload.next(submit_job).next(get_response)
