@@ -1,10 +1,14 @@
 import re
 from functools import reduce
-from typing import Any, ClassVar, List, Pattern, Union, cast
+from typing import Any, ClassVar, List, Mapping, Pattern, Union, cast
 
 import aws_cdk as cdk
 from aibs_informatics_core.utils.json import JSON
 from aws_cdk import aws_stepfunctions as sfn
+
+
+def convert_reference_paths_in_mapping(parameters: Mapping[str, Any]) -> Mapping[str, Any]:
+    return {k: convert_reference_paths(v) for k, v in parameters.items()}
 
 
 def convert_reference_paths(parameters: JSON) -> JSON:

@@ -3,7 +3,10 @@ from typing import Any, Optional
 import constructs
 from aws_cdk import aws_stepfunctions as sfn
 
-from aibs_informatics_cdk_lib.constructs_.sfn.utils import convert_reference_paths
+from aibs_informatics_cdk_lib.constructs_.sfn.utils import (
+    convert_reference_paths,
+    convert_reference_paths_in_mapping,
+)
 
 
 class S3Operation:
@@ -61,7 +64,7 @@ class S3Operation:
         init = sfn.Pass(
             scope,
             id + " PutObject Prep",
-            parameters=convert_reference_paths(
+            parameters=convert_reference_paths_in_mapping(
                 {
                     "Bucket": bucket_name,
                     "Key": key,
@@ -90,7 +93,7 @@ class S3Operation:
         end = sfn.Pass(
             scope,
             id + " PutObject Post",
-            parameters=convert_reference_paths(
+            parameters=convert_reference_paths_in_mapping(
                 {
                     "Bucket": f"{result_path or '$'}.Bucket",
                     "Key": f"{result_path or '$'}.Key",
@@ -155,7 +158,7 @@ class S3Operation:
         init = sfn.Pass(
             scope,
             id + " GetObject Prep",
-            parameters=convert_reference_paths(
+            parameters=convert_reference_paths_in_mapping(
                 {
                     "Bucket": bucket_name,
                     "Key": key,
@@ -164,12 +167,19 @@ class S3Operation:
             result_path=result_path or "$",
         )
 
+        if result_path:
+            bucket_path = f"{result_path}.Bucket"
+            key_path = f"{result_path}.Key"
+        else:
+            bucket_path = "$.Bucket"
+            key_path = "$.Key"
+
         state_json = {
             "Type": "Task",
             "Resource": "arn:aws:states:::aws-sdk:s3:getObject",
             "Parameters": {
-                "Bucket.$": "$.Bucket",
-                "Key.$": "$.Key",
+                "Bucket.$": bucket_path,
+                "Key.$": key_path,
             },
             "ResultSelector": {
                 "Body.$": "$.Body",
@@ -245,37 +255,65 @@ class S3Operation:
         bucket_name: str,
         key: str,
         result_path: Optional[str] = "$",
-        output_path: Optional[str] = "$",
     ) -> sfn.Chain:
         """Gets a payload from s3
 
         This chain fetches object and then passes the body through a json parser
 
-        Example:
-            Context:
-                {"bucket": "woah", "key": "wait/what"}
-            Definition:
-                S3Operation.get_payload(..., bucket_name="$.bucket", key="$.key")
-            Result:
-                # text '{"a": "b"}' is fetched from s3://woah/wait/what
-                {"a": "b"}
+        The resulting payload will be stored to path specified by result_path
+
+        Examples:
+            Use Case #1 - No result path
+                Context:
+                    {"bucket": "woah", "key": "wait/what"}
+                Definition:
+                    S3Operation.get_payload(..., bucket_name="$.bucket", key="$.key")
+                Result:
+                    # text '{"a": "b"}' is fetched from s3://woah/wait/what
+                    {"a": "b"}
+
+            Use Case #2 - result path specified
+                Context:
+                    {"bucket": "woah", "key": "wait/what"}
+                Definition:
+                    S3Operation.get_payload(
+                        ..., bucket_name="$.bucket", key="$.key", result_path="$.payload"
+                    )
+                Result:
+                    # text '{"a": "b"}' is fetched from s3://woah/wait/what
+                    {
+                        "bucket": "woah",
+                        "key": "wait/what",
+                        "payload": {"a": "b"}
+                    }
 
         Args:
             scope (constructs.Construct): cdk construct
             id (str): id
-            bucket_name (str): bucket name
-            key (str): key
+            bucket_name (str): bucket name. Can be a reference path
+            key (str): key name. Can be a reference path
+            result_path (Optional[str], optional): path to store the payload. Defaults to "$".
 
         Returns:
             sfn.Chain: chain
         """
 
-        get_chain = S3Operation.get_object(scope, id, bucket_name, key, result_path, output_path)
+        get_chain = S3Operation.get_object(scope, id, bucket_name, key, result_path)
         post = sfn.Pass(
             scope,
             id + " Post",
-            parameters={"Payload": sfn.JsonPath.string_to_json("$.Body")},
+            parameters={
+                "Payload": sfn.JsonPath.string_to_json(
+                    sfn.JsonPath.string_at(f"{result_path}.Body")
+                )
+            },
             result_path=result_path,
-            output_path="$.Payload",
         )
-        return get_chain.next(post)
+        restructure = sfn.Pass(
+            scope,
+            id + " Restructure",
+            input_path=f"{result_path}.Payload",
+            result_path=result_path,
+        )
+
+        return get_chain.next(post).next(restructure)
