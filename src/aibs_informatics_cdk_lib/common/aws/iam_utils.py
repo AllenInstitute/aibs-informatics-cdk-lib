@@ -12,12 +12,16 @@ from aibs_informatics_cdk_lib.common.aws.core_utils import (
     build_sfn_arn,
 )
 
+BATCH_READ_ONLY_ACTIONS = [
+    "batch:Describe*",
+    "batch:List*",
+]
+
 BATCH_FULL_ACCESS_ACTIONS = [
     "batch:RegisterJobDefinition",
     "batch:DeregisterJobDefinition",
     "batch:DescribeJobDefinitions",
-    "batch:List*",
-    "batch:Describe*",
+    *BATCH_READ_ONLY_ACTIONS,
     "batch:*",
 ]
 

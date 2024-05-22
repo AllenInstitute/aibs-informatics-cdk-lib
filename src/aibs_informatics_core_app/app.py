@@ -97,7 +97,7 @@ class InfraStage(ConfigBasedStage):
 def main():
     app = cdk.App()
 
-    config = get_config(app.node)
+    config: StageConfig = get_config(app.node)
 
     InfraStage(app, config)
 

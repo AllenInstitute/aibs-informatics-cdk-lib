@@ -29,7 +29,7 @@ class StateMachineMixins(EnvBaseConstructMixins):
         resource_cache = cast(Dict[str, lambda_.IFunction], getattr(self, cache_attr))
         if function_name not in resource_cache:
             resource_cache[function_name] = lambda_.Function.from_function_arn(
-                scope=self,
+                scope=self.as_construct(),
                 id=self.env_base.get_construct_id(function_name, "from-arn"),
                 function_arn=build_lambda_arn(
                     resource_type="function",
@@ -120,10 +120,10 @@ class StateMachineFragment(sfn.StateMachineFragment):
 
         if isinstance(chain, sfn.Chain):
             parallel = chain.to_single_state(
-                id=f"{id} Parallel", input_path="$.input", output_path="$[0]"
+                id=f"{id} Parallel", input_path="$.input", result_path="$.result"
             )
         else:
-            parallel = chain.to_single_state(input_path="$.input", output_path="$[0]")
+            parallel = chain.to_single_state(input_path="$.input", result_path="$.result")
 
         mod_result_path = JsonReferencePath("$.input")
         if result_path and result_path != sfn.JsonPath.DISCARD:
