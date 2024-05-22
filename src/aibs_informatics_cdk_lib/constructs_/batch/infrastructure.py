@@ -23,7 +23,9 @@ from aws_cdk import aws_iam as iam
 from aws_cdk import aws_s3 as s3
 
 from aibs_informatics_cdk_lib.common.aws.iam_utils import (
+    BATCH_READ_ONLY_ACTIONS,
     S3_READ_ONLY_ACCESS_ACTIONS,
+    batch_policy_statement,
     dynamodb_policy_statement,
     lambda_policy_statement,
 )
@@ -149,6 +151,7 @@ class Batch(EnvBaseConstruct):
                     effect=iam.Effect.ALLOW,
                     resources=["*"],
                 ),
+                batch_policy_statement(actions=BATCH_READ_ONLY_ACTIONS, env_base=self.env_base),
                 lambda_policy_statement(actions=["lambda:InvokeFunction"], env_base=self.env_base),
                 dynamodb_policy_statement(
                     env_base=self.env_base,

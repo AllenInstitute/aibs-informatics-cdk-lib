@@ -29,7 +29,7 @@ class StateMachineMixins(EnvBaseConstructMixins):
         resource_cache = cast(Dict[str, lambda_.IFunction], getattr(self, cache_attr))
         if function_name not in resource_cache:
             resource_cache[function_name] = lambda_.Function.from_function_arn(
-                scope=self,
+                scope=self.as_construct(),
                 id=self.env_base.get_construct_id(function_name, "from-arn"),
                 function_arn=build_lambda_arn(
                     resource_type="function",
@@ -50,6 +50,37 @@ class StateMachineMixins(EnvBaseConstructMixins):
                 state_machine_name=self.env_base.get_state_machine_name(state_machine_name),
             )
         return resource_cache[state_machine_name]
+
+
+def create_state_machine(
+    scope: constructs.Construct,
+    env_base: EnvBase,
+    name: str,
+    definition: sfn.IChainable,
+    role: Optional[iam.Role] = None,
+    logs: Optional[sfn.LogOptions] = None,
+    timeout: Optional[cdk.Duration] = None,
+) -> sfn.StateMachine:
+    return sfn.StateMachine(
+        scope,
+        env_base.get_construct_id(name),
+        state_machine_name=env_base.get_state_machine_name(name),
+        logs=(
+            logs
+            or sfn.LogOptions(
+                destination=logs_.LogGroup(
+                    scope,
+                    env_base.get_construct_id(name, "state-loggroup"),
+                    log_group_name=env_base.get_state_machine_log_group_name(name),
+                    removal_policy=cdk.RemovalPolicy.DESTROY,
+                    retention=logs_.RetentionDays.ONE_MONTH,
+                )
+            )
+        ),
+        role=cast(iam.IRole, role),
+        definition_body=sfn.DefinitionBody.from_chainable(definition),
+        timeout=timeout,
+    )
 
 
 class StateMachineFragment(sfn.StateMachineFragment):
@@ -87,9 +118,13 @@ class StateMachineFragment(sfn.StateMachineFragment):
             scope, f"{id} Parallel Prep", parameters={"input": sfn.JsonPath.entire_payload}
         )
 
-        parallel = chain.to_single_state(
-            id=f"{id} Parallel", input_path="$.input", result_path="$.result"
-        )
+        if isinstance(chain, sfn.Chain):
+            parallel = chain.to_single_state(
+                id=f"{id} Parallel", input_path="$.input", result_path="$.result"
+            )
+        else:
+            parallel = chain.to_single_state(input_path="$.input", result_path="$.result")
+
         mod_result_path = JsonReferencePath("$.input")
         if result_path and result_path != sfn.JsonPath.DISCARD:
             mod_result_path = mod_result_path + result_path

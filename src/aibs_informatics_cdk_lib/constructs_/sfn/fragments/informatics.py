@@ -11,9 +11,12 @@ from aibs_informatics_aws_utils.constants.s3 import S3_SCRATCH_KEY_PREFIX
 from aibs_informatics_core.env import EnvBase
 from aws_cdk import aws_stepfunctions as sfn
 
+from aibs_informatics_cdk_lib.constructs_.efs.file_system import MountPointConfiguration
 from aibs_informatics_cdk_lib.constructs_.sfn.fragments.base import EnvBaseStateMachineFragment
-from aibs_informatics_cdk_lib.constructs_.sfn.fragments.batch import SubmitJobFragment
-from aibs_informatics_cdk_lib.constructs_.sfn.states.batch import BatchOperation
+from aibs_informatics_cdk_lib.constructs_.sfn.fragments.batch import (
+    AWSBatchMixins,
+    SubmitJobFragment,
+)
 from aibs_informatics_cdk_lib.constructs_.sfn.states.s3 import S3Operation
 
 if TYPE_CHECKING:
@@ -23,56 +26,7 @@ else:
     VolumeTypeDef = dict
 
 
-class RcloneFragment(EnvBaseStateMachineFragment):
-    def __init__(
-        self,
-        scope: constructs.Construct,
-        id: str,
-        env_base: EnvBase,
-        name: str,
-        image: str,
-        job_queue: str,
-        bucket_name: str,
-        payload_path: Optional[str] = None,
-        command: Optional[Union[List[str], str]] = None,
-        environment: Optional[Mapping[str, str]] = None,
-        memory: Optional[Union[int, str]] = None,
-        vcpus: Optional[Union[int, str]] = None,
-        mount_points: Optional[List[MountPointTypeDef]] = None,
-        volumes: Optional[List[VolumeTypeDef]] = None,
-        platform_capabilities: Optional[List[Literal["EC2", "FARGATE"]]] = None,
-    ) -> None:
-        pass
-        # submit_job = SubmitJobFragment(
-        #     self,
-        #     f"{id} Batch",
-        #     env_base=env_base,
-        #     name=name,
-        #     job_queue=job_queue,
-        #     command=command or [],
-        #     image=image,
-        #     environment={
-        #         **(environment if environment else {}),
-        #         AWS_LAMBDA_FUNCTION_NAME_KEY: name,
-        #         # AWS_LAMBDA_FUNCTION_HANDLER_KEY: handler,
-        #         AWS_LAMBDA_EVENT_PAYLOAD_KEY: sfn.JsonPath.format(
-        #             "s3://{}/{}",
-        #             sfn.JsonPath.string_at("$.taskResult.put.Bucket"),
-        #             sfn.JsonPath.string_at("$.taskResult.put.Key"),
-        #         ),
-        #         AWS_LAMBDA_EVENT_RESPONSE_LOCATION_KEY: sfn.JsonPath.format(
-        #             "s3://{}/{}", bucket_name, response_key
-        #         ),
-        #     },
-        #     memory=memory,
-        #     vcpus=vcpus,
-        #     mount_points=mount_points or [],
-        #     volumes=volumes or [],
-        #     platform_capabilities=platform_capabilities,
-        # )
-
-
-class BatchInvokedLambdaFunction(EnvBaseStateMachineFragment):
+class BatchInvokedLambdaFunction(EnvBaseStateMachineFragment, AWSBatchMixins):
     def __init__(
         self,
         scope: constructs.Construct,
@@ -89,9 +43,10 @@ class BatchInvokedLambdaFunction(EnvBaseStateMachineFragment):
         environment: Optional[Mapping[str, str]] = None,
         memory: Optional[Union[int, str]] = None,
         vcpus: Optional[Union[int, str]] = None,
-        mount_points: Optional[List[MountPointTypeDef]] = None,
-        volumes: Optional[List[VolumeTypeDef]] = None,
-        platform_capabilities: Optional[List[Literal["EC2", "FARGATE"]]] = None,
+        mount_points: Optional[Union[List[MountPointTypeDef], str]] = None,
+        volumes: Optional[Union[List[VolumeTypeDef], str]] = None,
+        mount_point_configs: Optional[List[MountPointConfiguration]] = None,
+        platform_capabilities: Optional[Union[List[Literal["EC2", "FARGATE"]], str]] = None,
     ) -> None:
         """Invoke a command on image via batch with a payload from s3
 
@@ -140,6 +95,11 @@ class BatchInvokedLambdaFunction(EnvBaseStateMachineFragment):
             f"{key_prefix}{{}}/response.json", sfn.JsonPath.execution_name
         )
 
+        if mount_point_configs:
+            if mount_points or volumes:
+                raise ValueError("Cannot specify both mount_point_configs and mount_points")
+            mount_points, volumes = self.convert_to_mount_point_and_volumes(mount_point_configs)
+
         put_payload = S3Operation.put_payload(
             self,
             f"{id} Put Request to S3",
@@ -179,11 +139,12 @@ class BatchInvokedLambdaFunction(EnvBaseStateMachineFragment):
 
         get_response = S3Operation.get_payload(
             self,
-            f"{id} Get Response from S3",
+            f"{id}",
             bucket_name=bucket_name,
             key=response_key,
-            result_path="$.taskResult.get",
-            output_path="$.taskResult.get",
+        ).to_single_state(
+            "Get Response from S3",
+            output_path="$[0]",
         )
 
         self.definition = put_payload.next(submit_job).next(get_response)
@@ -197,7 +158,7 @@ class BatchInvokedLambdaFunction(EnvBaseStateMachineFragment):
         return self.definition.end_states
 
 
-class BatchInvokedExecutorFragment(EnvBaseStateMachineFragment):
+class BatchInvokedExecutorFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
     def __init__(
         self,
         scope: constructs.Construct,
@@ -213,6 +174,7 @@ class BatchInvokedExecutorFragment(EnvBaseStateMachineFragment):
         environment: Optional[Union[Mapping[str, str], str]] = None,
         memory: Optional[Union[int, str]] = None,
         vcpus: Optional[Union[int, str]] = None,
+        mount_point_configs: Optional[List[MountPointConfiguration]] = None,
         mount_points: Optional[List[MountPointTypeDef]] = None,
         volumes: Optional[List[VolumeTypeDef]] = None,
     ) -> None:
@@ -260,12 +222,18 @@ class BatchInvokedExecutorFragment(EnvBaseStateMachineFragment):
             f"{key_prefix}{{}}/response.json", sfn.JsonPath.execution_name
         )
 
+        if mount_point_configs:
+            if mount_points or volumes:
+                raise ValueError("Cannot specify both mount_point_configs and mount_points")
+            mount_points, volumes = self.convert_to_mount_point_and_volumes(mount_point_configs)
+
         put_payload = S3Operation.put_payload(
             self,
-            f"Put Request to S3",
+            f"{id} Put Request to S3",
             payload=payload_path or sfn.JsonPath.entire_payload,
             bucket_name=bucket_name,
             key=request_key,
+            result_path="$.taskResult.put",
         )
 
         submit_job = SubmitJobFragment(
@@ -293,9 +261,12 @@ class BatchInvokedExecutorFragment(EnvBaseStateMachineFragment):
 
         get_response = S3Operation.get_payload(
             self,
-            f"Get Response from S3",
+            f"{id}",
             bucket_name=bucket_name,
             key=response_key,
+        ).to_single_state(
+            "Get Response from S3",
+            output_path="$[0]",
         )
 
         self.definition = put_payload.next(submit_job).next(get_response)

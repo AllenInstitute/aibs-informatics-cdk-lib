@@ -165,6 +165,7 @@ class CodeAsset:
         cls,
         path: Path,
         context_path: Optional[Path],
+        requirements_file: Optional[Path] = None,
         includes: Optional[Sequence[str]] = None,
         excludes: Optional[Sequence[str]] = None,
         runtime: lambda_.Runtime = lambda_.Runtime.PYTHON_3_11,
@@ -219,7 +220,7 @@ class CodeAsset:
                             "ssh -vT git@github.com || true",
                             # Must make sure that the package is not installing using --editable mode
                             "python3 -m pip install --upgrade pip --no-cache",
-                            "pip3 install . --no-cache -t /asset-output",
+                            f"pip3 install {'-r ' + requirements_file.as_posix() if requirements_file else '.'} --no-cache -t /asset-output",
                             # TODO: remove botocore and boto3 from asset output
                             # Must make asset output permissions accessible to lambda
                             "find /asset-output -type d -print0 | xargs -0 chmod 755",

@@ -141,7 +141,7 @@ no_site_packages = true
 # Untyped definitions and calls
 # https://mypy.readthedocs.io/en/stable/config_file.html#untyped-definitions-and-calls
 # TODO: enable and fix errors
-check_untyped_defs = false
+check_untyped_defs = true
 
 
 # Miscellaneous strictness flags

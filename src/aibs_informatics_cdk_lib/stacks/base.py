@@ -45,12 +45,20 @@ class EnvBaseStack(cdk.Stack, EnvBaseStackMixins):
     ) -> None:
         super().__init__(
             scope,
-            id or env_base.get_construct_id(self.__class__),
+            id or env_base.get_construct_id(str(self.__class__)),
             env=env,
             **kwargs,
         )
         self.env_base = env_base
         self.add_tags(*self.stack_tags)
+
+    @property
+    def aws_region(self) -> str:
+        return cdk.Stack.of(self).region
+
+    @property
+    def aws_account(self) -> str:
+        return cdk.Stack.of(self).account
 
     @property
     def stack_tags(self) -> List[cdk.Tag]:
