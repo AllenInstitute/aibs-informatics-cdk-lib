@@ -105,7 +105,7 @@ class DashboardMixins(EnvBaseConstructMixins):
         Returns:
             Tuple[List[cw.IWidget], List[cw.IAlarm]]: List of widgets and list of alarms
         """
-        self_stack = self.get_stack_of(self)
+        self_stack = cdk.Stack.of(self.as_construct())
 
         graph_widgets: List[cw.IWidget] = []
         metric_alarms: List[cw.IAlarm] = []

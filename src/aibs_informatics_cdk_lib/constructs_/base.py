@@ -34,7 +34,7 @@ class EnvBaseConstructMixins(EnvBaseMixins):
 
     def add_tags(self, *tags: cdk.Tag):
         for tag in tags:
-            cdk.Tags.of(self).add(key=tag.key, value=tag.value)
+            cdk.Tags.of(self.as_construct()).add(key=tag.key, value=tag.value)
 
     def normalize_construct_id(
         self, construct_id: str, max_size: int = 64, hash_size: int = 8
@@ -71,11 +71,14 @@ class EnvBaseConstructMixins(EnvBaseMixins):
             return name.get_name(self.env_base)
         return self.env_base.get_resource_name(name)
 
-    def get_stack_of(self, construct: Construct) -> Optional[Stack]:
-        try:
-            return cdk.Stack.of(construct)
-        except:
-            return None
+    def get_stack_of(self, construct: Optional[Construct] = None) -> Stack:
+        if construct is None:
+            construct = self.as_construct()
+        return cdk.Stack.of(construct)
+
+    def as_construct(self) -> Construct:
+        assert isinstance(self, Construct)
+        return self
 
     @classmethod
     def build_construct_id(cls, env_base: EnvBase, *names: str) -> str:
@@ -104,3 +107,11 @@ class EnvBaseConstruct(Construct, EnvBaseConstructMixins):
     @property
     def construct_id(self) -> str:
         return self.node.id
+
+    @property
+    def aws_region(self) -> str:
+        return cdk.Stack.of(self).region
+
+    @property
+    def aws_account(self) -> str:
+        return cdk.Stack.of(self).account
