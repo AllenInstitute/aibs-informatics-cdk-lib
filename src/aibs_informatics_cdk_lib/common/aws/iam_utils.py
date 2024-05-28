@@ -1,3 +1,9 @@
+"""
+The list of actions for each service is incomplete and based on our needs so far.
+A helpful resource to research actions is:
+https://www.awsiamactions.io/
+"""
+
 from typing import List, Optional, Union
 
 from aibs_informatics_core.env import EnvBase
@@ -25,6 +31,25 @@ BATCH_FULL_ACCESS_ACTIONS = [
     "batch:*",
 ]
 
+CLOUDWATCH_READ_ACTIONS = [
+    "logs:GetLogEvents",
+    "logs:GetLogRecord",
+    "logs:GetLogGroupFields",
+    "logs:GetQueryResults",
+    "logs:DescribeLogGroups",
+]
+
+CLOUDWATCH_WRITE_ACTIONS = [
+    "logs:CreateLogStream",
+    "logs:CreateLogGroup",
+    "logs:PutLogEvents",
+]
+
+CLOUDWATCH_FULL_ACCESS_ACTIONS = [
+    *CLOUDWATCH_READ_ACTIONS,
+    *CLOUDWATCH_WRITE_ACTIONS,
+]
+
 DYNAMODB_READ_ACTIONS = [
     "dynamodb:BatchGet*",
     "dynamodb:DescribeStream",
@@ -49,6 +74,26 @@ DYNAMODB_READ_WRITE_ACTIONS = [
 
 
 EC2_ACTIONS = ["ec2:DescribeAvailabilityZones"]
+
+ECS_READ_ACTIONS = [
+    "ecs:DescribeTaskDefinition",
+    "ecs:ListTasks",
+    "ecs:DescribeTasks",
+]
+
+ECS_WRITE_ACTIONS = [
+    "ecs:RegisterTaskDefinition",
+]
+
+ECS_RUN_ACTIONS = [
+    "ecs:RunTask",
+]
+
+ECS_FULL_ACCESS_ACTIONS = [
+    *ECS_READ_ACTIONS,
+    *ECS_WRITE_ACTIONS,
+    *ECS_RUN_ACTIONS,
+]
 
 ECR_READ_ACTIONS = [
     "ecr:GetAuthorizationToken",
@@ -76,6 +121,23 @@ ECR_WRITE_ACTIONS = [
 ECR_TAGGING_ACTIONS = [
     "ecr:TagResource",
     "ecr:UntagResource",
+]
+
+
+KMS_READ_ACTIONS = [
+    "kms:Decrypt",
+    "kms:DescribeKey",
+]
+
+KMS_WRITE_ACTIONS = [
+    "kms:GenerateDataKey*",
+    "kms:Encrypt",
+    "kms:PutKeyPolicy",
+]
+
+KMS_FULL_ACCESS_ACTIONS = [
+    *KMS_READ_ACTIONS,
+    *KMS_WRITE_ACTIONS,
 ]
 
 ECR_FULL_ACCESS_ACTIONS = [*ECR_READ_ACTIONS, *ECR_WRITE_ACTIONS, *ECR_TAGGING_ACTIONS]
@@ -121,6 +183,23 @@ SFN_STATES_EXECUTION_ACTIONS = [
 ]
 
 SNS_FULL_ACCESS_ACTIONS = ["sns:*"]
+
+SQS_READ_ACTIONS = [
+    "sqs:GetQueueAttributes",
+    "sqs:GetQueueUrl",
+    "sqs:ReceiveMessage",
+    "sqs:SendMessage",
+]
+
+SQS_WRITE_ACTIONS = [
+    "sqs:ChangeMessageVisibility",
+    "sqs:DeleteMessage",
+]
+
+SQS_FULL_ACCESS_ACTIONS = [
+    *SQS_READ_ACTIONS,
+    *SQS_WRITE_ACTIONS,
+]
 
 SSM_READ_ACTIONS = [
     "ssm:GetParameter",
