@@ -1,3 +1,9 @@
+"""
+The list of actions for each service is incomplete and based on our needs so far.
+A helpful resource to research actions is:
+https://www.awsiamactions.io/
+"""
+
 from typing import List, Optional, Union
 
 from aibs_informatics_core.env import EnvBase
@@ -12,6 +18,28 @@ from aibs_informatics_cdk_lib.common.aws.core_utils import (
     build_sfn_arn,
 )
 
+#
+# utils
+#
+
+
+def grant_managed_policies(
+    role: Optional[iam.IRole],
+    *managed_policies: Union[str, iam.ManagedPolicy],
+):
+    if not role:
+        return
+
+    for mp in managed_policies:
+        role.add_managed_policy(
+            iam.ManagedPolicy.from_aws_managed_policy_name(mp) if isinstance(mp, str) else mp
+        )
+
+
+#
+# policy action lists
+#
+
 BATCH_READ_ONLY_ACTIONS = [
     "batch:Describe*",
     "batch:List*",
@@ -23,6 +51,25 @@ BATCH_FULL_ACCESS_ACTIONS = [
     "batch:DescribeJobDefinitions",
     *BATCH_READ_ONLY_ACTIONS,
     "batch:*",
+]
+
+CLOUDWATCH_READ_ACTIONS = [
+    "logs:DescribeLogGroups",
+    "logs:GetLogEvents",
+    "logs:GetLogGroupFields",
+    "logs:GetLogRecord",
+    "logs:GetQueryResults",
+]
+
+CLOUDWATCH_WRITE_ACTIONS = [
+    "logs:CreateLogGroup",
+    "logs:CreateLogStream",
+    "logs:PutLogEvents",
+]
+
+CLOUDWATCH_FULL_ACCESS_ACTIONS = [
+    *CLOUDWATCH_READ_ACTIONS,
+    *CLOUDWATCH_WRITE_ACTIONS,
 ]
 
 DYNAMODB_READ_ACTIONS = [
@@ -50,27 +97,48 @@ DYNAMODB_READ_WRITE_ACTIONS = [
 
 EC2_ACTIONS = ["ec2:DescribeAvailabilityZones"]
 
+ECS_READ_ACTIONS = [
+    "ecs:DescribeContainerInstances",
+    "ecs:DescribeTaskDefinition",
+    "ecs:DescribeTasks",
+    "ecs:ListTasks",
+]
+
+ECS_WRITE_ACTIONS = [
+    "ecs:RegisterTaskDefinition",
+]
+
+ECS_RUN_ACTIONS = [
+    "ecs:RunTask",
+]
+
+ECS_FULL_ACCESS_ACTIONS = [
+    *ECS_READ_ACTIONS,
+    *ECS_WRITE_ACTIONS,
+    *ECS_RUN_ACTIONS,
+]
+
 ECR_READ_ACTIONS = [
-    "ecr:GetAuthorizationToken",
     "ecr:BatchCheckLayerAvailability",
+    "ecr:BatchGetImage",
+    "ecr:DescribeImageScanFindings",
+    "ecr:DescribeImages",
+    "ecr:DescribeRepositories",
+    "ecr:GetAuthorizationToken",
     "ecr:GetDownloadUrlForLayer",
     "ecr:GetRepositoryPolicy",
-    "ecr:DescribeRepositories",
     "ecr:ListImages",
-    "ecr:DescribeImages",
-    "ecr:BatchGetImage",
     "ecr:ListTagsForResource",
-    "ecr:DescribeImageScanFindings",
 ]
 
 ECR_WRITE_ACTIONS = [
+    "ecr:CompleteLayerUpload",
     "ecr:CreateRepository",
     "ecr:DeleteRepository",
     "ecr:InitiateLayerUpload",
-    "ecr:UploadLayerPart",
-    "ecr:CompleteLayerUpload",
     "ecr:PutImage",
     "ecr:PutLifecyclePolicy",
+    "ecr:UploadLayerPart",
 ]
 
 ECR_TAGGING_ACTIONS = [
@@ -78,23 +146,33 @@ ECR_TAGGING_ACTIONS = [
     "ecr:UntagResource",
 ]
 
-ECR_FULL_ACCESS_ACTIONS = [*ECR_READ_ACTIONS, *ECR_WRITE_ACTIONS, *ECR_TAGGING_ACTIONS]
+ECR_FULL_ACCESS_ACTIONS = [
+    *ECR_READ_ACTIONS,
+    *ECR_TAGGING_ACTIONS,
+    *ECR_WRITE_ACTIONS,
+]
 
-ECS_READ_ACTIONS = ["ecs:DescribeContainerInstances"]
+KMS_READ_ACTIONS = [
+    "kms:Decrypt",
+    "kms:DescribeKey",
+]
 
+KMS_WRITE_ACTIONS = [
+    "kms:Encrypt",
+    "kms:GenerateDataKey*",
+    "kms:PutKeyPolicy",
+]
 
-CODE_BUILD_IAM_POLICY = iam.PolicyStatement(
-    actions=[
-        *EC2_ACTIONS,
-        *ECR_FULL_ACCESS_ACTIONS,
-    ],
-    resources=["*"],
-)
+KMS_FULL_ACCESS_ACTIONS = [
+    *KMS_READ_ACTIONS,
+    *KMS_WRITE_ACTIONS,
+]
 
 
 LAMBDA_FULL_ACCESS_ACTIONS = ["lambda:*"]
 
 S3_FULL_ACCESS_ACTIONS = ["s3:*"]
+
 S3_READ_ONLY_ACCESS_ACTIONS = [
     "s3:Get*",
     "s3:List*",
@@ -122,11 +200,41 @@ SFN_STATES_EXECUTION_ACTIONS = [
 
 SNS_FULL_ACCESS_ACTIONS = ["sns:*"]
 
+SQS_READ_ACTIONS = [
+    "sqs:GetQueueAttributes",
+    "sqs:GetQueueUrl",
+    "sqs:ReceiveMessage",
+    "sqs:SendMessage",
+]
+
+SQS_WRITE_ACTIONS = [
+    "sqs:ChangeMessageVisibility",
+    "sqs:DeleteMessage",
+]
+
+SQS_FULL_ACCESS_ACTIONS = [
+    *SQS_READ_ACTIONS,
+    *SQS_WRITE_ACTIONS,
+]
+
 SSM_READ_ACTIONS = [
     "ssm:GetParameter",
     "ssm:GetParameters",
     "ssm:GetParametersByPath",
 ]
+
+
+#
+# policy statement constants and builders
+#
+
+CODE_BUILD_IAM_POLICY = iam.PolicyStatement(
+    actions=[
+        *EC2_ACTIONS,
+        *ECR_FULL_ACCESS_ACTIONS,
+    ],
+    resources=["*"],
+)
 
 
 def batch_policy_statement(
@@ -295,16 +403,3 @@ def ssm_policy_statement(
     return iam.PolicyStatement(
         sid=sid, actions=actions, effect=iam.Effect.ALLOW, resources=[build_arn(service="ssm")]
     )
-
-
-def grant_managed_policies(
-    role: Optional[iam.IRole],
-    *managed_policies: Union[str, iam.ManagedPolicy],
-):
-    if not role:
-        return
-
-    for mp in managed_policies:
-        role.add_managed_policy(
-            iam.ManagedPolicy.from_aws_managed_policy_name(mp) if isinstance(mp, str) else mp
-        )
