@@ -3,10 +3,7 @@ from typing import Any, Optional
 import constructs
 from aws_cdk import aws_stepfunctions as sfn
 
-from aibs_informatics_cdk_lib.constructs_.sfn.utils import (
-    convert_reference_paths,
-    convert_reference_paths_in_mapping,
-)
+from aibs_informatics_cdk_lib.constructs_.sfn.utils import convert_reference_paths_in_mapping
 
 
 class S3Operation:

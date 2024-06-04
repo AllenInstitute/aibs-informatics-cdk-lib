@@ -1,21 +1,12 @@
-from typing import TYPE_CHECKING, List, Mapping, Optional, Union, cast
+from typing import cast
 
 import constructs
-from aibs_informatics_aws_utils.constants.lambda_ import (
-    AWS_LAMBDA_EVENT_PAYLOAD_KEY,
-    AWS_LAMBDA_EVENT_RESPONSE_LOCATION_KEY,
-    AWS_LAMBDA_FUNCTION_HANDLER_KEY,
-    AWS_LAMBDA_FUNCTION_NAME_KEY,
-)
-from aibs_informatics_aws_utils.constants.s3 import S3_SCRATCH_KEY_PREFIX
 from aibs_informatics_core.env import EnvBase
-from aws_cdk import aws_ecr_assets as ecr_assets
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_stepfunctions as sfn
 from aws_cdk import aws_stepfunctions_tasks as stepfn_tasks
 
 from aibs_informatics_cdk_lib.constructs_.sfn.fragments.base import EnvBaseStateMachineFragment
-from aibs_informatics_cdk_lib.constructs_.sfn.states.s3 import S3Operation
 
 
 class LambdaFunctionFragment(EnvBaseStateMachineFragment):
