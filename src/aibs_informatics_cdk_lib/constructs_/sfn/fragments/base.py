@@ -1,6 +1,5 @@
-import builtins
 from abc import abstractmethod
-from typing import Any, Dict, List, Mapping, Optional, Type, TypeVar, cast
+from typing import Any, Dict, List, Mapping, Optional, Sequence, TypeVar, Union, cast
 
 import aws_cdk as cdk
 import constructs
@@ -14,11 +13,82 @@ from aws_cdk import aws_stepfunctions as sfn
 from aibs_informatics_cdk_lib.common.aws.core_utils import build_lambda_arn
 from aibs_informatics_cdk_lib.common.aws.sfn_utils import JsonReferencePath
 from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstructMixins
-from aibs_informatics_cdk_lib.constructs_.sfn.utils import convert_reference_paths
 
 T = TypeVar("T", bound=ValidatedStr)
 
 F = TypeVar("F", bound="StateMachineFragment")
+
+
+def create_log_options(
+    scope: constructs.Construct,
+    id: str,
+    env_base: EnvBase,
+    removal_policy: Optional[cdk.RemovalPolicy] = None,
+    retention: Optional[logs_.RetentionDays] = None,
+) -> sfn.LogOptions:
+    return sfn.LogOptions(
+        destination=logs_.LogGroup(
+            scope,
+            env_base.get_construct_id(id, "state-loggroup"),
+            log_group_name=env_base.get_state_machine_log_group_name(id),
+            removal_policy=removal_policy or cdk.RemovalPolicy.DESTROY,
+            retention=retention or logs_.RetentionDays.ONE_MONTH,
+        )
+    )
+
+
+def create_role(
+    scope: constructs.Construct,
+    id: str,
+    env_base: EnvBase,
+    assumed_by: iam.IPrincipal = iam.ServicePrincipal("states.amazonaws.com"),  # type: ignore[assignment]
+    managed_policies: Optional[Sequence[Union[iam.IManagedPolicy, str]]] = None,
+    inline_policies: Optional[Mapping[str, iam.PolicyDocument]] = None,
+    inline_policies_from_statements: Optional[Mapping[str, Sequence[iam.PolicyStatement]]] = None,
+    include_default_managed_policies: bool = True,
+) -> iam.Role:
+    construct_id = env_base.get_construct_id(id, "role")
+
+    if managed_policies is not None:
+        managed_policies = [
+            iam.ManagedPolicy.from_aws_managed_policy_name(policy)
+            if isinstance(policy, str)
+            else policy
+            for policy in managed_policies
+        ]
+
+    if inline_policies is None:
+        inline_policies = {}
+    if inline_policies_from_statements:
+        inline_policies = {
+            **inline_policies,
+            **{
+                name: iam.PolicyDocument(statements=statements)
+                for name, statements in inline_policies_from_statements.items()
+            },
+        }
+
+    return iam.Role(
+        scope,
+        construct_id,
+        assumed_by=assumed_by,  # type: ignore
+        managed_policies=[
+            *(managed_policies or []),
+            *[
+                iam.ManagedPolicy.from_aws_managed_policy_name(policy)
+                for policy in (
+                    [
+                        "AWSStepFunctionsFullAccess",
+                        "CloudWatchLogsFullAccess",
+                        "CloudWatchEventsFullAccess",
+                    ]
+                    if include_default_managed_policies
+                    else []
+                )
+            ],
+        ],
+        inline_policies=inline_policies,
+    )
 
 
 class StateMachineMixins(EnvBaseConstructMixins):
@@ -45,7 +115,7 @@ class StateMachineMixins(EnvBaseConstructMixins):
         resource_cache = cast(Dict[str, sfn.IStateMachine], getattr(self, cache_attr))
         if state_machine_name not in resource_cache:
             resource_cache[state_machine_name] = sfn.StateMachine.from_state_machine_name(
-                scope=self,
+                scope=self.as_construct(),
                 id=self.env_base.get_construct_id(state_machine_name, "from-name"),
                 state_machine_name=self.env_base.get_state_machine_name(state_machine_name),
             )
@@ -55,7 +125,8 @@ class StateMachineMixins(EnvBaseConstructMixins):
 def create_state_machine(
     scope: constructs.Construct,
     env_base: EnvBase,
-    name: str,
+    id: str,
+    name: Optional[str],
     definition: sfn.IChainable,
     role: Optional[iam.Role] = None,
     logs: Optional[sfn.LogOptions] = None,
@@ -63,15 +134,15 @@ def create_state_machine(
 ) -> sfn.StateMachine:
     return sfn.StateMachine(
         scope,
-        env_base.get_construct_id(name),
-        state_machine_name=env_base.get_state_machine_name(name),
+        env_base.get_construct_id(id),
+        state_machine_name=env_base.get_state_machine_name(name) if name else None,
         logs=(
             logs
             or sfn.LogOptions(
                 destination=logs_.LogGroup(
                     scope,
-                    env_base.get_construct_id(name, "state-loggroup"),
-                    log_group_name=env_base.get_state_machine_log_group_name(name),
+                    env_base.get_construct_id(id, "state-loggroup"),
+                    log_group_name=env_base.get_state_machine_log_group_name(name or id),
                     removal_policy=cdk.RemovalPolicy.DESTROY,
                     retention=logs_.RetentionDays.ONE_MONTH,
                 )
@@ -100,50 +171,60 @@ class StateMachineFragment(sfn.StateMachineFragment):
     def end_states(self) -> List[sfn.INextable]:
         return self.definition.end_states
 
-    @classmethod
     def enclose(
-        cls: Type[F],
-        scope: constructs.Construct,
+        self,
         id: str,
-        definition: sfn.IChainable,
+        input_path: Optional[str] = None,
         result_path: Optional[str] = None,
-    ) -> F:
-        chain = (
-            sfn.Chain.start(definition)
-            if not isinstance(definition, (sfn.Chain, sfn.StateMachineFragment))
-            else definition
-        )
+    ) -> sfn.Chain:
+        """Enclose the current state machine fragment within a parallel state.
 
-        pre = sfn.Pass(
-            scope, f"{id} Parallel Prep", parameters={"input": sfn.JsonPath.entire_payload}
+        Notes:
+            - If input_path is not provided, it will default to "$"
+            - If result_path is not provided, it will default to input_path
+
+        Args:
+            id (str): an identifier for the parallel state
+            input_path (Optional[str], optional): input path for the enclosed state.
+                Defaults to "$".
+            result_path (Optional[str], optional): result path to put output of enclosed state.
+                Defaults to same as input_path.
+
+        Returns:
+            sfn.Chain: the new state machine fragment
+        """
+        if input_path is None:
+            input_path = "$"
+        if result_path is None:
+            result_path = input_path
+
+        chain = (
+            sfn.Chain.start(self.definition)
+            if not isinstance(self.definition, (sfn.Chain, sfn.StateMachineFragment))
+            else self.definition
         )
 
         if isinstance(chain, sfn.Chain):
             parallel = chain.to_single_state(
-                id=f"{id} Parallel", input_path="$.input", result_path="$.result"
+                id=f"{id} Enclosure", input_path=input_path, result_path=result_path
             )
         else:
-            parallel = chain.to_single_state(input_path="$.input", result_path="$.result")
+            parallel = chain.to_single_state(input_path=input_path, result_path=result_path)
+        definition = sfn.Chain.start(parallel)
 
-        mod_result_path = JsonReferencePath("$.input")
         if result_path and result_path != sfn.JsonPath.DISCARD:
-            mod_result_path = mod_result_path + result_path
+            restructure = sfn.Pass(
+                self,
+                f"{id} Enclosure Post",
+                input_path=f"{result_path}[0]",
+                result_path=result_path,
+            )
+            definition = definition.next(restructure)
 
-        post = sfn.Pass(
-            scope,
-            f"{id} Parallel Post",
-            input_path="$.result[0]",
-            result_path=mod_result_path.as_reference,
-            output_path="$.input",
-        )
-
-        new_definition = sfn.Chain.start(pre).next(parallel).next(post)
-        (self := cls(scope, id)).definition = new_definition
-
-        return self
+        return definition
 
 
-class EnvBaseStateMachineFragment(sfn.StateMachineFragment, StateMachineMixins):
+class EnvBaseStateMachineFragment(StateMachineFragment, StateMachineMixins):
     def __init__(
         self,
         scope: constructs.Construct,
@@ -152,22 +233,6 @@ class EnvBaseStateMachineFragment(sfn.StateMachineFragment, StateMachineMixins):
     ) -> None:
         super().__init__(scope, id)
         self.env_base = env_base
-
-    @property
-    def definition(self) -> sfn.IChainable:
-        return self._definition
-
-    @definition.setter
-    def definition(self, value: sfn.IChainable):
-        self._definition = value
-
-    @property
-    def start_state(self) -> sfn.State:
-        return self.definition.start_state
-
-    @property
-    def end_states(self) -> List[sfn.INextable]:
-        return self.definition.end_states
 
     def to_single_state(
         self,
@@ -197,28 +262,44 @@ class EnvBaseStateMachineFragment(sfn.StateMachineFragment, StateMachineMixins):
         logs: Optional[sfn.LogOptions] = None,
         timeout: Optional[cdk.Duration] = None,
     ) -> sfn.StateMachine:
+        if role is None:
+            role = create_role(
+                self,
+                state_machine_name,
+                self.env_base,
+                managed_policies=self.required_managed_policies,
+                inline_policies_from_statements={
+                    "default": self.required_inline_policy_statements,
+                },
+            )
+        else:
+            for policy in self.required_managed_policies:
+                if isinstance(policy, str):
+                    policy = iam.ManagedPolicy.from_aws_managed_policy_name(policy)
+                role.add_managed_policy(policy)
+
+            for statement in self.required_inline_policy_statements:
+                role.add_to_policy(statement)
+
         return sfn.StateMachine(
             self,
             self.get_construct_id(state_machine_name),
             state_machine_name=self.env_base.get_state_machine_name(state_machine_name),
-            logs=(
-                logs
-                or sfn.LogOptions(
-                    destination=logs_.LogGroup(
-                        self,
-                        self.get_construct_id(state_machine_name, "state-loggroup"),
-                        log_group_name=self.env_base.get_state_machine_log_group_name(
-                            state_machine_name
-                        ),
-                        removal_policy=cdk.RemovalPolicy.DESTROY,
-                        retention=logs_.RetentionDays.ONE_MONTH,
-                    )
-                )
-            ),
-            role=cast(iam.IRole, role),
+            logs=logs or create_log_options(self, state_machine_name, self.env_base),
+            role=(
+                role if role is not None else create_role(self, state_machine_name, self.env_base)
+            ),  # type: ignore[arg-type]
             definition_body=sfn.DefinitionBody.from_chainable(self.definition),
             timeout=timeout,
         )
+
+    @property
+    def required_managed_policies(self) -> Sequence[Union[iam.ManagedPolicy, str]]:
+        return []
+
+    @property
+    def required_inline_policy_statements(self) -> Sequence[iam.PolicyStatement]:
+        return []
 
 
 class LazyLoadStateMachineFragment(EnvBaseStateMachineFragment):
@@ -255,10 +336,11 @@ class TaskWithPrePostStatus(LazyLoadStateMachineFragment):
 
     @property
     def task(self) -> sfn.IChainable:
+        assert self._task, "Task must be set"
         return self._task
 
     @task.setter
-    def task(self, value: sfn.IChainable):
+    def task(self, value: Optional[sfn.IChainable]):
         self._task = value
 
     @property
