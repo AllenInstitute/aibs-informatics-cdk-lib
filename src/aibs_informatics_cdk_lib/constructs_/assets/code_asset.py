@@ -8,7 +8,6 @@ import aws_cdk as cdk
 import constructs
 from aibs_informatics_core.utils.decorators import cached_property
 from aibs_informatics_core.utils.hashing import generate_path_hash
-from aws_cdk import aws_ecr_assets as ecr_assets
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_s3_assets, aws_s3_deployment
 
