@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import logging
-from pathlib import Path
-from typing import List, Optional
 
 import aws_cdk as cdk
 from constructs import Construct
@@ -9,15 +6,14 @@ from constructs import Construct
 from aibs_informatics_cdk_lib.constructs_.efs.file_system import MountPointConfiguration
 from aibs_informatics_cdk_lib.project.config import StageConfig
 from aibs_informatics_cdk_lib.project.utils import get_config
-from aibs_informatics_cdk_lib.stacks.assets import AIBSInformaticsAssetsStack
-from aibs_informatics_cdk_lib.stacks.compute import (
-    ComputeStack,
-    ComputeWorkflowStack,
-    LambdaComputeStack,
-)
-from aibs_informatics_cdk_lib.stacks.network import NetworkStack
-from aibs_informatics_cdk_lib.stacks.storage import StorageStack
 from aibs_informatics_cdk_lib.stages.base import ConfigBasedStage
+from aibs_informatics_core_app.stacks.assets import AIBSInformaticsAssetsStack
+from aibs_informatics_core_app.stacks.demand_execution import (
+    DemandExecutionInfrastructureStack,
+    DemandExecutionStack,
+)
+from aibs_informatics_core_app.stacks.network import NetworkStack
+from aibs_informatics_core_app.stacks.storage import StorageStack
 
 
 class InfraStage(ConfigBasedStage):
@@ -44,52 +40,28 @@ class InfraStage(ConfigBasedStage):
             env=self.env,
         )
 
-        efs_ecosystem = storage.efs_ecosystem
-
-        ap_mount_point_configs = [
-            MountPointConfiguration.from_access_point(
-                efs_ecosystem.scratch_access_point, "/opt/scratch"
-            ),
-            MountPointConfiguration.from_access_point(efs_ecosystem.tmp_access_point, "/opt/tmp"),
-            MountPointConfiguration.from_access_point(
-                efs_ecosystem.shared_access_point, "/opt/shared", read_only=True
-            ),
-        ]
-        fs_mount_point_configs = [
-            MountPointConfiguration.from_file_system(storage.file_system, None, "/opt/efs"),
-        ]
-
-        compute = ComputeStack(
+        demand_execution_infra = DemandExecutionInfrastructureStack(
             self,
-            self.get_stack_name("Compute"),
+            self.get_stack_name("DemandExecutionInfra"),
             self.env_base,
-            batch_name="batch",
             vpc=network.vpc,
             buckets=[storage.bucket],
-            file_systems=[storage.file_system],
-            mount_point_configs=fs_mount_point_configs,
+            mount_point_configs=[
+                MountPointConfiguration.from_file_system(storage.file_system, None, "/opt/efs"),
+            ],
             env=self.env,
         )
 
-        lambda_compute = LambdaComputeStack(
+        demand_execution = DemandExecutionStack(
             self,
-            self.get_stack_name("LambdaCompute"),
-            self.env_base,
-            batch_name="lambda-batch",
-            vpc=network.vpc,
-            buckets=[storage.bucket],
-            file_systems=[storage.file_system],
-            mount_point_configs=fs_mount_point_configs,
-            env=self.env,
-        )
-
-        compute_workflow = ComputeWorkflowStack(
-            self,
-            self.get_stack_name("ComputeWorkflow"),
+            self.get_stack_name("DemandExecution"),
             env_base=self.env_base,
-            batch_environment=lambda_compute.primary_batch_environment,
-            primary_bucket=storage.bucket,
-            mount_point_configs=fs_mount_point_configs,
+            assets=assets.assets,
+            scaffolding_bucket=storage.bucket,
+            efs_ecosystem=storage.efs_ecosystem,
+            data_sync_job_queue=demand_execution_infra.infra_compute.lambda_medium_batch_environment.job_queue_name,
+            scaffolding_job_queue=demand_execution_infra.infra_compute.primary_batch_environment.job_queue_name,
+            execution_job_queue=demand_execution_infra.execution_compute.primary_batch_environment.job_queue_name,
             env=self.env,
         )
 

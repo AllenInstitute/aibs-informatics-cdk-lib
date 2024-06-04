@@ -4,6 +4,7 @@ import constructs
 from aibs_informatics_core.env import EnvBase
 
 from aibs_informatics_cdk_lib.constructs_.assets.code_asset_definitions import (
+    AIBSInformaticsAssets,
     AIBSInformaticsCodeAssets,
     AIBSInformaticsDockerAssets,
 )
@@ -19,11 +20,11 @@ class AIBSInformaticsAssetsStack(EnvBaseStack):
         **kwargs,
     ):
         super().__init__(scope, id, env_base, **kwargs)
-        self.code_assets = AIBSInformaticsCodeAssets(
+
+        self.assets = AIBSInformaticsAssets(
             self,
-            "aibs-info-code-assets",
+            "aibs-info-assets",
             self.env_base,
         )
-        self.docker_assets = AIBSInformaticsDockerAssets(
-            self, "aibs-info-docker-assets", self.env_base
-        )
+        self.code_assets = self.assets.code_assets
+        self.docker_assets = self.assets.docker_assets
