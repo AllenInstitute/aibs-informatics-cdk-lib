@@ -21,7 +21,7 @@ from aibs_informatics_cdk_lib.constructs_.assets.code_asset import (
 )
 
 AIBS_INFORMATICS_AWS_LAMBDA_REPO_ENV_VAR = "AIBS_INFORMATICS_AWS_LAMBDA_REPO"
-AIBS_INFORMATICS_AWS_LAMBDA_REPO = "git@github.com/AllenInstitute/aibs-informatics-aws-lambda.git"
+AIBS_INFORMATICS_AWS_LAMBDA_REPO = "git@github.com:AllenInstitute/aibs-informatics-aws-lambda.git"
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class AssetsMixin:
         return repo_path
 
 
-class AIBSInformaticsCodeAssets(constructs.Construct):
+class AIBSInformaticsCodeAssets(constructs.Construct, AssetsMixin):
     def __init__(
         self,
         scope: constructs.Construct,
@@ -76,16 +76,9 @@ class AIBSInformaticsCodeAssets(constructs.Construct):
             CodeAsset: The code asset
         """
 
-        if AIBS_INFORMATICS_AWS_LAMBDA_REPO_ENV_VAR in os.environ:
-            logger.info(f"Using {AIBS_INFORMATICS_AWS_LAMBDA_REPO_ENV_VAR} from environment")
-            repo_path = os.getenv(AIBS_INFORMATICS_AWS_LAMBDA_REPO_ENV_VAR)
-            if not repo_path or not is_local_repo(repo_path):
-                raise ValueError(
-                    f"Environment variable {AIBS_INFORMATICS_AWS_LAMBDA_REPO_ENV_VAR} is not a valid git repo"
-                )
-            repo_path = Path(repo_path)
-        else:
-            repo_path = clone_repo(AIBS_INFORMATICS_AWS_LAMBDA_REPO, skip_if_exists=True)
+        repo_path = self.resolve_repo_path(
+            AIBS_INFORMATICS_AWS_LAMBDA_REPO, AIBS_INFORMATICS_AWS_LAMBDA_REPO_ENV_VAR
+        )
 
         asset_hash = generate_path_hash(
             path=str(repo_path.resolve()),
@@ -179,8 +172,27 @@ class AIBSInformaticsDockerAssets(constructs.Construct, AssetsMixin):
             platform=aws_ecr_assets.Platform.LINUX_AMD64,
             asset_name="aibs-informatics-aws-lambda",
             file="docker/Dockerfile",
+            extra_hash=generate_path_hash(
+                path=str(repo_path.resolve()),
+                excludes=PYTHON_REGEX_EXCLUDES,
+            ),
             exclude=[
                 *PYTHON_GLOB_EXCLUDES,
                 *GLOBAL_GLOB_EXCLUDES,
             ],
         )
+
+
+class AIBSInformaticsAssets(constructs.Construct):
+    def __init__(
+        self,
+        scope: constructs.Construct,
+        construct_id: str,
+        env_base: EnvBase,
+        runtime: Optional[lambda_.Runtime] = None,
+    ) -> None:
+        super().__init__(scope, construct_id)
+        self.env_base = env_base
+
+        self.code_assets = AIBSInformaticsCodeAssets(self, "CodeAssets", env_base, runtime=runtime)
+        self.docker_assets = AIBSInformaticsDockerAssets(self, "DockerAssets", env_base)

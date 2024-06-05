@@ -2,7 +2,7 @@ import re
 from collections import defaultdict
 from copy import deepcopy
 from math import ceil
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Any, Dict, List, Literal, Optional, Tuple, cast
 
 import aws_cdk as cdk
 import constructs
@@ -126,7 +126,11 @@ class DashboardMixins(EnvBaseConstructMixins):
                     else:
                         metric_name = graph_metric.label or metric_config["statistic"]
                 else:
-                    metric_name = metric_config["metric"]
+                    metric = metric_config["metric"]
+                    if isinstance(metric, cw.Metric):
+                        metric_name = metric.metric_name
+                    else:
+                        metric_name = str(metric)
                     metric_label = metric_config.get(
                         "label",
                         re.sub(

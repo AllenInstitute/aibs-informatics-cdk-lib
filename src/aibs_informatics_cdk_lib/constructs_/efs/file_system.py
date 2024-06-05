@@ -1,20 +1,14 @@
 import logging
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Literal, Optional, Tuple, TypeVar, Union
+from typing import Any, Literal, Optional, Tuple, TypeVar, Union, cast
 
 import aws_cdk as cdk
 import constructs
 from aibs_informatics_aws_utils.batch import to_mount_point, to_volume
 from aibs_informatics_aws_utils.constants.efs import (
-    EFS_MOUNT_POINT_PATH_VAR,
-    EFS_ROOT_ACCESS_POINT_TAG,
     EFS_ROOT_PATH,
-    EFS_SCRATCH_ACCESS_POINT_TAG,
     EFS_SCRATCH_PATH,
-    EFS_SHARED_ACCESS_POINT_TAG,
     EFS_SHARED_PATH,
-    EFS_TMP_ACCESS_POINT_TAG,
     EFS_TMP_PATH,
     EFSTag,
 )
@@ -32,6 +26,7 @@ from aws_cdk.aws_efs import (
 
 from aibs_informatics_cdk_lib.common.aws.iam_utils import grant_managed_policies
 from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstruct, EnvBaseConstructMixins
+from aibs_informatics_cdk_lib.constructs_.sfn.utils import convert_to_sfn_api_action_case
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +70,7 @@ class EnvBaseFileSystem(efs.FileSystem, EnvBaseConstructMixins):
             **kwargs,
         )
 
-        self._root_access_point = self.create_access_point("root", EFS_ROOT_PATH)
+        self._root_access_point = self.create_access_point(name="root", path=EFS_ROOT_PATH)
 
     @property
     def root_access_point(self) -> efs.AccessPoint:
@@ -98,12 +93,11 @@ class EnvBaseFileSystem(efs.FileSystem, EnvBaseConstructMixins):
             efs.AccessPoint: _description_
         """
         ap_tags = [tag if isinstance(tag, EFSTag) else EFSTag(*tag) for tag in tags]
-
         if not any(tag.key == "Name" for tag in ap_tags):
             ap_tags.insert(0, EFSTag("Name", name))
 
         cfn_access_point = efs.CfnAccessPoint(
-            self,
+            self.get_stack_of(self),
             self.get_construct_id(name, "cfn-ap"),
             file_system_id=self.file_system_id,
             access_point_tags=[
@@ -169,11 +163,14 @@ class EFSEcosystem(EnvBaseConstruct):
             vpc=vpc,
         )
 
-        self.shared_access_point = self.file_system.create_access_point("shared", EFS_SHARED_PATH)
-        self.scratch_access_point = self.file_system.create_access_point(
-            "scratch", EFS_SCRATCH_PATH
+        self.shared_access_point = self.file_system.create_access_point(
+            name="shared", path=EFS_SHARED_PATH
         )
-        self.tmp_access_point = self.file_system.create_access_point("tmp", EFS_TMP_PATH)
+        self.scratch_access_point = self.file_system.create_access_point(
+            name="scratch", path=EFS_SCRATCH_PATH
+        )
+        self.tmp_access_point = self.file_system.create_access_point(name="tmp", path=EFS_TMP_PATH)
+        self.file_system.add_tags(cdk.Tag("blah", self.env_base))
 
     @property
     def file_system(self) -> EnvBaseFileSystem:
@@ -250,26 +247,41 @@ class MountPointConfiguration:
         else:
             raise ValueError("No file system or access point provided")
 
-    def to_batch_mount_point(self, name: str) -> dict[str, Any]:
-        return to_mount_point(self.mount_point, self.read_only, source_volume=name)  # type: ignore
+    @property
+    def access_point_id(self) -> Optional[str]:
+        if self.access_point:
+            return self.access_point.access_point_id
+        return None
 
-    def to_batch_volume(self, name: str) -> dict[str, Any]:
+    def to_batch_mount_point(self, name: str, sfn_format: bool = False) -> dict[str, Any]:
+        mount_point: dict[str, Any] = to_mount_point(
+            self.mount_point, self.read_only, source_volume=name
+        )  # type: ignore[arg-type]  # typed dict should be accepted
+        if sfn_format:
+            return convert_to_sfn_api_action_case(mount_point)
+        return mount_point
+
+    def to_batch_volume(self, name: str, sfn_format: bool = False) -> dict[str, Any]:
         efs_volume_configuration: dict[str, Any] = {
             "fileSystemId": self.file_system_id,
         }
         if self.access_point:
             efs_volume_configuration["transitEncryption"] = "ENABLED"
+            # TODO: Consider adding IAM
             efs_volume_configuration["authorizationConfig"] = {
                 "accessPointId": self.access_point.access_point_id,
-                "iam": "ENABLED",
+                "iam": "DISABLED",
             }
         else:
             efs_volume_configuration["rootDirectory"] = self.root_directory or "/"
-        return to_volume(
+        volume: dict[str, Any] = to_volume(
             None,
             name=name,
             efs_volume_configuration=efs_volume_configuration,  # type: ignore
-        )  # type: ignore
+        )
+        if sfn_format:
+            return convert_to_sfn_api_action_case(volume)
+        return volume
 
 
 def create_access_point(

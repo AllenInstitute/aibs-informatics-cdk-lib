@@ -29,7 +29,7 @@ class EnvBaseBucket(s3.Bucket, EnvBaseConstructMixins):
     ):
         self.env_base = env_base
         self._full_bucket_name = bucket_name
-        if self._full_bucket_name is not None:
+        if bucket_name is not None:
             self._full_bucket_name = env_base.get_bucket_name(
                 base_name=bucket_name, account_id=account_id, region=region
             )

@@ -32,6 +32,14 @@ class EnvBaseConstructMixins(EnvBaseMixins):
     def construct_tags(self) -> List[cdk.Tag]:
         return []
 
+    @property
+    def aws_region(self) -> str:
+        return cdk.Stack.of(self.as_construct()).region
+
+    @property
+    def aws_account(self) -> str:
+        return cdk.Stack.of(self.as_construct()).account
+
     def add_tags(self, *tags: cdk.Tag):
         for tag in tags:
             cdk.Tags.of(self.as_construct()).add(key=tag.key, value=tag.value)
@@ -107,11 +115,3 @@ class EnvBaseConstruct(Construct, EnvBaseConstructMixins):
     @property
     def construct_id(self) -> str:
         return self.node.id
-
-    @property
-    def aws_region(self) -> str:
-        return cdk.Stack.of(self).region
-
-    @property
-    def aws_account(self) -> str:
-        return cdk.Stack.of(self).account

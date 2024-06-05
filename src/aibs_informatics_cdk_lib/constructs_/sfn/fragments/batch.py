@@ -4,16 +4,12 @@ import constructs
 from aibs_informatics_core.env import EnvBase
 from aibs_informatics_core.utils.tools.dicttools import convert_key_case
 from aibs_informatics_core.utils.tools.strtools import pascalcase
-from aws_cdk import aws_batch_alpha as batch
 from aws_cdk import aws_stepfunctions as sfn
 
 from aibs_informatics_cdk_lib.constructs_.efs.file_system import MountPointConfiguration
-from aibs_informatics_cdk_lib.constructs_.sfn.fragments.base import (
-    EnvBaseStateMachineFragment,
-    StateMachineFragment,
-)
+from aibs_informatics_cdk_lib.constructs_.sfn.fragments.base import EnvBaseStateMachineFragment
 from aibs_informatics_cdk_lib.constructs_.sfn.states.batch import BatchOperation
-from aibs_informatics_cdk_lib.constructs_.sfn.utils import enclosed_chain
+from aibs_informatics_cdk_lib.constructs_.sfn.states.common import CommonOperation
 
 if TYPE_CHECKING:
     from mypy_boto3_batch.type_defs import MountPointTypeDef, VolumeTypeDef
@@ -99,13 +95,14 @@ class SubmitJobFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
             job_definition=sfn.JsonPath.string_at("$.taskResult.register.JobDefinitionArn"),
         )
 
-        register = StateMachineFragment.enclose(
+        register = CommonOperation.enclose_chainable(
             self, id + " Register", register_chain, result_path="$.taskResult.register"
         )
-        submit = StateMachineFragment.enclose(
+        # submit = StateMachineFragment.enclose(
+        submit = CommonOperation.enclose_chainable(
             self, id + " Submit", submit_chain, result_path="$.taskResult.submit"
-        ).to_single_state(output_path="$[0]")
-        deregister = StateMachineFragment.enclose(
+        ).to_single_state(id=f"{id} Enclosure", output_path="$[0]")
+        deregister = CommonOperation.enclose_chainable(
             self, id + " Deregister", deregister_chain, result_path="$.taskResult.deregister"
         )
         submit.add_catch(
@@ -231,15 +228,8 @@ class SubmitJobWithDefaultsFragment(EnvBaseStateMachineFragment, AWSBatchMixins)
                 "default": defaults,
             },
         )
-
-        merge = sfn.Pass(
-            self,
-            "Merge",
-            parameters={
-                "request": sfn.JsonPath.json_merge(
-                    sfn.JsonPath.object_at("$.default"), sfn.JsonPath.object_at("$.input")
-                ),
-            },
+        merge_chain = CommonOperation.merge_defaults(
+            self, f"{id}", defaults=defaults, input_path="$.input", result_path="$.request"
         )
 
         submit_job = SubmitJobFragment(
@@ -262,4 +252,4 @@ class SubmitJobWithDefaultsFragment(EnvBaseStateMachineFragment, AWSBatchMixins)
             platform_capabilities=sfn.JsonPath.string_at("$.request.platform_capabilities"),
         ).to_single_state()
 
-        self.definition = start.next(merge).next(submit_job)
+        self.definition = start.next(merge_chain).next(submit_job)

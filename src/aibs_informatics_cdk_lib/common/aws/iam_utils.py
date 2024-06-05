@@ -170,6 +170,10 @@ KMS_FULL_ACCESS_ACTIONS = [
 
 
 LAMBDA_FULL_ACCESS_ACTIONS = ["lambda:*"]
+LAMBDA_READ_ONLY_ACTIONS = [
+    "lambda:Get*",
+    "lambda:List*",
+]
 
 S3_FULL_ACCESS_ACTIONS = ["s3:*"]
 

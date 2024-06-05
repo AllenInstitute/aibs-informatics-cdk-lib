@@ -58,7 +58,8 @@ class BatchLaunchTemplateBuilder(IBatchLaunchTemplateBuilder["BatchLaunchTemplat
         launch_template = ec2.LaunchTemplate(
             self,
             launch_template_name,
-            launch_template_name=launch_template_name,
+            # NOTE: unsetting because of complications when multiple batch environments are created
+            # launch_template_name=launch_template_name,
             instance_initiated_shutdown_behavior=ec2.InstanceInitiatedShutdownBehavior.TERMINATE,
             security_group=security_group,
             user_data=user_data,
@@ -121,7 +122,7 @@ class EbsBatchLaunchTemplateBuilder(IBatchLaunchTemplateBuilder["EbsBatchLaunchT
 
 @dataclass
 class BatchLaunchTemplateUserData:
-    env_base: str
+    env_base: EnvBase
     batch_env_name: str
     user_data_text: str = field(init=False)
 

@@ -1,14 +1,35 @@
 import re
 from functools import reduce
-from typing import Any, ClassVar, List, Mapping, Pattern, Union, cast
+from typing import Any, ClassVar, Dict, List, Mapping, Optional, Pattern, TypeVar, Union, cast
 
 import aws_cdk as cdk
+import constructs
 from aibs_informatics_core.utils.json import JSON
+from aibs_informatics_core.utils.tools.dicttools import convert_key_case
+from aibs_informatics_core.utils.tools.strtools import pascalcase
 from aws_cdk import aws_stepfunctions as sfn
+
+T = TypeVar("T")
 
 
 def convert_reference_paths_in_mapping(parameters: Mapping[str, Any]) -> Mapping[str, Any]:
     return {k: convert_reference_paths(v) for k, v in parameters.items()}
+
+
+def convert_to_sfn_api_action_case(parameters: T) -> T:
+    """Converts a dictionary of parameters to the format expected by the Step Functions for service integration.
+
+    Even if a native API specifies a parameter in camelCase, the Step Functions SDK expects it in pascal case.
+
+    https://docs.aws.amazon.com/step-functions/latest/dg/supported-services-awssdk.html#use-awssdk-integ
+
+    Args:
+        parameters (Dict[str, Any]): parameters for SDK action
+
+    Returns:
+        Dict[str, Any]: parameters for SDK action in pascal case
+    """
+    return convert_key_case(parameters, pascalcase)
 
 
 def convert_reference_paths(parameters: JSON) -> JSON:
@@ -28,15 +49,57 @@ def convert_reference_paths(parameters: JSON) -> JSON:
 
 
 def enclosed_chain(
-    id: str, chain: sfn.Chain, result_path: str = "$", output_path: str = "$"
+    scope: constructs.Construct,
+    id: str,
+    definition: sfn.IChainable,
+    input_path: Optional[str] = None,
+    result_path: Optional[str] = None,
 ) -> sfn.Chain:
-    pre = sfn.Pass(id + " Parallel Prep", result_path=result_path, output_path=output_path)  # type: ignore
-    parallel = chain.to_single_state(
-        id=f"{id} Parallel", input_path=result_path, output_path="$[0]"
-    )
-    post = sfn.Pass(id + " Parallel Post", result_path=result_path, output_path=output_path)  # type: ignore
+    """Enclose the current state machine fragment within a parallel state.
 
-    return sfn.Chain.start(pre).next(parallel).next(post)
+    Notes:
+        - If input_path is not provided, it will default to "$"
+        - If result_path is not provided, it will default to input_path
+
+    Args:
+        id (str): an identifier for the parallel state
+        input_path (Optional[str], optional): input path for the enclosed state.
+            Defaults to "$".
+        result_path (Optional[str], optional): result path to put output of enclosed state.
+            Defaults to same as input_path.
+
+    Returns:
+        sfn.Chain: the new state machine fragment
+    """
+    if input_path is None:
+        input_path = "$"
+    if result_path is None:
+        result_path = input_path
+
+    chain = (
+        sfn.Chain.start(definition)
+        if not isinstance(definition, (sfn.Chain, sfn.StateMachineFragment))
+        else definition
+    )
+
+    if isinstance(chain, sfn.Chain):
+        parallel = chain.to_single_state(
+            id=f"{id} Enclosure", input_path=input_path, result_path=result_path
+        )
+    else:
+        parallel = chain.to_single_state(input_path=input_path, result_path=result_path)
+    definition = sfn.Chain.start(parallel)
+
+    if result_path and result_path != sfn.JsonPath.DISCARD:
+        restructure = sfn.Pass(
+            scope,
+            f"{id} Enclosure Post",
+            input_path=f"{result_path}[0]",
+            result_path=result_path,
+        )
+        definition = definition.next(restructure)
+
+    return definition
 
 
 class JsonReferencePath(str):
