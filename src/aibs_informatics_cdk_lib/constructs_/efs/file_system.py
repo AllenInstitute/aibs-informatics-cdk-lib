@@ -256,7 +256,7 @@ class MountPointConfiguration:
     def to_batch_mount_point(self, name: str, sfn_format: bool = False) -> dict[str, Any]:
         mount_point: dict[str, Any] = to_mount_point(
             self.mount_point, self.read_only, source_volume=name
-        )  # type: ignore
+        )  # type: ignore[arg-type]  # typed dict should be accepted
         if sfn_format:
             return convert_to_sfn_api_action_case(mount_point)
         return mount_point
@@ -267,6 +267,7 @@ class MountPointConfiguration:
         }
         if self.access_point:
             efs_volume_configuration["transitEncryption"] = "ENABLED"
+            # TODO: Consider adding IAM
             efs_volume_configuration["authorizationConfig"] = {
                 "accessPointId": self.access_point.access_point_id,
                 "iam": "DISABLED",

@@ -1,25 +1,25 @@
 from typing import Optional
 
 from aibs_informatics_core.env import EnvBase
-from aws_cdk import aws_ec2 as ec2
 from constructs import Construct
 
+from aibs_informatics_cdk_lib.constructs_.ec2.network import EnvBaseVpc
 from aibs_informatics_cdk_lib.constructs_.efs.file_system import EFSEcosystem, EnvBaseFileSystem
 from aibs_informatics_cdk_lib.constructs_.s3 import EnvBaseBucket, LifecycleRuleGenerator
 from aibs_informatics_cdk_lib.stacks.base import EnvBaseStack
 
 
-class StorageStack(EnvBaseStack):
+class CoreStack(EnvBaseStack):
     def __init__(
         self,
         scope: Construct,
         id: Optional[str],
         env_base: EnvBase,
         name: str,
-        vpc: ec2.Vpc,
         **kwargs,
     ) -> None:
         super().__init__(scope, id, env_base, **kwargs)
+        self._vpc = EnvBaseVpc(self, "Vpc", self.env_base, max_azs=4)
 
         self._bucket = EnvBaseBucket(
             self,
@@ -35,9 +35,13 @@ class StorageStack(EnvBaseStack):
         )
 
         self._efs_ecosystem = EFSEcosystem(
-            self, id="EFS", env_base=self.env_base, file_system_name=name, vpc=vpc
+            self, id="EFS", env_base=self.env_base, file_system_name=name, vpc=self.vpc
         )
         self._file_system = self._efs_ecosystem.file_system
+
+    @property
+    def vpc(self) -> EnvBaseVpc:
+        return self._vpc
 
     @property
     def bucket(self) -> EnvBaseBucket:

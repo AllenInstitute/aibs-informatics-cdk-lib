@@ -127,10 +127,10 @@ class DashboardMixins(EnvBaseConstructMixins):
                         metric_name = graph_metric.label or metric_config["statistic"]
                 else:
                     metric = metric_config["metric"]
-                    if isinstance(metric, cw.IMetric):
-                        metric_name = cast(str, metric.metric_name)
+                    if isinstance(metric, cw.Metric):
+                        metric_name = metric.metric_name
                     else:
-                        metric_name = metric
+                        metric_name = str(metric)
                     metric_label = metric_config.get(
                         "label",
                         re.sub(

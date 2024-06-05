@@ -8,12 +8,11 @@ from aibs_informatics_cdk_lib.project.config import StageConfig
 from aibs_informatics_cdk_lib.project.utils import get_config
 from aibs_informatics_cdk_lib.stages.base import ConfigBasedStage
 from aibs_informatics_core_app.stacks.assets import AIBSInformaticsAssetsStack
+from aibs_informatics_core_app.stacks.core import CoreStack
 from aibs_informatics_core_app.stacks.demand_execution import (
     DemandExecutionInfrastructureStack,
     DemandExecutionStack,
 )
-from aibs_informatics_core_app.stacks.network import NetworkStack
-from aibs_informatics_core_app.stacks.storage import StorageStack
 
 
 class InfraStage(ConfigBasedStage):
@@ -25,18 +24,11 @@ class InfraStage(ConfigBasedStage):
             self.env_base,
             env=self.env,
         )
-        network = NetworkStack(
+        core = CoreStack(
             self,
-            self.get_stack_name("Network"),
+            self.get_stack_name("Core"),
             self.env_base,
-            env=self.env,
-        )
-        storage = StorageStack(
-            self,
-            self.get_stack_name("Storage"),
-            self.env_base,
-            "core",
-            vpc=network.vpc,
+            name="core",
             env=self.env,
         )
 
@@ -44,10 +36,10 @@ class InfraStage(ConfigBasedStage):
             self,
             self.get_stack_name("DemandExecutionInfra"),
             self.env_base,
-            vpc=network.vpc,
-            buckets=[storage.bucket],
+            vpc=core.vpc,
+            buckets=[core.bucket],
             mount_point_configs=[
-                MountPointConfiguration.from_file_system(storage.file_system, None, "/opt/efs"),
+                MountPointConfiguration.from_file_system(core.file_system, None, "/opt/efs"),
             ],
             env=self.env,
         )
@@ -57,8 +49,8 @@ class InfraStage(ConfigBasedStage):
             self.get_stack_name("DemandExecution"),
             env_base=self.env_base,
             assets=assets.assets,
-            scaffolding_bucket=storage.bucket,
-            efs_ecosystem=storage.efs_ecosystem,
+            scaffolding_bucket=core.bucket,
+            efs_ecosystem=core.efs_ecosystem,
             data_sync_job_queue=demand_execution_infra.infra_compute.lambda_medium_batch_environment.job_queue_name,
             scaffolding_job_queue=demand_execution_infra.infra_compute.primary_batch_environment.job_queue_name,
             execution_job_queue=demand_execution_infra.execution_compute.primary_batch_environment.job_queue_name,
