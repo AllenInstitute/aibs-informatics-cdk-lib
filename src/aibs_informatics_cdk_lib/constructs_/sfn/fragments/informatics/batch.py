@@ -205,6 +205,7 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
         image_path: Optional[str] = None,
         handler_path: Optional[str] = None,
         payload_path: Optional[str] = None,
+        overrides_path: Optional[str] = None,
         command: Optional[List[str]] = None,
         memory: str = "1024",
         vcpus: str = "1",
@@ -260,7 +261,7 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
                 "handler": sfn.JsonPath.string_at(handler_path or "$.handler"),
                 "payload": sfn.JsonPath.object_at(payload_path or "$.payload"),
                 # We will merge the rest with the defaults
-                "input": sfn.JsonPath.object_at("$"),
+                "input": sfn.JsonPath.object_at(overrides_path if overrides_path else "$"),
             },
         )
 
