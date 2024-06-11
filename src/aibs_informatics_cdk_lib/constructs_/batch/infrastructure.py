@@ -26,8 +26,6 @@ from aibs_informatics_cdk_lib.common.aws.iam_utils import (
     BATCH_READ_ONLY_ACTIONS,
     S3_READ_ONLY_ACCESS_ACTIONS,
     batch_policy_statement,
-    dynamodb_policy_statement,
-    lambda_policy_statement,
 )
 from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstruct
 from aibs_informatics_cdk_lib.constructs_.batch.launch_template import IBatchLaunchTemplateBuilder
@@ -40,6 +38,17 @@ from aibs_informatics_cdk_lib.constructs_.efs.file_system import (
 
 class Batch(EnvBaseConstruct):
     """
+    Out of the box Batch construct that can be used to create multiple Batch Environments.
+
+    This construct creates simplifies the creation of Batch Environments.
+    It allows for the creation of multiple Batch Environments with different configurations
+    and launch templates, but using the same instance role and security group.
+
+    Notes:
+    - Instance Roles are created with a set of managed policies that are commonly used
+        by Batch jobs. It also includes custom resources to allow access to S3, Lambda, and DynamoDB.
+
+
     Defines:
         - Batch Compute Environment (Spot and OnDemand)
         - Instance Role
@@ -53,6 +62,7 @@ class Batch(EnvBaseConstruct):
         id: str,
         env_base: EnvBase,
         vpc: ec2.IVpc,
+        instance_role_name: Optional[str] = None,
         instance_role_policy_statements: Optional[List[iam.PolicyStatement]] = None,
     ) -> None:
         super().__init__(scope, id, env_base)
@@ -64,8 +74,11 @@ class Batch(EnvBaseConstruct):
         #  - security group
         #  - launch template
         # ---------------------------------------------------------------------
-        self.instance_role = self.create_instance_role(instance_role_policy_statements)
-        self.instance_profile = self.create_instance_profile()
+        self.instance_role = self.create_instance_role(
+            role_name=instance_role_name,
+            statements=instance_role_policy_statements,
+        )
+        self.instance_profile = self.create_instance_profile(self.instance_role.role_name)
         self.security_group = self.create_security_group()
 
         self._batch_environment_mapping: MutableMapping[str, BatchEnvironment] = {}
@@ -77,11 +90,14 @@ class Batch(EnvBaseConstruct):
         )
 
     def create_instance_role(
-        self, statements: Optional[List[iam.PolicyStatement]] = None
+        self,
+        role_name: Optional[str] = None,
+        statements: Optional[List[iam.PolicyStatement]] = None,
     ) -> iam.Role:
         instance_role = iam.Role(
             self,
             self.get_child_id(self, f"instance-role"),
+            role_name=role_name,
             description="Role used by ec2 instance in batch compute environment",
             assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"),  # type: ignore  # Interface not inferred
         )
@@ -152,23 +168,6 @@ class Batch(EnvBaseConstruct):
                     resources=["*"],
                 ),
                 batch_policy_statement(actions=BATCH_READ_ONLY_ACTIONS, env_base=self.env_base),
-                lambda_policy_statement(actions=["lambda:InvokeFunction"], env_base=self.env_base),
-                dynamodb_policy_statement(
-                    env_base=self.env_base,
-                    sid="DynamoDBReadWrite",
-                    actions=[
-                        "dynamodb:BatchGet*",
-                        "dynamodb:DescribeStream",
-                        "dynamodb:DescribeTable",
-                        "dynamodb:Get*",
-                        "dynamodb:Query",
-                        "dynamodb:Scan",
-                        "dynamodb:BatchWrite*",
-                        "dynamodb:Delete*",
-                        "dynamodb:Update*",
-                        "dynamodb:PutItem",
-                    ],
-                ),
             ],
             roles=[instance_role],  # type: ignore  # Role is not inferred as IRole
         )
@@ -184,11 +183,11 @@ class Batch(EnvBaseConstruct):
 
         return instance_role
 
-    def create_instance_profile(self) -> iam.CfnInstanceProfile:
+    def create_instance_profile(self, instance_role_name: str) -> iam.CfnInstanceProfile:
         return iam.CfnInstanceProfile(
             self,
             f"instance-profile",
-            roles=[self.instance_role.role_name],
+            roles=[instance_role_name],
         )
 
     def create_security_group(self) -> ec2.SecurityGroup:

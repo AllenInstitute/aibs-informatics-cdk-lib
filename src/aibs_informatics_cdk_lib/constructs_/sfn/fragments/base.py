@@ -173,7 +173,7 @@ class StateMachineFragment(sfn.StateMachineFragment):
 
     def enclose(
         self,
-        id: str,
+        id: Optional[str] = None,
         input_path: Optional[str] = None,
         result_path: Optional[str] = None,
     ) -> sfn.Chain:
@@ -193,6 +193,8 @@ class StateMachineFragment(sfn.StateMachineFragment):
         Returns:
             sfn.Chain: the new state machine fragment
         """
+        id = id or self.node.id
+
         if input_path is None:
             input_path = "$"
         if result_path is None:
