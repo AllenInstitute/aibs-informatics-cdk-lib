@@ -1,6 +1,11 @@
 from typing import Iterable, Optional, Union
 
 import constructs
+from aibs_informatics_aws_utils.constants.efs import (
+    EFS_SCRATCH_PATH,
+    EFS_SHARED_PATH,
+    EFS_TMP_PATH,
+)
 from aibs_informatics_core.env import EnvBase
 from aws_cdk import aws_batch_alpha as batch
 from aws_cdk import aws_ec2 as ec2
@@ -22,6 +27,11 @@ from aibs_informatics_cdk_lib.constructs_.sfn.fragments.informatics import (
     BatchInvokedLambdaFunction,
     DataSyncFragment,
     DemandExecutionFragment,
+)
+from aibs_informatics_cdk_lib.constructs_.sfn.fragments.informatics.efs import (
+    CleanFileSystemFragment,
+    CleanFileSystemTriggerConfig,
+    CleanFileSystemTriggerRuleConfig,
 )
 from aibs_informatics_cdk_lib.stacks.base import EnvBaseStack
 
@@ -150,3 +160,36 @@ class DemandExecutionStack(EnvBaseStack):
             scratch_mount_point_config=scratch_mount_point_config,
         )
         self.demand_execution_state_machine = demand_execution.to_state_machine("demand-execution")
+
+        ## EFS Cleanup
+
+        clean_fs = CleanFileSystemFragment(
+            self,
+            "clean-file-system",
+            env_base=self.env_base,
+            aibs_informatics_docker_asset=self._assets.docker_assets.AIBS_INFORMATICS_AWS_LAMBDA,
+            batch_job_queue=self.execution_job_queue,
+            scaffolding_bucket=scaffolding_bucket,
+            mount_point_configs=[root_mount_point_config],
+        )
+        self.clean_file_system_state_machine = clean_fs.to_state_machine("clean-file-system")
+
+        CleanFileSystemTriggerRuleConfig(
+            rule_name="clean-file-system-trigger",
+            trigger_configs=[
+                CleanFileSystemTriggerConfig(
+                    file_system=self.efs_ecosystem.file_system,
+                    path=path,
+                    days_since_last_accessed=days_since_last_accessed,
+                    max_depth=max_depth,
+                    min_depth=min_depth,
+                    min_size_bytes_allowed=0,
+                )
+                for path, days_since_last_accessed, min_depth, max_depth in [
+                    (EFS_TMP_PATH, 3.0, 1, 1),
+                    (EFS_SCRATCH_PATH, 3.0, 1, 1),
+                    (f"{EFS_SCRATCH_PATH}/tmp", 3.0, 1, 1),
+                    (EFS_SHARED_PATH, 3.0, 1, 1),
+                ]
+            ],
+        ).create_rule(self, clean_file_system_state_machine=self.clean_file_system_state_machine)
