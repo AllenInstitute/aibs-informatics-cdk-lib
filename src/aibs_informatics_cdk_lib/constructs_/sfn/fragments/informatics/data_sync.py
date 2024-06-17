@@ -162,7 +162,7 @@ class DistributedDataSyncFragment(BatchInvokedBaseFragment):
             self,
             f"{id}: Batch Data Sync: Map Start",
             comment="Runs requests for batch sync in parallel",
-            items_path=f"$.tasks.{prep_batch_sync_task_name}.response.Payload.requests",
+            items_path=f"$.tasks.{prep_batch_sync_task_name}.response.requests",
             result_path=sfn.JsonPath.DISCARD,
         )
 
@@ -172,7 +172,7 @@ class DistributedDataSyncFragment(BatchInvokedBaseFragment):
                 id=f"{id}: Batch Data Sync",
                 env_base=env_base,
                 name="batch-data-sync",
-                payload_path="$.request",
+                payload_path="$.requests",
                 image=(
                     aibs_informatics_docker_asset
                     if isinstance(aibs_informatics_docker_asset, str)
