@@ -7,6 +7,7 @@ from aws_cdk import aws_ecr_assets as ecr_assets
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_s3 as s3
 from aws_cdk import aws_stepfunctions as sfn
+from aws_cdk import aws_stepfunctions_tasks as sfn_tasks
 
 from aibs_informatics_cdk_lib.common.aws.iam_utils import (
     SFN_STATES_EXECUTION_ACTIONS,
@@ -15,6 +16,7 @@ from aibs_informatics_cdk_lib.common.aws.iam_utils import (
 )
 from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstructMixins
 from aibs_informatics_cdk_lib.constructs_.efs.file_system import MountPointConfiguration
+from aibs_informatics_cdk_lib.constructs_.sfn.fragments.base import EnvBaseStateMachineFragment
 from aibs_informatics_cdk_lib.constructs_.sfn.fragments.informatics.batch import (
     BatchInvokedBaseFragment,
     BatchInvokedLambdaFunction,
@@ -110,3 +112,88 @@ class DataSyncFragment(BatchInvokedBaseFragment, EnvBaseConstructMixins):
                 actions=SFN_STATES_EXECUTION_ACTIONS + SFN_STATES_READ_ACCESS_ACTIONS,
             ),
         ]
+
+
+class DistributedDataSyncFragment(BatchInvokedBaseFragment):
+    def __init__(
+        self,
+        scope: constructs.Construct,
+        id: str,
+        env_base: EnvBase,
+        aibs_informatics_docker_asset: Union[ecr_assets.DockerImageAsset, str],
+        batch_job_queue: Union[batch.JobQueue, str],
+        scaffolding_bucket: s3.Bucket,
+        mount_point_configs: Optional[Iterable[MountPointConfiguration]] = None,
+    ) -> None:
+        super().__init__(scope, id, env_base)
+        start_pass_state = sfn.Pass(
+            self,
+            f"{id}: Start",
+            parameters={
+                "request": sfn.JsonPath.object_at("$"),
+            },
+        )
+        prep_batch_sync_task_name = "prep-batch-data-sync-requests"
+
+        prep_batch_sync = BatchInvokedLambdaFunction(
+            scope=scope,
+            id=f"{id}: Prep Batch Data Sync",
+            env_base=env_base,
+            name=prep_batch_sync_task_name,
+            payload_path="$.request",
+            image=(
+                aibs_informatics_docker_asset
+                if isinstance(aibs_informatics_docker_asset, str)
+                else aibs_informatics_docker_asset.image_uri
+            ),
+            handler="aibs_informatics_aws_lambda.handlers.data_sync.prepare_batch_data_sync_handler",
+            job_queue=(
+                batch_job_queue
+                if isinstance(batch_job_queue, str)
+                else batch_job_queue.job_queue_name
+            ),
+            bucket_name=scaffolding_bucket.bucket_name,
+            memory=1024,
+            vcpus=1,
+            mount_point_configs=list(mount_point_configs) if mount_point_configs else None,
+        ).enclose(result_path=f"$.tasks.{prep_batch_sync_task_name}.response")
+
+        batch_sync_map_state = sfn.Map(
+            self,
+            f"{id}: Batch Data Sync: Map Start",
+            comment="Runs requests for batch sync in parallel",
+            items_path=f"$.tasks.{prep_batch_sync_task_name}.response.Payload.requests",
+            result_path=sfn.JsonPath.DISCARD,
+        )
+
+        batch_sync_map_state.iterator(
+            BatchInvokedLambdaFunction(
+                scope=scope,
+                id=f"{id}: Batch Data Sync",
+                env_base=env_base,
+                name="batch-data-sync",
+                payload_path="$.request",
+                image=(
+                    aibs_informatics_docker_asset
+                    if isinstance(aibs_informatics_docker_asset, str)
+                    else aibs_informatics_docker_asset.image_uri
+                ),
+                handler="aibs_informatics_aws_lambda.handlers.data_sync.batch_data_sync_handler",
+                job_queue=(
+                    batch_job_queue
+                    if isinstance(batch_job_queue, str)
+                    else batch_job_queue.job_queue_name
+                ),
+                bucket_name=scaffolding_bucket.bucket_name,
+                memory=2048,
+                vcpus=1,
+                mount_point_configs=list(mount_point_configs) if mount_point_configs else None,
+            )
+        )
+        # fmt: off
+        self.definition = (
+            start_pass_state
+            .next(prep_batch_sync)
+            .next(batch_sync_map_state)
+        )
+        # fmt: on

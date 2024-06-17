@@ -1,7 +1,8 @@
-from typing import Any, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import constructs
 from aibs_informatics_core.env import EnvBase
+from aibs_informatics_core.utils.tools.dicttools import remove_null_values
 from aws_cdk import aws_batch_alpha as batch
 from aws_cdk import aws_ecr_assets as ecr_assets
 from aws_cdk import aws_iam as iam
@@ -35,6 +36,8 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
         data_sync_state_machine: sfn.StateMachine,
         shared_mount_point_config: Optional[MountPointConfiguration],
         scratch_mount_point_config: Optional[MountPointConfiguration],
+        tmp_mount_point_config: Optional[MountPointConfiguration] = None,
+        context_manager_configuration: Optional[Dict[str, Any]] = None,
     ) -> None:
         super().__init__(scope, id, env_base)
 
@@ -72,7 +75,7 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
         file_system_configurations = {}
 
         # Update arguments with mount points and volumes if provided
-        if shared_mount_point_config or scratch_mount_point_config:
+        if shared_mount_point_config or scratch_mount_point_config or tmp_mount_point_config:
             mount_points = []
             volumes = []
             if shared_mount_point_config:
@@ -104,18 +107,34 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
                 volumes.append(
                     scratch_mount_point_config.to_batch_volume("scratch", sfn_format=True)
                 )
+            if tmp_mount_point_config:
+                # update file system configurations for scaffolding function
+                file_system_configurations["tmp"] = {
+                    "file_system": tmp_mount_point_config.file_system_id,
+                    "access_point": tmp_mount_point_config.access_point_id,
+                    "container_path": tmp_mount_point_config.mount_point,
+                }
+                # add to mount point and volumes list for batch invoked lambda functions
+                mount_points.append(
+                    tmp_mount_point_config.to_batch_mount_point("tmp", sfn_format=True)
+                )
+                volumes.append(tmp_mount_point_config.to_batch_volume("tmp", sfn_format=True))
 
             batch_invoked_lambda_kwargs["mount_points"] = mount_points
             batch_invoked_lambda_kwargs["volumes"] = volumes
+
+        request = {
+            "demand_execution": sfn.JsonPath.object_at("$"),
+            "file_system_configurations": file_system_configurations,
+        }
+        if context_manager_configuration:
+            request["context_manager_configuration"] = context_manager_configuration
 
         start_state = sfn.Pass(
             self,
             f"Start Demand Batch Task",
             parameters={
-                "request": {
-                    "demand_execution": sfn.JsonPath.object_at("$"),
-                    "file_system_configurations": file_system_configurations,
-                }
+                "request": request,
             },
         )
 
