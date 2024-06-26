@@ -7,7 +7,7 @@ __all__ = [
 
 import logging
 import pathlib
-from typing import List, Optional, Type
+from typing import List, Optional, Type, Union
 
 import constructs
 from aibs_informatics_core.env import (
@@ -26,7 +26,7 @@ from aibs_informatics_cdk_lib.project.config import BaseProjectConfig, G, Projec
 logger = logging.getLogger(__name__)
 
 
-def resolve_repo_root() -> str:
+def resolve_repo_root(start_path: Optional[Union[str, pathlib.Path]] = None) -> str:
     """Find the root of the git repository
 
     Returns:
@@ -36,7 +36,7 @@ def resolve_repo_root() -> str:
         next(
             filter(
                 lambda p: (p / ".git").is_dir(),  # type: ignore
-                pathlib.Path(__file__).absolute().parents,
+                pathlib.Path(start_path or __file__).absolute().parents,
             )
         )
     )
