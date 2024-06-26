@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING, Any, Iterable, List, Literal, Mapping, Optional, Sequence, Union
+from unittest import result
 
 import constructs
 from aibs_informatics_aws_utils.constants.lambda_ import (
@@ -116,11 +117,35 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
         """
         super().__init__(scope, id, env_base)
         key_prefix = key_prefix or S3_SCRATCH_KEY_PREFIX
+
         request_key = sfn.JsonPath.format(
-            f"{key_prefix}{{}}/request.json", sfn.JsonPath.execution_name
+            f"{key_prefix}{{}}/{{}}/request.json",
+            sfn.JsonPath.execution_name,
+            sfn.JsonPath.string_at("$.taskResult.prep.task_id"),
         )
         response_key = sfn.JsonPath.format(
-            f"{key_prefix}{{}}/response.json", sfn.JsonPath.execution_name
+            f"{key_prefix}{{}}/{{}}/response.json",
+            sfn.JsonPath.execution_name,
+            sfn.JsonPath.string_at("$.taskResult.prep.task_id"),
+        )
+
+        start = sfn.Pass(
+            self,
+            f"{id} Prep S3 Keys",
+            parameters={
+                "task_id": sfn.JsonPath.uuid(),
+                # "requestKey": sfn.JsonPath.format(
+                #     f"{key_prefix}{{}}/{{}}/request.json",
+                #     sfn.JsonPath.execution_name,
+                #     sfn.JsonPath.uuid(),
+                # ),
+                # "responseKey": sfn.JsonPath.format(
+                #     f"{key_prefix}{{}}/{{}}/response.json",
+                #     sfn.JsonPath.execution_name,
+                #     sfn.JsonPath.uuid(),
+                # ),
+            },
+            result_path="$.taskResult.prep",
         )
 
         if mount_point_configs:
@@ -146,7 +171,9 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
                 sfn.JsonPath.string_at("$.taskResult.put.Key"),
             ),
             AWS_LAMBDA_EVENT_RESPONSE_LOCATION_KEY: sfn.JsonPath.format(
-                "s3://{}/{}", bucket_name, response_key
+                "s3://{}/{}",
+                bucket_name,
+                response_key,
             ),
             EnvBase.ENV_BASE_KEY: self.env_base,
             "AWS_REGION": self.aws_region,
@@ -182,7 +209,7 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
             output_path="$[0]",
         )
 
-        self.definition = put_payload.next(submit_job).next(get_response)
+        self.definition = start.next(put_payload).next(submit_job).next(get_response)
 
     @property
     def start_state(self) -> sfn.State:
@@ -334,11 +361,25 @@ class BatchInvokedExecutorFragment(BatchInvokedBaseFragment, AWSBatchMixins):
         """
         super().__init__(scope, id, env_base)
         key_prefix = key_prefix or S3_SCRATCH_KEY_PREFIX
+
         request_key = sfn.JsonPath.format(
-            f"{key_prefix}{{}}/request.json", sfn.JsonPath.execution_name
+            f"{key_prefix}{{}}/{{}}/request.json",
+            sfn.JsonPath.execution_name,
+            sfn.JsonPath.string_at("$.taskResult.prep.task_id"),
         )
         response_key = sfn.JsonPath.format(
-            f"{key_prefix}{{}}/response.json", sfn.JsonPath.execution_name
+            f"{key_prefix}{{}}/{{}}/response.json",
+            sfn.JsonPath.execution_name,
+            sfn.JsonPath.string_at("$.taskResult.prep.task_id"),
+        )
+
+        start = sfn.Pass(
+            self,
+            f"{id} Prep S3 Keys",
+            parameters={
+                "task_id": sfn.JsonPath.uuid(),
+            },
+            result_path="$.taskResult.prep",
         )
 
         if mount_point_configs:
@@ -368,7 +409,7 @@ class BatchInvokedExecutorFragment(BatchInvokedBaseFragment, AWSBatchMixins):
                 "--input",
                 sfn.JsonPath.format("s3://{}/{}", "$.Bucket", "$.Key"),
                 "--output-location",
-                sfn.JsonPath.format("s3://{}/{}", bucket_name, response_key),
+                sfn.JsonPath.format("s3://{}/{}", bucket_name, "$.t"),
             ],
             image=image,
             environment=environment,

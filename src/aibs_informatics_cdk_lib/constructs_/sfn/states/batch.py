@@ -82,7 +82,10 @@ class BatchOperation:
         """
 
         job_definition_name = sfn.JsonPath.format(
-            f"{{}}-{{}}", job_definition_name, sfn.JsonPath.execution_name
+            f"{{}}-{{}}-{{}}",
+            job_definition_name,
+            sfn.JsonPath.execution_name,
+            sfn.JsonPath.uuid(),
         )
         if not isinstance(environment, str):
             environment_pairs = to_key_value_pairs(dict(environment or {}))
@@ -151,7 +154,9 @@ class BatchOperation:
         result_path: Optional[str] = "$",
         output_path: Optional[str] = "$",
     ) -> sfn.Chain:
-        job_name = sfn.JsonPath.format(f"{job_name}-{{}}", sfn.JsonPath.execution_name)
+        job_name = sfn.JsonPath.format(
+            f"{job_name}-{{}}-{{}}", sfn.JsonPath.execution_name, sfn.JsonPath.uuid()
+        )
         if not isinstance(environment, str):
             environment_pairs = to_key_value_pairs(dict(environment or {}))
         else:

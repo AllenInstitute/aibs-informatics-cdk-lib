@@ -140,6 +140,7 @@ class SubmitJobFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
         defaults["job_queue"] = job_queue
         defaults["environment"] = environment or {}
         defaults["memory"] = memory
+        defaults["image"] = image
         defaults["vcpus"] = vcpus
         defaults["gpu"] = "0"
         defaults["platform_capabilities"] = ["EC2"]
@@ -153,7 +154,7 @@ class SubmitJobFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
             scope,
             id,
             env_base=env_base,
-            name="SubmitJobCore",
+            name=name,
             image=sfn.JsonPath.string_at("$.request.image"),
             command=sfn.JsonPath.string_at("$.request.command"),
             job_queue=sfn.JsonPath.string_at("$.request.job_queue"),
