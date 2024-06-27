@@ -134,16 +134,6 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
             f"{id} Prep S3 Keys",
             parameters={
                 "task_id": sfn.JsonPath.uuid(),
-                # "requestKey": sfn.JsonPath.format(
-                #     f"{key_prefix}{{}}/{{}}/request.json",
-                #     sfn.JsonPath.execution_name,
-                #     sfn.JsonPath.uuid(),
-                # ),
-                # "responseKey": sfn.JsonPath.format(
-                #     f"{key_prefix}{{}}/{{}}/response.json",
-                #     sfn.JsonPath.execution_name,
-                #     sfn.JsonPath.uuid(),
-                # ),
             },
             result_path="$.taskResult.prep",
         )
@@ -409,7 +399,7 @@ class BatchInvokedExecutorFragment(BatchInvokedBaseFragment, AWSBatchMixins):
                 "--input",
                 sfn.JsonPath.format("s3://{}/{}", "$.Bucket", "$.Key"),
                 "--output-location",
-                sfn.JsonPath.format("s3://{}/{}", bucket_name, "$.t"),
+                sfn.JsonPath.format("s3://{}/{}", bucket_name, response_key),
             ],
             image=image,
             environment=environment,
@@ -429,7 +419,7 @@ class BatchInvokedExecutorFragment(BatchInvokedBaseFragment, AWSBatchMixins):
             output_path="$[0]",
         )
 
-        self.definition = put_payload.next(submit_job).next(get_response)
+        self.definition = start.next(put_payload).next(submit_job).next(get_response)
 
     @property
     def start_state(self) -> sfn.State:

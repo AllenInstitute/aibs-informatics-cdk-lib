@@ -82,10 +82,7 @@ class BatchOperation:
         """
 
         job_definition_name = sfn.JsonPath.format(
-            f"{{}}-{{}}-{{}}",
-            job_definition_name,
-            sfn.JsonPath.execution_name,
-            sfn.JsonPath.uuid(),
+            f"{{}}-{{}}", job_definition_name, sfn.JsonPath.uuid()
         )
         if not isinstance(environment, str):
             environment_pairs = to_key_value_pairs(dict(environment or {}))
@@ -133,6 +130,14 @@ class BatchOperation:
                 },
                 "ResultPath": result_path,
                 "OutputPath": output_path,
+                "Retry": [
+                    {
+                        "ErrorEquals": ["Batch.BatchException"],
+                        "IntervalSeconds": 1,
+                        "MaxAttempts": 3,
+                        "BackoffRate": 2.0,
+                    },
+                ],
             },
         )
         return start.next(register)
@@ -202,6 +207,14 @@ class BatchOperation:
                 },
                 "ResultPath": result_path,
                 "OutputPath": output_path,
+                "Retry": [
+                    {
+                        "ErrorEquals": ["Batch.BatchException"],
+                        "IntervalSeconds": 1,
+                        "MaxAttempts": 3,
+                        "BackoffRate": 2.0,
+                    },
+                ],
             },
         )
         return start.next(submit)
@@ -234,6 +247,14 @@ class BatchOperation:
                 },
                 "ResultPath": result_path,
                 "OutputPath": output_path,
+                "Retry": [
+                    {
+                        "ErrorEquals": ["Batch.BatchException"],
+                        "IntervalSeconds": 1,
+                        "MaxAttempts": 3,
+                        "BackoffRate": 2.0,
+                    },
+                ],
             },
         )
         return start.next(deregister)

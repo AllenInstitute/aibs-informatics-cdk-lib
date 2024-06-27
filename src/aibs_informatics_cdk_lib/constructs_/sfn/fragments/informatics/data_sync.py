@@ -184,8 +184,8 @@ class DistributedDataSyncFragment(BatchInvokedBaseFragment):
                     else batch_job_queue.job_queue_name
                 ),
                 bucket_name=scaffolding_bucket.bucket_name,
-                memory=2048,
-                vcpus=1,
+                memory=4096,
+                vcpus=2,
                 mount_point_configs=list(mount_point_configs) if mount_point_configs else None,
             )
         )
