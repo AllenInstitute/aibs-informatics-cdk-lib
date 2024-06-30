@@ -401,6 +401,9 @@ runcmd:
 # Enable ECS Metadata file
 - echo ECS_ENABLE_CONTAINER_METADATA=true >> /etc/ecs/ecs.config
 
+# Install lustre
+- amazon-linux-extras install lustre -y
+
 --==BOUNDARY==--"""
 
 
