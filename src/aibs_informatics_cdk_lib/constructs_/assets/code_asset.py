@@ -168,6 +168,7 @@ class CodeAsset:
         includes: Optional[Sequence[str]] = None,
         excludes: Optional[Sequence[str]] = None,
         runtime: lambda_.Runtime = lambda_.Runtime.PYTHON_3_11,
+        platform: Optional[str] = "linux/amd64",
         environment: Optional[Mapping[str, str]] = None,
     ) -> "CodeAsset":
         """Returns a NEW code asset
@@ -234,6 +235,7 @@ class CodeAsset:
                         container_path=host_ssh_dir,
                     ),
                 ],
+                platform=platform,
             ),
         )
 

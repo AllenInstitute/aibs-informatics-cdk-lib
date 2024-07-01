@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Iterable, List, Optional, Union
+from typing import Iterable, List, Optional, Union
 
 import constructs
 from aibs_informatics_core.env import EnvBase
@@ -7,7 +7,6 @@ from aws_cdk import aws_ecr_assets as ecr_assets
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_s3 as s3
 from aws_cdk import aws_stepfunctions as sfn
-from aws_cdk import aws_stepfunctions_tasks as sfn_tasks
 
 from aibs_informatics_cdk_lib.common.aws.iam_utils import (
     SFN_STATES_EXECUTION_ACTIONS,
@@ -172,7 +171,7 @@ class DistributedDataSyncFragment(BatchInvokedBaseFragment):
                 id=f"{id}: Batch Data Sync",
                 env_base=env_base,
                 name="batch-data-sync",
-                payload_path="$.requests",
+                payload_path="$",
                 image=(
                     aibs_informatics_docker_asset
                     if isinstance(aibs_informatics_docker_asset, str)
@@ -185,8 +184,8 @@ class DistributedDataSyncFragment(BatchInvokedBaseFragment):
                     else batch_job_queue.job_queue_name
                 ),
                 bucket_name=scaffolding_bucket.bucket_name,
-                memory=2048,
-                vcpus=1,
+                memory=4096,
+                vcpus=2,
                 mount_point_configs=list(mount_point_configs) if mount_point_configs else None,
             )
         )
