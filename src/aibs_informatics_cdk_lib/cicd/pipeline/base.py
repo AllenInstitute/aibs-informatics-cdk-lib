@@ -138,28 +138,32 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
         # So we need to cache the results for a given result if config has same repo name.
 
         if source_config.repository not in self.source_cache:
-            # TEMPORARY -- we need to use this going forward
-            # source = pipelines.CodePipelineSource.connection(
-            #     repo_string=github_config.repository,
-            #     branch=github_config.branch,
-            #     connection_arn=build_arn(
-            #         service="codestar-connections",
-            #         resource_type="connection",
-            #         resource_delim="/",
-            #         resource_id=github_config.codestar_connection,
-            #     ),
-            #     code_build_clone_output=True,
-            #     trigger_on_push=True,
-            # )
-
-            source = pipelines.CodePipelineSource.git_hub(
-                repo_string=source_config.repository,
-                branch=source_config.branch,
-                authentication=cdk.SecretValue.secrets_manager(
-                    secret_id=source_config.oauth_secret_name
-                ),
-                trigger=aws_codepipeline_actions.GitHubTrigger.WEBHOOK,
-            )
+            if source_config.codestar_connection:
+                source = pipelines.CodePipelineSource.connection(
+                    repo_string=source_config.repository,
+                    branch=source_config.branch,
+                    connection_arn=build_arn(
+                        service="codestar-connections",
+                        resource_type="connection",
+                        resource_delim="/",
+                        resource_id=source_config.codestar_connection,
+                    ),
+                    code_build_clone_output=True,
+                    trigger_on_push=True,
+                )
+            elif source_config.oauth_secret_name:
+                source = pipelines.CodePipelineSource.git_hub(
+                    repo_string=source_config.repository,
+                    branch=source_config.branch,
+                    authentication=cdk.SecretValue.secrets_manager(
+                        secret_id=source_config.oauth_secret_name
+                    ),
+                    trigger=aws_codepipeline_actions.GitHubTrigger.WEBHOOK,
+                )
+            else:
+                raise ValueError(
+                    "Invalid source config. Must have codestar_connection or oauth_secret_name"
+                )
             self.source_cache[source_config.repository] = source
         return self.source_cache[source_config.repository]
 

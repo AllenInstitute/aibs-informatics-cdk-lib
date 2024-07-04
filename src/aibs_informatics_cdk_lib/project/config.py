@@ -12,8 +12,9 @@ __all__ = [
     "ConfigProvider",
 ]
 
+import logging
 from pathlib import Path
-from typing import Annotated, Dict, Generic, MutableMapping, Optional, Type, TypeVar, Union
+from typing import Annotated, Dict, Generic, List, MutableMapping, Optional, Type, TypeVar, Union
 
 import yaml
 from aibs_informatics_core.collections import DeepChainMap
@@ -22,7 +23,7 @@ from aibs_informatics_core.models.unique_ids import UniqueID
 from aibs_informatics_core.utils.file_operations import find_paths
 from aibs_informatics_core.utils.os_operations import expandvars
 from aibs_informatics_core.utils.tools.dicttools import remove_null_values
-from pydantic import BaseModel, PlainSerializer, PlainValidator
+from pydantic import BaseModel, PlainSerializer, PlainValidator, model_validator
 
 UniqueIDType = Annotated[
     UniqueID, PlainValidator(lambda x: UniqueID(x)), PlainSerializer(lambda x: str(x))
@@ -84,8 +85,17 @@ class CodePipelineBuildConfig(BaseModel):
 class CodePipelineSourceConfig(BaseModel):
     repository: str
     branch: Annotated[str, PlainValidator(EnvVarStr.validate)]
-    codestar_connection: UniqueIDType
-    oauth_secret_name: str
+    codestar_connection: Optional[UniqueIDType]
+    oauth_secret_name: Optional[str]
+
+    @model_validator(mode="after")
+    @classmethod
+    def check_source_config(cls, v):
+        if not v.codestar_connection and not v.oauth_secret_name:
+            raise ValueError("Either codestar_connection or oauth_secret_name must be set")
+        if v.codestar_connection and v.oauth_secret_name:
+            logging.warning("Only one of codestar_connection or oauth_secret_name can be set")
+        return v
 
 
 class CodePipelineNotificationsConfig(BaseModel):
