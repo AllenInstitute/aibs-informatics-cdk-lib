@@ -24,31 +24,17 @@ from aws_cdk import aws_codepipeline as aws_codepipeline
 from aws_cdk import aws_codepipeline_actions
 from aws_cdk import aws_codestarnotifications as codestarnotifications
 from aws_cdk import aws_iam as iam
-from aws_cdk import aws_s3 as s3
-from aws_cdk import aws_secretsmanager as secretsmanager
 from aws_cdk import aws_sns as sns
 from aws_cdk import pipelines
-from aws_cdk.aws_codebuild import (
-    BuildEnvironment,
-    BuildEnvironmentVariable,
-    BuildSpec,
-    LinuxBuildImage,
-)
-from dataclasses_json import global_config
+from aws_cdk.aws_codebuild import BuildEnvironment, BuildEnvironmentVariable, BuildSpec
 
 from aibs_informatics_cdk_lib.common.aws.core_utils import build_arn
-from aibs_informatics_cdk_lib.common.aws.iam_utils import (
-    CODE_BUILD_IAM_POLICY,
-    DYNAMODB_READ_ACTIONS,
-    S3_FULL_ACCESS_ACTIONS,
-)
+from aibs_informatics_cdk_lib.common.aws.iam_utils import CODE_BUILD_IAM_POLICY
 from aibs_informatics_cdk_lib.project.config import (
     BaseProjectConfig,
     CodePipelineSourceConfig,
-    Env,
     GlobalConfig,
     PipelineConfig,
-    ProjectConfig,
     StageConfig,
 )
 from aibs_informatics_cdk_lib.stacks.base import EnvBaseStack
@@ -200,10 +186,11 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
     ) -> None:
         self.project_config = config
         self.stage_config = config.get_stage_config(env_base.env_type)
+        self.stage_config.env.label = env_base.env_label
         env = cdk.Environment(
             account=self.stage_config.env.account, region=self.stage_config.env.region
         )
-        super().__init__(scope, id, config=config, env=env, **kwargs)
+        super().__init__(scope, id, env_base=env_base, env=env, **kwargs)
         self.build_pipeline()
 
     @abstractmethod
@@ -228,7 +215,7 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
 
         # Add Stages
         for stage_method in self.get_stage_methods():
-            stage_info: PipelineStageInfo = stage_method._pipeline_stage_info  # type: ignore[attr-defined]
+            stage_info: PipelineStageInfo = stage_method._pipeline_stage_info  # type: ignore[union-attr]
             stage = stage_method()
             pre_steps = stage_info.pre_steps
             post_steps = stage_info.post_steps

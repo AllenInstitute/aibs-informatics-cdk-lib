@@ -85,8 +85,8 @@ class CodePipelineBuildConfig(BaseModel):
 class CodePipelineSourceConfig(BaseModel):
     repository: str
     branch: Annotated[str, PlainValidator(EnvVarStr.validate)]
-    codestar_connection: Optional[UniqueIDType]
-    oauth_secret_name: Optional[str]
+    codestar_connection: Optional[UniqueIDType] = None
+    oauth_secret_name: Optional[str] = None
 
     @model_validator(mode="after")
     @classmethod
