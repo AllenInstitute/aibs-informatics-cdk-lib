@@ -1,4 +1,5 @@
 import os
+from unittest import mock
 
 import aws_cdk as cdk
 import constructs
@@ -13,7 +14,6 @@ from aibs_informatics_core.env import (
     LABEL_KEY,
     LABEL_KEY_ALIAS,
     EnvBase,
-    EnvType,
 )
 
 from aibs_informatics_cdk_lib.project.utils import (
@@ -111,13 +111,14 @@ def test__get_env_base__context_and_env_vars(env_vars, dummy_node):
 
 def test__set_env_base__env_vars_only(env_vars):
     env_base = EnvBase("dev")
-    set_env_base(env_base)
-    assert os.environ.get(ENV_BASE_KEY) == "dev"
-    assert os.environ.get(ENV_TYPE_KEY) == "dev"
-    assert os.environ.get(ENV_LABEL_KEY) is None
+    with mock.patch.dict(os.environ, clear=True):
+        set_env_base(env_base)
+        assert os.environ.get(ENV_BASE_KEY) == "dev"
+        assert os.environ.get(ENV_TYPE_KEY) == "dev"
+        assert os.environ.get(ENV_LABEL_KEY) is None
 
-    env_base = EnvBase("prod-marmot")
-    set_env_base(env_base)
-    assert os.environ.get(ENV_BASE_KEY) == "prod-marmot"
-    assert os.environ.get(ENV_TYPE_KEY) == "prod"
-    assert os.environ.get(ENV_LABEL_KEY) == "marmot"
+        env_base = EnvBase("prod-marmot")
+        set_env_base(env_base)
+        assert os.environ.get(ENV_BASE_KEY) == "prod-marmot"
+        assert os.environ.get(ENV_TYPE_KEY) == "prod"
+        assert os.environ.get(ENV_LABEL_KEY) == "marmot"

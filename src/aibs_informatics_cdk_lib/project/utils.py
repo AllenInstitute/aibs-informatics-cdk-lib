@@ -147,6 +147,18 @@ def get_project_config_and_env_base(
 def get_config(
     node: constructs.Node, project_config_cls: Type[BaseProjectConfig[G, S]] = ProjectConfig
 ) -> S:
+    """
+    Retrieves the stage configuration for a given node.
+
+    Args:
+        node (constructs.Node): The node for which to retrieve the configuration.
+        project_config_cls (Type[BaseProjectConfig[G, S]], optional): The project configuration class to use.
+            Defaults to ProjectConfig.
+
+    Returns:
+        S: The stage configuration object.
+
+    """
     project_config, env_base = get_project_config_and_env_base(  # type: ignore
         node, project_config_cls=project_config_cls
     )

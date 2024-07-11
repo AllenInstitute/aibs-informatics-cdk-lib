@@ -1,6 +1,7 @@
 import base64
 import logging
 from abc import abstractmethod
+from importlib.resources import files
 from pathlib import Path
 from typing import (
     Callable,
@@ -15,7 +16,6 @@ from typing import (
     Union,
     cast,
 )
-from importlib.resources import files
 
 import aws_cdk as cdk
 import constructs
@@ -111,10 +111,33 @@ def pipeline_stage(
             Defaults to None.
     """
 
-    def decorator_pipeline_stage(func):
+    def decorator_pipeline_stage(
+        func: Callable[[PIPELINE_STACK], Union[cdk.Stage, Tuple[cdk.Stage]]]
+    ) -> Callable[
+        [PIPELINE_STACK],
+        Tuple[Optional[Sequence[pipelines.Step]], cdk.Stage, Optional[Sequence[pipelines.Step]]],
+    ]:
         @functools.wraps(func)
-        def wrapper_pipeline_stage(*args, **kwargs):
-            return func(*args, **kwargs)
+        def wrapper_pipeline_stage(
+            *args, **kwargs
+        ) -> Tuple[
+            Optional[Sequence[pipelines.Step]], cdk.Stage, Optional[Sequence[pipelines.Step]]
+        ]:
+            results = func(*args, **kwargs)
+            if isinstance(results, cdk.Stage):
+                return None, results, None
+            assert isinstance(results, tuple) and len(results) == 3
+            assert isinstance(results[0], list) or results[0] is None
+            assert isinstance(results[1], cdk.Stage)
+            assert isinstance(results[2], list) or results[2] is None
+            return cast(
+                Tuple[
+                    Optional[Sequence[pipelines.Step]],
+                    cdk.Stage,
+                    Optional[Sequence[pipelines.Step]],
+                ],
+                results,
+            )
 
         wrapper_pipeline_stage._pipeline_stage_info = PipelineStageInfo(  # type: ignore[attr-defined]
             order=order, name=name, pre_steps=pre_steps, post_steps=post_steps
@@ -215,26 +238,14 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
 
         # Add Stages
         for stage_method in self.get_stage_methods():
-            stage_info: PipelineStageInfo = stage_method._pipeline_stage_info  # type: ignore[union-attr]
-            stage = stage_method()
-            pre_steps = stage_info.pre_steps
-            post_steps = stage_info.post_steps
-            if isinstance(stage, cdk.Stage):
-                stage = stage
-            elif (
-                isinstance(stage, tuple)
-                and len(stage) == 3
-                and isinstance(stage[0], list)
-                and isinstance(stage[1], cdk.Stage)
-                and isinstance(stage[2], list)
-            ):
-                pre_steps = [*(pre_steps or []), *(cast(List[pipelines.Step], stage[0]))]
-                post_steps = [*(post_steps or []), *(cast(List[pipelines.Step], stage[2]))]
-                stage = stage[1]
-            else:
-                raise ValueError(
-                    "Stage must be a cdk.Stage or a tuple of pre_steps, stage, post_steps"
-                )
+            stage_info: PipelineStageInfo = stage_method._pipeline_stage_info  # type: ignore[attr-defined]
+            pre_steps, stage, post_steps = stage_method()
+
+            if stage_info.pre_steps is not None:
+                pre_steps = [*stage_info.pre_steps, *(pre_steps or [])]
+            if stage_info.post_steps is not None:
+                post_steps = [*stage_info.post_steps, *(post_steps or [])]
+
             self.pipeline.add_stage(stage, pre=pre_steps, post=post_steps)
 
         # Add Promotion Stage
@@ -361,7 +372,9 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
                         #   1. Read the release script file
                         #   2. Base64 encode the file
                         #   3. Decode the base64 encoded file and write it to the release script path
-                        # TODO: i think importlib
+                        # TODO: i think `importlib.resources.files` is preferred way to go here, but
+                        #       it requires specifying the package path. This is a bit more
+                        #       difficult to do in this context. So we are using the Path approach.
                         f"echo {base64.b64encode((Path(__file__).parent / 'scripts' / 'cicd-release.sh').read_text().encode()).decode()} | base64 --decode > $RELEASE_SCRIPT_PATH"
                     ),
                     # Run the release script
@@ -512,12 +525,7 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
 
     def get_stage_methods(
         self,
-    ) -> List[
-        Union[
-            Callable[[], cdk.Stage],
-            Callable[[], Tuple[Sequence[pipelines.Step], cdk.Stage, Sequence[pipelines.Step]]],
-        ]
-    ]:
+    ) -> List[Callable[[], Tuple[Sequence[pipelines.Step], cdk.Stage, Sequence[pipelines.Step]]]]:
         # Get all methods of the instance
         methods = [
             getattr(self, method_name)
@@ -530,8 +538,8 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
 
         # Sort methods by their order attribute
         stage_methods.sort(key=lambda method: method._pipeline_stage_info.order)  # type: ignore[attr-defined]
-        # Return the sorted methods
 
+        # Return the sorted methods
         return stage_methods
 
     @staticmethod
