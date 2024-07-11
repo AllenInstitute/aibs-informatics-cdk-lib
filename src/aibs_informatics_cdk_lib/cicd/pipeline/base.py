@@ -11,11 +11,11 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
-    Type,
     TypeVar,
     Union,
     cast,
 )
+from importlib.resources import files
 
 import aws_cdk as cdk
 import constructs
@@ -361,6 +361,7 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
                         #   1. Read the release script file
                         #   2. Base64 encode the file
                         #   3. Decode the base64 encoded file and write it to the release script path
+                        # TODO: i think importlib
                         f"echo {base64.b64encode((Path(__file__).parent / 'scripts' / 'cicd-release.sh').read_text().encode()).decode()} | base64 --decode > $RELEASE_SCRIPT_PATH"
                     ),
                     # Run the release script

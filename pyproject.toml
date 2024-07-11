@@ -35,7 +35,7 @@ version = {attr = "aibs_informatics_cdk_lib._version.__version__"}
 [tool.setuptools.package-data]
 "*" = [
     'py.typed',
-    'src/aibs_informatics_cdk_lib/cicd/pipeline/scripts/cicd-release.sh',
+    '*.sh',
 ]
 
 [tool.setuptools.packages.find]
