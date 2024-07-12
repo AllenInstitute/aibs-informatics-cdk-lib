@@ -59,6 +59,7 @@ class BaseBatchComputeConstruct(EnvBaseConstruct):
         buckets: Optional[Iterable[s3.Bucket]] = None,
         file_systems: Optional[Iterable[Union[efs.FileSystem, efs.IFileSystem]]] = None,
         mount_point_configs: Optional[Iterable[MountPointConfiguration]] = None,
+        instance_role_name: Optional[str] = None,
         instance_role_policy_statements: Optional[List[iam.PolicyStatement]] = None,
         **kwargs,
     ) -> None:
@@ -69,6 +70,7 @@ class BaseBatchComputeConstruct(EnvBaseConstruct):
             batch_name,
             self.env_base,
             vpc=vpc,
+            instance_role_name=instance_role_name,
             instance_role_policy_statements=instance_role_policy_statements,
         )
 

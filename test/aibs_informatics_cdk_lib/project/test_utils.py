@@ -1,3 +1,6 @@
+import os
+from unittest import mock
+
 import aws_cdk as cdk
 import constructs
 import pytest
@@ -11,7 +14,6 @@ from aibs_informatics_core.env import (
     LABEL_KEY,
     LABEL_KEY_ALIAS,
     EnvBase,
-    EnvType,
 )
 
 from aibs_informatics_cdk_lib.project.utils import (
@@ -19,6 +21,7 @@ from aibs_informatics_cdk_lib.project.utils import (
     ENV_LABEL_KEYS,
     ENV_TYPE_KEYS,
     get_env_base,
+    set_env_base,
 )
 
 USER = "marmotdev"
@@ -104,3 +107,18 @@ def test__get_env_base__context_and_env_vars(env_vars, dummy_node):
     # Base from context supercedes type/label
     dummy_node.set_context(ENV_BASE_KEY, "dev")
     assert get_env_base(dummy_node) == EnvBase("dev")
+
+
+def test__set_env_base__env_vars_only(env_vars):
+    env_base = EnvBase("dev")
+    with mock.patch.dict(os.environ, clear=True):
+        set_env_base(env_base)
+        assert os.environ.get(ENV_BASE_KEY) == "dev"
+        assert os.environ.get(ENV_TYPE_KEY) == "dev"
+        assert os.environ.get(ENV_LABEL_KEY) is None
+
+        env_base = EnvBase("prod-marmot")
+        set_env_base(env_base)
+        assert os.environ.get(ENV_BASE_KEY) == "prod-marmot"
+        assert os.environ.get(ENV_TYPE_KEY) == "prod"
+        assert os.environ.get(ENV_LABEL_KEY) == "marmot"

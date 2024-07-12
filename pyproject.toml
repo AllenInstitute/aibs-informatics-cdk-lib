@@ -33,7 +33,10 @@ dev = [
 version = {attr = "aibs_informatics_cdk_lib._version.__version__"}
 
 [tool.setuptools.package-data]
-"*" = ['py.typed']
+"*" = [
+    'py.typed',
+    '*.sh',
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

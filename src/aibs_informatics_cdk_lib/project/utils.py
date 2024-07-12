@@ -6,8 +6,9 @@ __all__ = [
 ]
 
 import logging
+import os
 import pathlib
-from typing import List, Optional, Type, Union
+from typing import List, Optional, Tuple, Type, Union
 
 import constructs
 from aibs_informatics_core.env import (
@@ -21,7 +22,7 @@ from aibs_informatics_core.env import (
 )
 from aibs_informatics_core.utils.os_operations import get_env_var, set_env_var
 
-from aibs_informatics_cdk_lib.project.config import BaseProjectConfig, G, ProjectConfig, S
+from aibs_informatics_cdk_lib.project.config import BaseProjectConfig, G, P, ProjectConfig, S
 
 logger = logging.getLogger(__name__)
 
@@ -120,19 +121,53 @@ def get_env_base(node: constructs.Node) -> EnvBase:
         return EnvBase.from_type_and_label(env_type=env_type, env_label=env_label)
 
 
-def get_config(
-    node: constructs.Node, project_config_cls: Type[BaseProjectConfig[G, S]] = ProjectConfig
-) -> S:
-    env_base = get_env_base(node)
+def set_env_base(env_base: EnvBase) -> None:
+    """Set the environment base
 
+    Args:
+        env_base (EnvBase): environment base
+    """
     set_env_var(EnvBase.ENV_BASE_KEY, env_base)
     set_env_var(EnvBase.ENV_TYPE_KEY, env_base.env_type)
     if env_base.env_label:
         set_env_var(EnvBase.ENV_LABEL_KEY, env_base.env_label)
+    else:
+        os.environ.pop(EnvBase.ENV_LABEL_KEY, None)
 
-    config: S = project_config_cls.load_stage_config(env_type=env_base.env_type)
-    config.env.label = env_base.env_label
-    return config
+
+def get_project_config_and_env_base(
+    node: constructs.Node, project_config_cls: Type[P] = ProjectConfig
+) -> Tuple[P, EnvBase]:
+    env_base = get_env_base(node)
+
+    config = project_config_cls.load_config()
+    return config, env_base
+
+
+def get_config(
+    node: constructs.Node, project_config_cls: Type[BaseProjectConfig[G, S]] = ProjectConfig
+) -> S:
+    """
+    Retrieves the stage configuration for a given node.
+
+    Args:
+        node (constructs.Node): The node for which to retrieve the configuration.
+        project_config_cls (Type[BaseProjectConfig[G, S]], optional): The project configuration class to use.
+            Defaults to ProjectConfig.
+
+    Returns:
+        S: The stage configuration object.
+
+    """
+    project_config, env_base = get_project_config_and_env_base(  # type: ignore
+        node, project_config_cls=project_config_cls
+    )
+    set_env_base(env_base)
+
+    stage_config: S = project_config.get_stage_config(env_type=env_base.env_type)
+    stage_config.env.label = env_base.env_label
+
+    return stage_config
 
 
 def _get_from_context(

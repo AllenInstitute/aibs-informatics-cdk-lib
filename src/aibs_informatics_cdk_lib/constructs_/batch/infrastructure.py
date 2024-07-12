@@ -65,6 +65,23 @@ class Batch(EnvBaseConstruct):
         instance_role_name: Optional[str] = None,
         instance_role_policy_statements: Optional[List[iam.PolicyStatement]] = None,
     ) -> None:
+        """Batch Infrastructure Construct
+
+        Creates the shared infrastructure for Batch Environments.
+        Has the ability to create multiple Batch Environments with different configurations.
+
+
+        Args:
+            scope (constructs.Construct): scope
+            id (str): id
+            env_base (EnvBase): env base to use
+            vpc (ec2.IVpc): vpc to use
+            instance_role_name (Optional[str]): Optionally can specify the name of the instance
+                role created. Defaults to None (will be auto-generated).
+            instance_role_policy_statements (Optional[List[iam.PolicyStatement]]): Optionally can
+                specify additional policy statements to add to the instance role
+                Defaults to None.
+        """
         super().__init__(scope, id, env_base)
         self.vpc = vpc
 
