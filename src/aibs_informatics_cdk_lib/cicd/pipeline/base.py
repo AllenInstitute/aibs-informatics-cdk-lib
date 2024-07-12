@@ -354,6 +354,11 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
                     # Create a temporary directory and file to store the release script
                     "export RELEASE_SCRIPT_PATH=$(mktemp -d)/cicd-release.sh",
                     "mkdir -p $(dirname $RELEASE_SCRIPT_PATH)",
+                    # The release script will not be available to us unless we set up
+                    # a virtual environment and install our source package. This is because the
+                    # release script is in a dependent package (aibs-informatics-cdk-lib) and
+                    # is not included in the source package used as input for this step.
+                    # Assuming we want to avoid having to install the package, We have two options here:
                     # TODO: Decide which approach is better (prefer 2)
                     #   1. Download the release script from the source repository (using gh cli)
                     #       - This requires the use of the Github CLI
