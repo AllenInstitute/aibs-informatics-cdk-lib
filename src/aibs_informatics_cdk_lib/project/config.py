@@ -146,11 +146,25 @@ class BaseProjectConfig(BaseModel, Generic[G, S]):
     def get_stage_config_cls(cls) -> Type[S]:
         return cls.model_fields["default_config"].annotation  # type: ignore
 
-    def get_stage_config(self, env_type: Union[str, EnvType]) -> S:
-        """Get default config with `EnvType` overrides"""
+    def get_stage_config(
+        self, env_type: Union[str, EnvType], env_label: Optional[str] = None
+    ) -> S:
+        """Get default config with `EnvType` overrides (and optional env_label override)
 
+        Args:
+            env_type (Union[str, EnvType]): The EnvType override for the stage config to
+                be retrieved.
+            env_label (Optional[str], optional): An optional env_label override for
+                the stage config to be retrieved. Defaults to None (no override).
+
+        Raises:
+            e: If the stage config model validation fails (or any other error)
+
+        Returns:
+            S: A stage config object
+        """
         try:
-            return self.get_stage_config_cls().model_validate(
+            stage_config = self.get_stage_config_cls().model_validate(
                 {
                     **DeepChainMap(
                         self.default_config_overrides[EnvType(env_type)],
@@ -160,6 +174,12 @@ class BaseProjectConfig(BaseModel, Generic[G, S]):
             )
         except Exception as e:
             raise e
+
+        if env_label is None:
+            return stage_config
+        else:
+            stage_config.env.label = env_label
+            return stage_config
 
     @classmethod
     def parse_file(cls: Type[P], path: Union[str, Path]) -> P:

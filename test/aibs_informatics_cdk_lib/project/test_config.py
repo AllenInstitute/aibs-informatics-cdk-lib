@@ -159,6 +159,36 @@ class ProjectConfigTests(BaseTest):
         another_proj_config = ProjectConfig.load_config(proj_config_json_path)
         self.assertEqual(proj_config, another_proj_config)
 
+    def test__get_stage_config__providing_an_optional_env_label_override(self):
+        global_config = create_global_config()
+        default_config = create_stage_config()
+
+        default_config_overrides = {
+            EnvType.DEV: {
+                "env": {
+                    "env_type": "dev",
+                    "label": "marmot",
+                    "account": "111222333",
+                }
+            }
+        }
+        proj_config = ProjectConfig(
+            global_config=global_config,
+            default_config=default_config,
+            default_config_overrides=default_config_overrides,
+        )
+        expected_config = StageConfig.model_validate(
+            {
+                **default_config.model_copy().model_dump(exclude_unset=True),
+            }
+        )
+        expected_config.env.env_type = EnvType.DEV
+        expected_config.env.label = "overridelabel"
+        expected_config.env.account = "111222333"
+
+        resolved_config = proj_config.get_stage_config("dev", "overridelabel")
+        self.assertEqual(resolved_config, expected_config)
+
 
 class ConfigProviderTests(BaseTest):
     def test__get_stage_config__fails_with_invalid_env_type(self):
