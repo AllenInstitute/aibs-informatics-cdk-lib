@@ -146,16 +146,24 @@ class EFSEcosystem(EnvBaseConstruct):
         env_base: EnvBase,
         file_system_name: Optional[str],
         vpc: ec2.Vpc,
+        efs_lifecycle_policy: Optional[efs.LifecyclePolicy] = None,
     ) -> None:
+        """Construct for setting up an EFS file system
+
+        NOTE: If the EFS filesystem is intended to be deployed in efs.ThroughputMode.BURSTING
+              it may be counterproductive to set an efs_lifecycle_policy other than None because
+              EFS files in IA tier DO NOT count towards burst credit accumulation calculations.
+              See: https://docs.aws.amazon.com/efs/latest/ug/performance.html#bursting
+        """
         super().__init__(scope, id, env_base)
         self._file_system = EnvBaseFileSystem(
-            self,
-            "fs",
+            scope=self,
+            id="fs",
             env_base=self.env_base,
             file_system_name=(
                 self.get_name_with_env(file_system_name) if file_system_name else None
             ),
-            lifecycle_policy=efs.LifecyclePolicy.AFTER_7_DAYS,
+            lifecycle_policy=efs_lifecycle_policy,
             out_of_infrequent_access_policy=efs.OutOfInfrequentAccessPolicy.AFTER_1_ACCESS,
             enable_automatic_backups=False,
             throughput_mode=efs.ThroughputMode.BURSTING,
