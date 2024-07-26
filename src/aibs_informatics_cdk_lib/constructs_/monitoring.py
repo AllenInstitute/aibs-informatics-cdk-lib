@@ -1,6 +1,8 @@
-from typing import List, Optional, Tuple, Union, cast
+from typing import List, Literal, Optional, Union
 
 from aibs_informatics_core.env import EnvBase, ResourceNameBaseEnum
+from aibs_informatics_core.models.email_address import EmailAddress
+from aibs_informatics_core.utils.hashing import uuid_str
 from aws_cdk import Duration
 from aws_cdk import aws_cloudwatch as cw
 from aws_cdk import aws_lambda as lambda_
@@ -17,6 +19,13 @@ from aibs_informatics_cdk_lib.constructs_.cw import (
     GraphMetricConfig,
     GroupedGraphMetricConfig,
 )
+from aibs_informatics_cdk_lib.constructs_.cw.config_generators.lambda_ import (
+    LambdaFunctionMetricConfigGenerator,
+)
+from aibs_informatics_cdk_lib.constructs_.cw.config_generators.sfn import (
+    SFN_TIME_UNITS,
+    StateMachineMetricConfigGenerator,
+)
 
 
 class MonitoringConstruct(EnvBaseConstruct):
@@ -25,11 +34,14 @@ class MonitoringConstruct(EnvBaseConstruct):
         scope: Construct,
         id: str,
         env_base: EnvBase,
+        name: Optional[str] = None,
+        notify_on_alarms: Optional[bool] = None,
+        alarm_topic: Optional[sns.Topic] = None,
     ) -> None:
         super().__init__(scope, id, env_base)
-        self.monitoring_name = self.construct_id
-        self.notify_on_alarms = None
-        self._alarm_topic = None
+        self.monitoring_name = name or self.construct_id
+        self.notify_on_alarms = notify_on_alarms
+        self.alarm_topic = alarm_topic
 
     @property
     def monitoring_name(self) -> str:
@@ -46,16 +58,20 @@ class MonitoringConstruct(EnvBaseConstruct):
         return self._notify_on_alarms
 
     @notify_on_alarms.setter
-    def notify_on_alarms(self, value: bool):
+    def notify_on_alarms(self, value: Optional[bool]):
         self._notify_on_alarms = value
 
     @property
     def alarm_topic(self) -> sns.Topic:
         if self._alarm_topic is None:
-            self._alarm_topic = sns.Topic(
+            self.alarm_topic = sns.Topic(
                 self, self.get_construct_id(self.monitoring_name, "alarm-topic")
             )
-        return self._alarm_topic
+        return self.alarm_topic
+
+    @alarm_topic.setter
+    def alarm_topic(self, value: Optional[sns.Topic]):
+        self._alarm_topic = value
 
     def create_dashboard(
         self, start: Optional[str] = "-P1W", end: Optional[str] = None
@@ -69,228 +85,212 @@ class MonitoringConstruct(EnvBaseConstruct):
             end=end,
         )
 
-    def add_function_widgets(
+    def add_function_widget(
         self,
-        group_name: str,
-        *function_names_groups: Union[Tuple[str, List[str]], List[str]],
+        dashboard: cw.Dashboard,
+        function_name: str,
+        title: Optional[str] = None,
+        title_header_level: int = 1,
+        prefix_name_with_env: bool = True,
         include_min_max_duration: bool = False,
     ):
-        self.dashboard_tools.add_text_widget(f"{group_name} Lambda Functions", 1)
+        self.add_function_widgets(
+            dashboard,
+            function_name,
+            title=title,
+            title_header_level=title_header_level,
+            prefix_name_with_env=prefix_name_with_env,
+            include_min_max_duration=include_min_max_duration,
+        )
 
-        function_names_groups: List[Tuple[str, List[str]]] = [
-            (
-                cast(Tuple[str, List[str]], _)
-                if isinstance(_, tuple) and len(_) == 2 and isinstance(_[-1], list)
-                else ("/".join(_), _)
+    def add_function_widgets(
+        self,
+        dashboard: cw.Dashboard,
+        *function_names: str,
+        title: Optional[str] = None,
+        title_header_level: int = 1,
+        prefix_name_with_env: bool = True,
+        include_min_max_duration: bool = False,
+        include_alarm: bool = False,
+    ):
+        dashboard_tools = (
+            dashboard if isinstance(dashboard, EnhancedDashboard) else DashboardTools(dashboard)
+        )
+        if title:
+            dashboard_tools.add_text_widget(title, title_header_level)
+
+        grouped_invocation_metrics: List[GraphMetricConfig] = []
+        grouped_error_metrics: List[GraphMetricConfig] = []
+        grouped_timing_metrics: List[GraphMetricConfig] = []
+        group_name = uuid_str(str(function_names))
+
+        for idx, raw_function_name in enumerate(function_names):
+            if prefix_name_with_env:
+                function_name = self.get_name_with_env(raw_function_name)
+            else:
+                function_name = raw_function_name
+
+            fn_config_generator = LambdaFunctionMetricConfigGenerator(
+                lambda_function=lambda_.Function.from_function_name(
+                    self, f"{function_name}-from-name", function_name=function_name
+                ),
+                lambda_function_name=function_name,
             )
-            for _ in function_names_groups
+
+            grouped_invocation_metrics.append(fn_config_generator.get_invocations_metric())
+            grouped_error_metrics.append(
+                fn_config_generator.get_errors_metric(
+                    discriminator=str(idx), include_alarm=include_alarm
+                )
+            )
+
+            # Availability metric - make sure to set the axis_side to "right"
+            avail_metric = fn_config_generator.get_availability_metric(discriminator=str(idx))
+            avail_metric["axis_side"] = "right"
+            grouped_error_metrics.append(avail_metric)
+
+            duration_avg_metric = fn_config_generator.get_duration_avg_metric()
+            grouped_timing_metrics.append(duration_avg_metric)
+            if include_min_max_duration:
+                grouped_timing_metrics.append(fn_config_generator.get_duration_max_metric())
+                grouped_timing_metrics.append(fn_config_generator.get_duration_min_metric())
+
+        grouped_metrics: List[GroupedGraphMetricConfig] = [
+            GroupedGraphMetricConfig(
+                title="Function Invocations", metrics=grouped_invocation_metrics
+            ),
+            GroupedGraphMetricConfig(
+                title="Function Successes / Failures", metrics=grouped_error_metrics
+            ),
+            GroupedGraphMetricConfig(
+                title="Function Duration",
+                namespace="AWS/Lambda",
+                metrics=grouped_timing_metrics,
+            ),
         ]
 
-        for sub_group_name, function_names in function_names_groups:
-            grouped_invocation_metrics: List[GraphMetricConfig] = []
-            grouped_error_metrics: List[GraphMetricConfig] = []
-            grouped_timing_metrics: List[GraphMetricConfig] = []
+        dashboard_tools.add_graphs(
+            grouped_metric_configs=grouped_metrics,
+            namespace="AWS/Lambda",
+            period=Duration.minutes(5),
+            alarm_id_discriminator=group_name,
+            alarm_topic=self.alarm_topic if self.notify_on_alarms else None,
+            dimensions={},
+        )
 
-            for idx, raw_function_name in enumerate(function_names):
-                function_name = self.get_name_with_env(raw_function_name)
-                fn = lambda_.Function.from_function_name(
-                    self, f"{function_name}-from-name", function_name=function_name
-                )
-                dimension_map = {"FunctionName": function_name}
-
-                grouped_invocation_metrics.append(
-                    GraphMetricConfig(
-                        metric="Invocations",
-                        statistic="Sum",
-                        dimension_map=dimension_map,
-                        label=f"{raw_function_name} Count",
-                    )
-                )
-
-                grouped_error_metrics.append(
-                    GraphMetricConfig(
-                        metric="Errors",
-                        statistic="Sum",
-                        dimension_map=dimension_map,
-                        label=f"{raw_function_name} Errors",
-                    )
-                )
-                grouped_error_metrics.append(
-                    GraphMetricConfig(
-                        metric="Availability",
-                        statistic="Average",
-                        dimension_map=dimension_map,
-                        label=f"{raw_function_name} %",
-                        metric_expression=f"100 - 100 * errors_{idx} / MAX([errors_{idx}, invocations_{idx}])",
-                        using_metrics={
-                            f"errors_{idx}": fn.metric_errors(),
-                            f"invocations_{idx}": fn.metric_invocations(),
-                        },
-                        axis_side="right",
-                    )
-                )
-
-                grouped_timing_metrics.append(
-                    GraphMetricConfig(
-                        metric="Duration",
-                        statistic="Average",
-                        dimension_map=dimension_map,
-                        label=f"{raw_function_name} Avg",
-                    )
-                )
-                if include_min_max_duration:
-                    grouped_timing_metrics.append(
-                        GraphMetricConfig(
-                            metric="Duration",
-                            statistic="Minimum",
-                            dimension_map=dimension_map,
-                            label=f"{raw_function_name} Min",
-                        )
-                    )
-                    grouped_timing_metrics.append(
-                        GraphMetricConfig(
-                            metric="Duration",
-                            statistic="Maximum",
-                            dimension_map=dimension_map,
-                            label=f"{raw_function_name} Max",
-                        )
-                    )
-
-            grouped_metrics: List[GroupedGraphMetricConfig] = [
-                GroupedGraphMetricConfig(
-                    title="Function Invocations", metrics=grouped_invocation_metrics
-                ),
-                GroupedGraphMetricConfig(
-                    title="Function Successes / Failures", metrics=grouped_error_metrics
-                ),
-                GroupedGraphMetricConfig(
-                    title="Function Duration",
-                    namespace="AWS/Lambda",
-                    metrics=grouped_timing_metrics,
-                ),
-            ]
-            self.dashboard_tools.add_text_widget(sub_group_name, 2)
-
-            self.dashboard_tools.add_graphs(
-                grouped_metric_configs=grouped_metrics,
-                namespace="AWS/Lambda",
-                period=Duration.minutes(5),
-                alarm_id_discriminator=sub_group_name,
-                alarm_topic=self.alarm_topic if self.notify_on_alarms else None,
-                dimensions={},
-            )
+    def add_state_machine_widget(
+        self,
+        dashboard: cw.Dashboard,
+        state_machine_name: str,
+        title: Optional[str] = None,
+        title_header_level: int = 1,
+        prefix_name_with_env: bool = True,
+    ):
+        self.add_state_machine_widgets(
+            dashboard,
+            state_machine_name,
+            title=title,
+            title_header_level=title_header_level,
+            prefix_name_with_env=prefix_name_with_env,
+        )
 
     def add_state_machine_widgets(
         self,
-        group_name: str,
-        *grouped_state_machine_names: Union[Tuple[str, List[str]], List[str]],
+        dashboard: cw.Dashboard,
+        *state_machine_names: str,
+        title: Optional[str] = None,
+        title_header_level: int = 1,
+        prefix_name_with_env: bool = True,
+        time_unit: SFN_TIME_UNITS = "minutes",
     ):
-        grouped_state_machine_names: List[Tuple[str, List[str]]] = [
-            (
-                cast(Tuple[str, List[str]], _)
-                if isinstance(_, tuple) and len(_) == 2 and isinstance(_[-1], list)
-                else ("/".join(_), _)
+        dashboard_tools = (
+            dashboard if isinstance(dashboard, EnhancedDashboard) else DashboardTools(dashboard)
+        )
+
+        if title:
+            dashboard_tools.add_text_widget(title, title_header_level)
+
+        grouped_invocation_metrics: List[GraphMetricConfig] = []
+        grouped_error_metrics: List[GraphMetricConfig] = []
+        grouped_timing_metrics: List[GraphMetricConfig] = []
+        group_name = uuid_str(str(state_machine_names))
+        for idx, raw_state_machine_name in enumerate(state_machine_names):
+            state_machine_name = self.get_state_machine_name(
+                raw_state_machine_name, prefix_name_with_env=prefix_name_with_env
             )
-            for _ in grouped_state_machine_names
-        ]
-        self.dashboard_tools.add_text_widget(f"{group_name} State Machines", 1)
 
-        for sub_group_name, raw_state_machine_names in grouped_state_machine_names:
-            grouped_invocation_metrics: List[GraphMetricConfig] = []
-            grouped_error_metrics: List[GraphMetricConfig] = []
-            grouped_timing_metrics: List[GraphMetricConfig] = []
-
-            for idx, raw_state_machine_name in enumerate(raw_state_machine_names):
-                state_machine_name = self.get_state_machine_name(raw_state_machine_name)
-                state_machine_arn = self.get_state_machine_arn(raw_state_machine_name)
-
-                state_machine = sfn.StateMachine.from_state_machine_name(
+            sm_config_generator = StateMachineMetricConfigGenerator(
+                state_machine=sfn.StateMachine.from_state_machine_name(
                     self, f"{state_machine_name}-from-name", state_machine_name
-                )
-
-                dimension_map = {"StateMachineArn": state_machine_arn}
-                grouped_invocation_metrics.append(
-                    GraphMetricConfig(
-                        metric="ExecutionsSucceeded",
-                        label=f"{raw_state_machine_name} Completed",
-                        statistic="Sum",
-                        dimension_map=dimension_map,
-                    )
-                )
-                grouped_invocation_metrics.append(
-                    GraphMetricConfig(
-                        metric="ExecutionsStarted",
-                        label=f"{raw_state_machine_name} Started",
-                        statistic="Sum",
-                        dimension_map=dimension_map,
-                    )
-                )
-                grouped_error_metrics.append(
-                    GraphMetricConfig(
-                        metric="ExecutionErrors",
-                        statistic="Sum",
-                        label=f"{raw_state_machine_name} Errors",
-                        dimension_map=dimension_map,
-                        metric_expression=(
-                            f"failed_{idx} + aborted_{idx} + timed_out_{idx} + throttled_{idx}"
-                        ),
-                        using_metrics={
-                            f"failed_{idx}": state_machine.metric_failed(),
-                            f"aborted_{idx}": state_machine.metric_aborted(),
-                            f"timed_out_{idx}": state_machine.metric_timed_out(),
-                            f"throttled_{idx}": state_machine.metric_throttled(),
-                        },
-                        alarm=AlarmMetricConfig(
-                            name=f"{raw_state_machine_name}-errors",
-                            threshold=1,
-                            evaluation_periods=3,
-                            datapoints_to_alarm=1,
-                            comparison_operator=cw.ComparisonOperator.GREATER_THAN_THRESHOLD,
-                        ),
-                    ),
-                )
-
-                grouped_timing_metrics.append(
-                    GraphMetricConfig(
-                        metric="ExecutionTime",
-                        statistic="Average",
-                        label=f"{raw_state_machine_name} Time",
-                        dimension_map=dimension_map,
-                        metric_expression=f"time_sec_{idx} / 1000 / 60",
-                        using_metrics={f"time_sec_{idx}": state_machine.metric_time()},
-                    ),
-                )
-
-            grouped_metrics = [
-                GroupedGraphMetricConfig(
-                    title="Execution Invocations", metrics=grouped_invocation_metrics
                 ),
-                GroupedGraphMetricConfig(title="Execution Errors", metrics=grouped_error_metrics),
-                GroupedGraphMetricConfig(
-                    title="Execution Time",
-                    metrics=grouped_timing_metrics,
-                    left_y_axis=cw.YAxisProps(label="Time (min)"),
-                ),
-            ]
-
-            self.dashboard_tools.add_text_widget(sub_group_name, 2)
-            self.dashboard_tools.add_graphs(
-                grouped_metric_configs=grouped_metrics,
-                namespace="AWS/States",
-                period=Duration.minutes(5),
-                alarm_id_discriminator=sub_group_name,
-                alarm_topic=self.alarm_topic,
-                dimensions={},
+                state_machine_name=state_machine_name,
+            )
+            grouped_invocation_metrics.append(
+                sm_config_generator.get_execution_invocations_metric(raw_state_machine_name)
+            )
+            grouped_invocation_metrics.append(
+                sm_config_generator.get_execution_completion_metric(raw_state_machine_name)
+            )
+            grouped_error_metrics.append(
+                sm_config_generator.get_execution_failures_metric(
+                    raw_state_machine_name, discriminator=str(idx)
+                )
+            )
+            grouped_timing_metrics.append(
+                sm_config_generator.get_execution_timing_metric(
+                    raw_state_machine_name,
+                    discriminator=str(idx),
+                    time_unit=time_unit,
+                )
             )
 
-    def get_state_machine_name(self, name: Union[str, ResourceNameBaseEnum]) -> str:
+        grouped_metrics = [
+            GroupedGraphMetricConfig(
+                title="Execution Invocations", metrics=grouped_invocation_metrics
+            ),
+            GroupedGraphMetricConfig(title="Execution Errors", metrics=grouped_error_metrics),
+            GroupedGraphMetricConfig(
+                title="Execution Time",
+                metrics=grouped_timing_metrics,
+                left_y_axis=cw.YAxisProps(label=f"Time ({time_unit})"),
+            ),
+        ]
+
+        dashboard_tools.add_graphs(
+            grouped_metric_configs=grouped_metrics,
+            namespace="AWS/States",
+            period=Duration.minutes(5),
+            alarm_id_discriminator=group_name,
+            alarm_topic=self.alarm_topic if self.notify_on_alarms else None,
+            dimensions={},
+        )
+
+    def add_alarm_subscription(self, email: Union[str, EmailAddress]):
+        if not isinstance(email, EmailAddress):
+            email = EmailAddress(email)
+
+        return sns.Subscription(
+            self,
+            self.get_construct_id(f"{email}-alarm-subscription"),
+            topic=self.alarm_topic,  # type: ignore  # Topic implements ITopic
+            endpoint=email,
+            protocol=sns.SubscriptionProtocol.EMAIL,
+        )
+
+    def get_state_machine_name(
+        self, name: Union[str, ResourceNameBaseEnum], prefix_name_with_env: bool = True
+    ) -> str:
         if isinstance(name, ResourceNameBaseEnum):
             return name.get_name(self.env_base)
-        else:
+        elif prefix_name_with_env:
             return self.env_base.get_state_machine_name(name)
+        else:
+            return name
 
-    def get_state_machine_arn(self, name) -> str:
-        state_machine_name = self.get_state_machine_name(name)
+    def get_state_machine_arn(
+        self, name: Union[str, ResourceNameBaseEnum], prefix_name_with_env: bool = True
+    ) -> str:
+        state_machine_name = self.get_state_machine_name(name, prefix_name_with_env)
         return build_sfn_arn(resource_type="stateMachine", resource_id=state_machine_name)
 
 
@@ -301,16 +301,12 @@ class ResourceMonitoring(MonitoringConstruct):
         id: str,
         env_base: EnvBase,
         notify_on_alarms: Optional[bool] = None,
+        alarm_email: Optional[str] = None,
     ) -> None:
         super().__init__(scope, id, env_base)
         self.notify_on_alarms = notify_on_alarms
         if self.notify_on_alarms:
-            sns.Subscription(
-                self,
-                self.get_construct_id(f"{id}-alarm-subscription"),
-                topic=self.alarm_topic,
-                endpoint="marmotdev@alleninstitute.org",
-                protocol=sns.SubscriptionProtocol("EMAIL"),
-            )
+            email = alarm_email or "marmotdev@alleninstitute.org"
+            self.add_alarm_subscription(email)
 
         self.dashboard = self.create_dashboard(start="-P1D")

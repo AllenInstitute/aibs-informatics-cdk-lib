@@ -11,8 +11,11 @@ from aws_cdk import aws_cloudwatch as cw
 from aws_cdk import aws_cloudwatch_actions as cw_actions
 from aws_cdk import aws_sns as sns
 
-from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstruct, EnvBaseConstructMixins
-from aibs_informatics_cdk_lib.constructs_.cw.types import GroupedGraphMetricConfig
+from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstructMixins
+from aibs_informatics_cdk_lib.constructs_.cw.types import (
+    GroupedGraphMetricConfig,
+    to_comparison_operator,
+)
 
 
 class DashboardMixins(EnvBaseConstructMixins):
@@ -105,7 +108,7 @@ class DashboardMixins(EnvBaseConstructMixins):
         Returns:
             Tuple[List[cw.IWidget], List[cw.IAlarm]]: List of widgets and list of alarms
         """
-        self_stack = cdk.Stack.of(self.as_construct())
+        self_stack = cdk.Stack.of(self.dashboard)
 
         graph_widgets: List[cw.IWidget] = []
         metric_alarms: List[cw.IAlarm] = []
@@ -162,13 +165,13 @@ class DashboardMixins(EnvBaseConstructMixins):
                         )
 
                 metric_axis = metric_config.get("axis_side", "left")
-                lr_graph_metrics[metric_axis].append(graph_metric)
+                lr_graph_metrics[metric_axis].append(graph_metric)  # type: ignore # MathExpression implements IMetric
 
                 metric_alarm_config = metric_config.get("alarm")
                 if metric_alarm_config:
                     alarm_name = metric_alarm_config["name"]
                     alarm = graph_metric.create_alarm(
-                        self_stack or self,
+                        self_stack,
                         self.get_construct_id(alarm_name, alarm_id_discriminator),
                         # TODO: every time a change is made to these alarms, Cfn throws an error
                         #       for trying to modify what is a custom resource. So instead, let
@@ -178,7 +181,9 @@ class DashboardMixins(EnvBaseConstructMixins):
                         threshold=metric_alarm_config["threshold"],
                         evaluation_periods=metric_alarm_config["evaluation_periods"],
                         datapoints_to_alarm=metric_alarm_config["datapoints_to_alarm"],
-                        comparison_operator=metric_alarm_config["comparison_operator"],
+                        comparison_operator=to_comparison_operator(
+                            metric_alarm_config["comparison_operator"]
+                        ),
                     )
                     lr_annotations[metric_axis].append(
                         cw.HorizontalAnnotation(
@@ -188,7 +193,7 @@ class DashboardMixins(EnvBaseConstructMixins):
                     )
                     metric_alarms.append(alarm)
                     if alarm_topic:
-                        alarm.add_alarm_action(cw_actions.SnsAction(alarm_topic))
+                        alarm.add_alarm_action(cw_actions.SnsAction(alarm_topic))  # type: ignore # SnsAction implements IAlarmAction
 
             graph_widgets.append(
                 cw.GraphWidget(
@@ -253,13 +258,6 @@ class EnhancedDashboard(DashboardMixins, cw.Dashboard):
         self.dashboard = self
 
 
-class DashboardTools(EnvBaseConstruct, DashboardMixins):
-    def __init__(
-        self,
-        scope: constructs.Construct,
-        id: Optional[str],
-        env_base: EnvBase,
-        dashboard: cw.Dashboard,
-    ) -> None:
-        super().__init__(scope, id, env_base)
+class DashboardTools(DashboardMixins):
+    def __init__(self, dashboard: cw.Dashboard) -> None:
         self.dashboard = dashboard

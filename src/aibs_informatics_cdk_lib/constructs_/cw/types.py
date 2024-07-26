@@ -3,6 +3,23 @@ from typing import Dict, List, Literal, TypedDict, Union
 from aws_cdk import aws_cloudwatch as cw
 
 
+def to_comparison_operator(value: Union[cw.ComparisonOperator, str]) -> cw.ComparisonOperator:
+    if isinstance(value, cw.ComparisonOperator):
+        return value
+    elif value.lower() in [">=", "greater_than_or_equal_to"]:
+        return cw.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD
+    elif value.lower() in [">", "greater_than"]:
+        return cw.ComparisonOperator.GREATER_THAN_THRESHOLD
+    elif value.lower() in ["<=", "less_than_or_equal_to"]:
+        return cw.ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD
+    elif value.lower() in ["<", "less_than"]:
+        return cw.ComparisonOperator.LESS_THAN_THRESHOLD
+    elif value.lower() in ["<>", "out_of_range"]:
+        return cw.ComparisonOperator.LESS_THAN_LOWER_OR_GREATER_THAN_UPPER_THRESHOLD
+    else:
+        return cw.ComparisonOperator(value)
+
+
 class _AlarmMetricConfigOptional(TypedDict, total=False):
     pass
 
