@@ -1,3 +1,4 @@
+from signal import alarm
 from typing import List, Literal, Optional, Union
 
 from aibs_informatics_core.env import EnvBase, ResourceNameBaseEnum
@@ -67,7 +68,9 @@ class MonitoringConstruct(EnvBaseConstruct):
             self.alarm_topic = sns.Topic(
                 self, self.get_construct_id(self.monitoring_name, "alarm-topic")
             )
-        return self.alarm_topic
+            return self.alarm_topic
+        else:
+            return self._alarm_topic
 
     @alarm_topic.setter
     def alarm_topic(self, value: Optional[sns.Topic]):
