@@ -32,6 +32,8 @@ class DataSyncFragment(BatchInvokedBaseFragment, EnvBaseConstructMixins):
         batch_job_queue: Union[batch.JobQueue, str],
         scaffolding_bucket: s3.Bucket,
         mount_point_configs: Optional[Iterable[MountPointConfiguration]] = None,
+        memory: Optional[Union[str, int]] = None,
+        vcpus: Optional[Union[str, int]] = None,
     ) -> None:
         """Sync data from one s3 bucket to another
 
@@ -82,8 +84,8 @@ class DataSyncFragment(BatchInvokedBaseFragment, EnvBaseConstructMixins):
             handler_path="$.handler",
             image_path="$.image",
             payload_path="$.payload",
-            memory="1024",
-            vcpus="1",
+            memory=str(memory or "1024"),
+            vcpus=str(vcpus or "1"),
             mount_point_configs=list(mount_point_configs) if mount_point_configs else None,
             environment={
                 EnvBase.ENV_BASE_KEY: self.env_base,
