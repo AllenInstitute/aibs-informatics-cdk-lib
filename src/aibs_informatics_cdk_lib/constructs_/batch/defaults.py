@@ -1,4 +1,4 @@
-from aws_cdk import aws_batch_alpha as batch
+from aws_cdk import aws_batch as batch
 
 from aibs_informatics_cdk_lib.constructs_.batch.infrastructure import BatchEnvironmentConfig
 from aibs_informatics_cdk_lib.constructs_.batch.instance_types import (

@@ -2,7 +2,7 @@ from typing import Iterable, List, Optional, Union
 
 import constructs
 from aibs_informatics_core.env import EnvBase
-from aws_cdk import aws_batch_alpha as batch
+from aws_cdk import aws_batch as batch
 from aws_cdk import aws_ecr_assets as ecr_assets
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_s3 as s3

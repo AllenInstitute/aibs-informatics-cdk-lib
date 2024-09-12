@@ -16,7 +16,7 @@ from aibs_informatics_core.env import EnvBase
 from aibs_informatics_core.utils.decorators import cached_property
 from aibs_informatics_core.utils.hashing import sha256_hexdigest
 from aibs_informatics_core.utils.tools.dicttools import remove_null_values
-from aws_cdk import aws_batch_alpha as batch
+from aws_cdk import aws_batch as batch
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_efs as efs
 from aws_cdk import aws_iam as iam

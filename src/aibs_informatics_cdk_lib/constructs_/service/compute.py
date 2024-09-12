@@ -3,7 +3,7 @@ from typing import Any, Iterable, List, Optional, Union
 
 import aws_cdk as cdk
 from aibs_informatics_core.env import EnvBase
-from aws_cdk import aws_batch_alpha as batch
+from aws_cdk import aws_batch as batch
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_efs as efs
 from aws_cdk import aws_iam as iam
