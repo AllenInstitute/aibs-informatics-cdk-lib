@@ -167,7 +167,7 @@ class BatchCompute(BaseBatchComputeConstruct):
         self.on_demand_batch_environment = self.batch.setup_batch_environment(
             descriptor=BatchEnvironmentDescriptor(f"{self.name}-on-demand"),
             config=BatchEnvironmentConfig(
-                allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
+                allocation_strategy=batch.AllocationStrategy.BEST_FIT,
                 instance_types=[ec2.InstanceType(_) for _ in ON_DEMAND_INSTANCE_TYPES],
                 use_spot=False,
                 use_fargate=False,
@@ -179,7 +179,7 @@ class BatchCompute(BaseBatchComputeConstruct):
         self.spot_batch_environment = self.batch.setup_batch_environment(
             descriptor=BatchEnvironmentDescriptor(f"{self.name}-spot"),
             config=BatchEnvironmentConfig(
-                allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
+                allocation_strategy=batch.AllocationStrategy.SPOT_PRICE_CAPACITY_OPTIMIZED,
                 instance_types=[ec2.InstanceType(_) for _ in SPOT_INSTANCE_TYPES],
                 use_spot=True,
                 use_fargate=False,
@@ -213,7 +213,7 @@ class LambdaCompute(BatchCompute):
         self.lambda_batch_environment = self.batch.setup_batch_environment(
             descriptor=BatchEnvironmentDescriptor(f"{self.name}-lambda"),
             config=BatchEnvironmentConfig(
-                allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
+                allocation_strategy=batch.AllocationStrategy.BEST_FIT,
                 instance_types=[
                     *LAMBDA_SMALL_INSTANCE_TYPES,
                     *LAMBDA_MEDIUM_INSTANCE_TYPES,
@@ -230,7 +230,7 @@ class LambdaCompute(BatchCompute):
         self.lambda_small_batch_environment = self.batch.setup_batch_environment(
             descriptor=BatchEnvironmentDescriptor(f"{self.name}-lambda-small"),
             config=BatchEnvironmentConfig(
-                allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
+                allocation_strategy=batch.AllocationStrategy.BEST_FIT,
                 instance_types=[*LAMBDA_SMALL_INSTANCE_TYPES],
                 use_spot=False,
                 use_fargate=False,
@@ -242,7 +242,7 @@ class LambdaCompute(BatchCompute):
         self.lambda_medium_batch_environment = self.batch.setup_batch_environment(
             descriptor=BatchEnvironmentDescriptor(f"{self.name}-lambda-medium"),
             config=BatchEnvironmentConfig(
-                allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
+                allocation_strategy=batch.AllocationStrategy.BEST_FIT,
                 instance_types=[*LAMBDA_MEDIUM_INSTANCE_TYPES],
                 use_spot=False,
                 use_fargate=False,
@@ -255,7 +255,7 @@ class LambdaCompute(BatchCompute):
         self.lambda_large_batch_environment = self.batch.setup_batch_environment(
             descriptor=BatchEnvironmentDescriptor(f"{self.name}-lambda-large"),
             config=BatchEnvironmentConfig(
-                allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
+                allocation_strategy=batch.AllocationStrategy.BEST_FIT,
                 instance_types=[*LAMBDA_LARGE_INSTANCE_TYPES],
                 use_spot=False,
                 use_fargate=False,
