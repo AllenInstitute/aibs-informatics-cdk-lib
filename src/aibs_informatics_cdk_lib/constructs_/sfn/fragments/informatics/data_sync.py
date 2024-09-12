@@ -15,7 +15,6 @@ from aibs_informatics_cdk_lib.common.aws.iam_utils import (
 )
 from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstructMixins
 from aibs_informatics_cdk_lib.constructs_.efs.file_system import MountPointConfiguration
-from aibs_informatics_cdk_lib.constructs_.sfn.fragments.base import EnvBaseStateMachineFragment
 from aibs_informatics_cdk_lib.constructs_.sfn.fragments.informatics.batch import (
     BatchInvokedBaseFragment,
     BatchInvokedLambdaFunction,
