@@ -2,8 +2,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import constructs
 from aibs_informatics_core.env import EnvBase
-from aibs_informatics_core.utils.tools.dicttools import remove_null_values
-from aws_cdk import aws_batch_alpha as batch
+from aws_cdk import aws_batch as batch
 from aws_cdk import aws_ecr_assets as ecr_assets
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_s3 as s3

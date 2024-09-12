@@ -1,5 +1,4 @@
-from typing import TYPE_CHECKING, Any, Iterable, List, Literal, Mapping, Optional, Sequence, Union
-from unittest import result
+from typing import TYPE_CHECKING, Any, List, Literal, Mapping, Optional, Sequence, Union
 
 import constructs
 from aibs_informatics_aws_utils.constants.lambda_ import (
@@ -10,19 +9,12 @@ from aibs_informatics_aws_utils.constants.lambda_ import (
 )
 from aibs_informatics_aws_utils.constants.s3 import S3_SCRATCH_KEY_PREFIX
 from aibs_informatics_core.env import EnvBase
-from aws_cdk import aws_batch_alpha as batch
-from aws_cdk import aws_ecr_assets as ecr_assets
 from aws_cdk import aws_iam as iam
-from aws_cdk import aws_s3 as s3
 from aws_cdk import aws_stepfunctions as sfn
-from aws_cdk import aws_stepfunctions_tasks as sfn_tasks
 
 from aibs_informatics_cdk_lib.common.aws.iam_utils import (
-    SFN_STATES_EXECUTION_ACTIONS,
-    SFN_STATES_READ_ACCESS_ACTIONS,
     batch_policy_statement,
     s3_policy_statement,
-    sfn_policy_statement,
 )
 from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstructMixins
 from aibs_informatics_cdk_lib.constructs_.efs.file_system import MountPointConfiguration

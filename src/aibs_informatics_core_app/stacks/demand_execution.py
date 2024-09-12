@@ -7,7 +7,7 @@ from aibs_informatics_aws_utils.constants.efs import (
     EFS_TMP_PATH,
 )
 from aibs_informatics_core.env import EnvBase
-from aws_cdk import aws_batch_alpha as batch
+from aws_cdk import aws_batch as batch
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_s3 as s3
 

@@ -2,7 +2,7 @@ from enum import Enum
 from test.aibs_informatics_cdk_lib.base import CdkBaseTest
 
 from aibs_informatics_core.env import EnvBase
-from aws_cdk import aws_batch_alpha
+from aws_cdk import aws_batch as batch
 from aws_cdk.aws_ec2 import Vpc
 
 from aibs_informatics_cdk_lib.constructs_.batch.infrastructure import (
@@ -32,7 +32,7 @@ class BatchTests(CdkBaseTest):
         stack = self.get_dummy_stack("test")
         vpc = Vpc(stack, "vpc")
         config = BatchEnvironmentConfig(
-            allocation_strategy=aws_batch_alpha.AllocationStrategy.SPOT_CAPACITY_OPTIMIZED,
+            allocation_strategy=batch.AllocationStrategy.SPOT_PRICE_CAPACITY_OPTIMIZED,
             instance_types=["t2.micro"],
             use_public_subnets=False,
             use_spot=True,

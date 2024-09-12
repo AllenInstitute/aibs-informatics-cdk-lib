@@ -1,27 +1,14 @@
 from abc import abstractmethod
-from typing import Any, Iterable, List, Optional, Union
+from typing import Iterable, List, Optional, Union
 
-import aws_cdk as cdk
 from aibs_informatics_core.env import EnvBase
-from aws_cdk import aws_batch_alpha as batch
+from aws_cdk import aws_batch as batch
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_efs as efs
 from aws_cdk import aws_iam as iam
-from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_s3 as s3
-from aws_cdk import aws_stepfunctions as sfn
-from aws_cdk import aws_stepfunctions_tasks as sfn_tasks
 from constructs import Construct
 
-from aibs_informatics_cdk_lib.common.aws.iam_utils import (
-    LAMBDA_READ_ONLY_ACTIONS,
-    batch_policy_statement,
-    lambda_policy_statement,
-    s3_policy_statement,
-)
-from aibs_informatics_cdk_lib.constructs_.assets.code_asset_definitions import (
-    AIBSInformaticsCodeAssets,
-)
 from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstruct
 from aibs_informatics_cdk_lib.constructs_.batch.infrastructure import (
     Batch,
@@ -38,14 +25,6 @@ from aibs_informatics_cdk_lib.constructs_.batch.instance_types import (
 from aibs_informatics_cdk_lib.constructs_.batch.launch_template import BatchLaunchTemplateBuilder
 from aibs_informatics_cdk_lib.constructs_.batch.types import BatchEnvironmentDescriptor
 from aibs_informatics_cdk_lib.constructs_.efs.file_system import MountPointConfiguration
-from aibs_informatics_cdk_lib.constructs_.sfn.fragments.base import create_state_machine
-from aibs_informatics_cdk_lib.constructs_.sfn.fragments.batch import (
-    AWSBatchMixins,
-    SubmitJobWithDefaultsFragment,
-)
-from aibs_informatics_cdk_lib.constructs_.sfn.fragments.informatics import (
-    BatchInvokedLambdaFunction,
-)
 
 
 class BaseBatchComputeConstruct(EnvBaseConstruct):
@@ -167,7 +146,7 @@ class BatchCompute(BaseBatchComputeConstruct):
         self.on_demand_batch_environment = self.batch.setup_batch_environment(
             descriptor=BatchEnvironmentDescriptor(f"{self.name}-on-demand"),
             config=BatchEnvironmentConfig(
-                allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
+                allocation_strategy=batch.AllocationStrategy.BEST_FIT,
                 instance_types=[ec2.InstanceType(_) for _ in ON_DEMAND_INSTANCE_TYPES],
                 use_spot=False,
                 use_fargate=False,
@@ -179,7 +158,7 @@ class BatchCompute(BaseBatchComputeConstruct):
         self.spot_batch_environment = self.batch.setup_batch_environment(
             descriptor=BatchEnvironmentDescriptor(f"{self.name}-spot"),
             config=BatchEnvironmentConfig(
-                allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
+                allocation_strategy=batch.AllocationStrategy.SPOT_PRICE_CAPACITY_OPTIMIZED,
                 instance_types=[ec2.InstanceType(_) for _ in SPOT_INSTANCE_TYPES],
                 use_spot=True,
                 use_fargate=False,
@@ -213,7 +192,7 @@ class LambdaCompute(BatchCompute):
         self.lambda_batch_environment = self.batch.setup_batch_environment(
             descriptor=BatchEnvironmentDescriptor(f"{self.name}-lambda"),
             config=BatchEnvironmentConfig(
-                allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
+                allocation_strategy=batch.AllocationStrategy.BEST_FIT,
                 instance_types=[
                     *LAMBDA_SMALL_INSTANCE_TYPES,
                     *LAMBDA_MEDIUM_INSTANCE_TYPES,
@@ -230,7 +209,7 @@ class LambdaCompute(BatchCompute):
         self.lambda_small_batch_environment = self.batch.setup_batch_environment(
             descriptor=BatchEnvironmentDescriptor(f"{self.name}-lambda-small"),
             config=BatchEnvironmentConfig(
-                allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
+                allocation_strategy=batch.AllocationStrategy.BEST_FIT,
                 instance_types=[*LAMBDA_SMALL_INSTANCE_TYPES],
                 use_spot=False,
                 use_fargate=False,
@@ -242,7 +221,7 @@ class LambdaCompute(BatchCompute):
         self.lambda_medium_batch_environment = self.batch.setup_batch_environment(
             descriptor=BatchEnvironmentDescriptor(f"{self.name}-lambda-medium"),
             config=BatchEnvironmentConfig(
-                allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
+                allocation_strategy=batch.AllocationStrategy.BEST_FIT,
                 instance_types=[*LAMBDA_MEDIUM_INSTANCE_TYPES],
                 use_spot=False,
                 use_fargate=False,
@@ -255,7 +234,7 @@ class LambdaCompute(BatchCompute):
         self.lambda_large_batch_environment = self.batch.setup_batch_environment(
             descriptor=BatchEnvironmentDescriptor(f"{self.name}-lambda-large"),
             config=BatchEnvironmentConfig(
-                allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
+                allocation_strategy=batch.AllocationStrategy.BEST_FIT,
                 instance_types=[*LAMBDA_LARGE_INSTANCE_TYPES],
                 use_spot=False,
                 use_fargate=False,
