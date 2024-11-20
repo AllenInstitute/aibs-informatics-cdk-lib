@@ -23,7 +23,7 @@ class ExternalSnsTrigger(constructs.Construct):
         external_sns_event_queue_filters: Optional[Sequence[Mapping[str, Any]]] = None,
         external_sns_event_queue_name: Optional[str] = None,
         external_sns_event_dlq_name: Optional[str] = None,
-        external_sns_event_queue_retention_period: Optional[cdk.Duration] = None,
+        external_sns_event_queue_retention_period: Optional[cdk.Duration] = cdk.Duration.days(7),
         sqs_event_source_enabled: Optional[bool] = None,
         **kwargs,
     ) -> None:
@@ -71,6 +71,9 @@ class ExternalSnsTrigger(constructs.Construct):
             external_sns_event_dlq_name = env_base.prefixed(
                 external_sns_event_name, "sns-event-dlq"
             )
+        if sqs_event_source_enabled is None:
+            sqs_event_source_enabled = env_base.env_type is EnvType.PROD
+
         self.external_sns_event_dlq = sqs.Queue(
             scope=self,
             id=env_base.get_construct_id(external_sns_event_name, "sns-event-dlq"),
@@ -82,7 +85,7 @@ class ExternalSnsTrigger(constructs.Construct):
             scope=self,
             id=env_base.get_construct_id(external_sns_event_name, "sns-event-queue"),
             queue_name=env_base.prefixed(external_sns_event_name, "sns-event-queue"),
-            retention_period=external_sns_event_queue_retention_period or cdk.Duration.days(7),
+            retention_period=external_sns_event_queue_retention_period,
             dead_letter_queue=sqs.DeadLetterQueue(
                 max_receive_count=2,
                 queue=self.external_sns_event_dlq,
@@ -114,9 +117,7 @@ class ExternalSnsTrigger(constructs.Construct):
                 queue=self.external_sns_event_queue,
                 report_batch_item_failures=True,
                 filters=external_sns_event_queue_filters,
-                enabled=(env_base.env_type is EnvType.PROD)
-                if sqs_event_source_enabled is None
-                else sqs_event_source_enabled,
+                enabled=sqs_event_source_enabled,
             )
         )
         self.external_sns_event_queue.grant_consume_messages(triggered_lambda_fn)
