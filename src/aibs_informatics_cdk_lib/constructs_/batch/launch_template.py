@@ -42,7 +42,6 @@ class BatchLaunchTemplateBuilder(IBatchLaunchTemplateBuilder["BatchLaunchTemplat
     def grant_instance_role_permissions(self, instance_role: iam.Role):
         pass
 
-    @abstractmethod
     def create_launch_template(
         self,
         descriptor: IBatchEnvironmentDescriptor,
