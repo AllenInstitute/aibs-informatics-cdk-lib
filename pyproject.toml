@@ -28,6 +28,11 @@ dev = [
     "aibs-informatics-test-resources @ git+ssh://git@github.com/AllenInstitute/aibs-informatics-test-resources.git@main",
 ]
 
+release = [
+    "build",
+    "wheel",
+]
+
 [tool.setuptools.dynamic]
 version = {attr = "aibs_informatics_cdk_lib._version.__version__"}
 
