@@ -1,6 +1,6 @@
 # Contributing to `aibs-informatics-cdk-lib`
 
-Contributions are welcome, and they are appreciated!
+Contributions are welcome and appreciated!
 
 ## Types of Contributions
 
