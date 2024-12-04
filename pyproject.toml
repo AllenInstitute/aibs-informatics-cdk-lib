@@ -46,6 +46,14 @@ version = {attr = "aibs_informatics_cdk_lib._version.__version__"}
 [tool.setuptools.packages.find]
 where = ["src"]
 
+
+[project.urls]
+Documentation = "https://.github.io/aibs-informatics-cdk-lib/"
+Homepage = "https://github.com/AllenInstitute/aibs-informatics-cdk-lib/"
+Issues = "https://github.com/AllenInstitute/aibs-informatics-cdk-lib/issues"
+Repository = "https://github.com/AllenInstitute/aibs-informatics-cdk-lib/"
+
+
 # -----------------------------------------------------------------------------
 ##  Pyright Configurations
 #   https://github.com/microsoft/pyright/blob/main/docs/configuration.md
