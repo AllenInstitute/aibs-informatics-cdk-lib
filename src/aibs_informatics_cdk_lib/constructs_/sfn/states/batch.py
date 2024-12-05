@@ -133,8 +133,10 @@ class BatchOperation:
                 "Retry": [
                     {
                         "ErrorEquals": ["Batch.BatchException"],
-                        "IntervalSeconds": 1,
-                        "MaxAttempts": 3,
+                        # Interval at attempt n = IntervalSeconds x BackoffRate ^(n-1)
+                        # Total time from first try: 3 + 6 + 12 + 24 = 45 seconds
+                        "IntervalSeconds": 3,
+                        "MaxAttempts": 5,
                         "BackoffRate": 2.0,
                     },
                 ],
@@ -208,8 +210,10 @@ class BatchOperation:
                 "Retry": [
                     {
                         "ErrorEquals": ["Batch.BatchException"],
-                        "IntervalSeconds": 1,
-                        "MaxAttempts": 3,
+                        # Interval at attempt n = IntervalSeconds x BackoffRate ^(n-1)
+                        # Total time from first try: 3 + 6 + 12 + 24 = 45 seconds
+                        "IntervalSeconds": 3,
+                        "MaxAttempts": 5,
                         "BackoffRate": 2.0,
                     },
                 ],
@@ -248,8 +252,10 @@ class BatchOperation:
                 "Retry": [
                     {
                         "ErrorEquals": ["Batch.BatchException"],
-                        "IntervalSeconds": 1,
-                        "MaxAttempts": 3,
+                        # Interval at attempt n = IntervalSeconds x BackoffRate ^(n-1)
+                        # Total time from first try: 3 + 6 + 12 + 24 = 45 seconds
+                        "IntervalSeconds": 3,
+                        "MaxAttempts": 5,
                         "BackoffRate": 2.0,
                     },
                 ],
