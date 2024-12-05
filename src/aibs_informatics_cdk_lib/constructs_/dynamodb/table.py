@@ -1,9 +1,11 @@
+import inspect
 from dataclasses import Field
 from typing import Optional, Tuple, Type
 
 import aws_cdk as cdk
 from aibs_informatics_core.env import EnvBase
 from aibs_informatics_core.models.db import DBIndex, DBModel
+from aibs_informatics_core.utils.modules import load_type_from_qualified_name
 from aws_cdk import aws_dynamodb as dynamodb
 from constructs import Construct
 
@@ -88,9 +90,15 @@ class DynamoDBModelTable(dynamodb.Table):
 
     @classmethod
     def get_attribute_type(cls, field: Field) -> dynamodb.AttributeType:
-        if issubclass(field.type, int):
+        _type = field.type
+        if isinstance(_type, str):
+            _type = load_type_from_qualified_name(_type)
+        if not inspect.isclass(_type):
+            _type = _type.__class__
+
+        if issubclass(_type, int):
             return dynamodb.AttributeType.NUMBER
-        elif issubclass(field.type, bytes):
+        elif issubclass(_type, bytes):
             return dynamodb.AttributeType.BINARY
         else:
             return dynamodb.AttributeType.STRING

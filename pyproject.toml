@@ -15,8 +15,8 @@ dynamic = [
     "version",
 ]
 dependencies = [
-    "aibs-informatics-aws-utils @ git+ssh://git@github.com/AllenInstitute/aibs-informatics-aws-utils.git@main",
-    "aibs-informatics-core @ git+ssh://git@github.com/AllenInstitute/aibs-informatics-core.git@main",
+    "aibs-informatics-aws-utils",
+    "aibs-informatics-core",
     "aws-cdk-lib~=2.96",
     "constructs~=10.0",
     "pydantic~=2.0",
@@ -24,8 +24,14 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "aibs-informatics-test-resources",
     "boto3-stubs[s3,batch]",
-    "aibs-informatics-test-resources @ git+ssh://git@github.com/AllenInstitute/aibs-informatics-test-resources.git@main",
+]
+
+release = [
+    "build",
+    "bump-my-version",
+    "wheel",
 ]
 
 [tool.setuptools.dynamic]
@@ -39,6 +45,14 @@ version = {attr = "aibs_informatics_cdk_lib._version.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+
+[project.urls]
+Documentation = "https://.github.io/aibs-informatics-cdk-lib/"
+Homepage = "https://github.com/AllenInstitute/aibs-informatics-cdk-lib/"
+Issues = "https://github.com/AllenInstitute/aibs-informatics-cdk-lib/issues"
+Repository = "https://github.com/AllenInstitute/aibs-informatics-cdk-lib/"
+
 
 # -----------------------------------------------------------------------------
 ##  Pyright Configurations
@@ -210,3 +224,29 @@ profile = "black"
 src_paths = ["src", "test"]
 skip = [".venv", "build", "cdk.out"]
 
+# -----------------------------------------------------------------------------
+##  bumpversion Configurations
+#   https://callowayproject.github.io/bump-my-version/
+# -----------------------------------------------------------------------------
+
+[tool.bumpversion]
+allow_dirty = false
+commit = true
+commit_args = ""
+current_version = "0.0.1"
+ignore_missing_version = false
+message = "Bump version: {current_version} → {new_version}"
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
+regex = false
+replace = "{new_version}"
+search = "{current_version}"
+serialize = ["{major}.{minor}.{patch}"]
+sign_tags = false
+tag = true
+tag_message = "Bump version: {current_version} → {new_version}"
+tag_name = "v{new_version}"
+
+[[tool.bumpversion.files]]
+filename = "src/aibs_informatics_cdk_lib/_version.py"
+search = "__version__ = \"{current_version}\""
+replace = "__version__ = \"{new_version}\""
