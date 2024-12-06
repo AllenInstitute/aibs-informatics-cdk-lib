@@ -28,7 +28,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "aibs-informatics-test-resources",
+    "aibs-informatics-test-resources[all]",
     "boto3-stubs[s3,batch]",
 ]
 
