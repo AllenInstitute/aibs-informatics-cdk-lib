@@ -9,7 +9,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aibs-informatics-cdk-lib"
+authors = [{ name = "AIBS Informatics Group", email = "marmot@alleninstitute.onmicrosoft.com"}]
+maintainers = [{ name = "AIBS Informatics Group", email = "marmot@alleninstitute.onmicrosoft.com"}]
 description = "CDK Library for AIBS Informatics services"
+readme = { file = "README.md", content-type = "text/markdown" }
+license = { file = "LICENSE" }
 requires-python = ">=3.9"
 dynamic = [
     "version",
