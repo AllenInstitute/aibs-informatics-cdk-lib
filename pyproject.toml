@@ -19,8 +19,8 @@ dynamic = [
     "version",
 ]
 dependencies = [
-    "aibs-informatics-aws-utils",
-    "aibs-informatics-core",
+    "aibs-informatics-aws-utils~=0.0.4",
+    "aibs-informatics-core~=0.0.8",
     "aws-cdk-lib~=2.96",
     "constructs~=10.0",
     "pydantic~=2.0",
@@ -28,7 +28,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "aibs-informatics-test-resources[all]",
+    "aibs-informatics-test-resources[all]~=0.0.4",
     "boto3-stubs[s3,batch]",
 ]
 
