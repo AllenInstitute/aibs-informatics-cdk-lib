@@ -250,9 +250,10 @@ class CleanFileSystemFragment(BatchInvokedBaseFragment):
         batch_job_queue: Union[batch.JobQueue, str],
         scaffolding_bucket: s3.Bucket,
         mount_point_configs: Optional[Iterable[MountPointConfiguration]] = None,
+        memory: int = 1024,
+        vcpus: int = 1,
     ) -> None:
-        """Clean up the file system
-
+        """Clean up the file system by scanning for outdated data paths and removing them
 
         Args:
             scope (Construct): construct scope
@@ -266,7 +267,10 @@ class CleanFileSystemFragment(BatchInvokedBaseFragment):
                 the batch invoked lambda function.
             mount_point_configs (Optional[Iterable[MountPointConfiguration]], optional):
                 List of mount point configurations to use. These can be overridden in the payload.
-
+            memory (int, optional): memory needed. Defaults to 1024.
+                This memory value is used for both the outdated path scanner and removal of data paths.
+            vcpus (int, optional): vcpus needed. Defaults to 1.
+                This memory value is used for both the outdated path scanner and removal of data paths.
         """
         super().__init__(scope, id, env_base)
 
@@ -289,6 +293,8 @@ class CleanFileSystemFragment(BatchInvokedBaseFragment):
             batch_job_queue=batch_job_queue,
             scaffolding_bucket=scaffolding_bucket,
             mount_point_configs=mount_point_configs,
+            memory=memory,
+            vcpus=vcpus,
         )
 
         self.remove_data_paths = remove_data_paths_fragment(
@@ -299,6 +305,8 @@ class CleanFileSystemFragment(BatchInvokedBaseFragment):
             batch_job_queue=batch_job_queue,
             scaffolding_bucket=scaffolding_bucket,
             mount_point_configs=mount_point_configs,
+            memory=memory,
+            vcpus=vcpus,
         )
 
         # fmt: off
