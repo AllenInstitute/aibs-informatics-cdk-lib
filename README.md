@@ -1,6 +1,7 @@
 # AIBS Informatics CDK Library
 
 [![Build Status](https://github.com/AllenInstitute/aibs-informatics-cdk-lib/actions/workflows/build.yml/badge.svg)](https://github.com/AllenInstitute/aibs-informatics-cdk-lib/actions/workflows/build.yml)
+[![codecov](https://codecov.io/gh/AllenInstitute/aibs-informatics-cdk-lib/graph/badge.svg?token=5XCVULUK3E)](https://codecov.io/gh/AllenInstitute/aibs-informatics-cdk-lib)
 
 ---
 
