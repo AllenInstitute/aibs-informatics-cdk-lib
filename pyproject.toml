@@ -30,6 +30,7 @@ dependencies = [
 dev = [
     "aibs-informatics-test-resources[all]~=0.0.4",
     "boto3-stubs[s3,batch]",
+    "mypy~=1.13.0",
 ]
 
 release = [
