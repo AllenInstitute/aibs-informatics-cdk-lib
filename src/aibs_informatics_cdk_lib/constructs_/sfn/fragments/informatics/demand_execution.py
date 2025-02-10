@@ -131,7 +131,7 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
 
         start_state = sfn.Pass(
             self,
-            f"Start Demand Batch Task",
+            "Start Demand Batch Task",
             parameters={
                 "request": request,
             },
@@ -156,7 +156,7 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
                     integration_pattern=sfn.IntegrationPattern.RUN_JOB,
                     associate_with_parent=False,
                     input_path="$",
-                    output_path=f"$.Output",
+                    output_path="$.Output",
                 )
             ),
             input_path="$.request",
@@ -182,11 +182,11 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
                     integration_pattern=sfn.IntegrationPattern.RUN_JOB,
                     associate_with_parent=False,
                     input_path="$",
-                    output_path=f"$.Output",
+                    output_path="$.Output",
                 )
             ),
             input_path="$.batch_create_request",
-            result_path=f"$",
+            result_path="$",
         )
 
         setup_tasks = (
@@ -218,7 +218,7 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
 
         execution_task = sfn.CustomState(
             self,
-            f"Submit Batch Job",
+            "Submit Batch Job",
             state_json={
                 "Type": "Task",
                 "Resource": "arn:aws:states:::batch:submitJob.sync",
@@ -251,7 +251,40 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
                     result_path=sfn.JsonPath.DISCARD,
                 )
             )
-        ).to_single_state("Execution Cleanup Steps", output_path="$[0]")
+        ).next(
+            sfn.Choice(self, "Cleanup Choice")
+            .when(
+                condition=sfn.Condition.is_present(
+                    f"$.{config_scaffolding_path}.cleanup_configs.remove_data_paths_requests"
+                ),
+                next=CommonOperation.enclose_chainable(
+                    self,
+                    "Cleanup Data Paths",
+                    input_path=f"$.{config_scaffolding_path}.cleanup_configs.remove_data_paths_requests",
+                    result_path=f"$.{config_cleanup_results_path}.remove_data_paths_results",
+                    definition=sfn.Pass(
+                        self,
+                        "Pass: Cleanup Data Paths",
+                        parameters={
+                            "handler": "aibs_informatics_aws_lambda.handlers.data_sync.remove_data_paths_handler",
+                            "payload": sfn.JsonPath.object_at("$"),
+                            **batch_invoked_lambda_kwargs,
+                        },
+                    ).next(
+                        sfn_tasks.StepFunctionsStartExecution(
+                            self,
+                            "SM: Cleanup Data Paths",
+                            state_machine=batch_invoked_lambda_state_machine,
+                            integration_pattern=sfn.IntegrationPattern.RUN_JOB,
+                            associate_with_parent=False,
+                            input_path="$",
+                            output_path="$.Output",
+                        )
+                    ),
+                ),
+            )
+            .otherwise(sfn.Pass(self, "No Data Paths to Cleanup"))
+        )
 
         # fmt: off
         definition = (
