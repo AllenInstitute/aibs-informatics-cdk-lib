@@ -55,7 +55,7 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
         config_setup_results_path = f"{config_scaffolding_path}.setup_results"
         config_batch_args_path = f"{config_setup_results_path}.batch_args"
 
-        config_cleanup_results_path = f"tasks.cleanup.cleanup_results"
+        config_cleanup_results_path = "tasks.cleanup.cleanup_results"
 
         # Create common kwargs for the batch invoked lambda functions
         # - specify the bucket name and job queue
@@ -257,30 +257,37 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
                 condition=sfn.Condition.is_present(
                     f"$.{config_scaffolding_path}.cleanup_configs.remove_data_paths_requests"
                 ),
-                next=CommonOperation.enclose_chainable(
-                    self,
-                    "Cleanup Data Paths",
-                    input_path=f"$.{config_scaffolding_path}.cleanup_configs.remove_data_paths_requests",
-                    result_path=f"$.{config_cleanup_results_path}.remove_data_paths_results",
-                    definition=sfn.Pass(
+                next=sfn.Chain.start(
+                    sfn.Map(
                         self,
-                        "Pass: Cleanup Data Paths",
-                        parameters={
-                            "handler": "aibs_informatics_aws_lambda.handlers.data_sync.remove_data_paths_handler",
-                            "payload": sfn.JsonPath.object_at("$"),
-                            **batch_invoked_lambda_kwargs,
-                        },
-                    ).next(
-                        sfn_tasks.StepFunctionsStartExecution(
+                        "Map: Cleanup Data Paths",
+                        input_path=f"$.{config_scaffolding_path}.cleanup_configs.remove_data_paths_requests",
+                        result_path=f"$.{config_cleanup_results_path}.remove_data_paths_results",
+                    ).iterator(
+                        CommonOperation.enclose_chainable(
                             self,
-                            "SM: Cleanup Data Paths",
-                            state_machine=batch_invoked_lambda_state_machine,
-                            integration_pattern=sfn.IntegrationPattern.RUN_JOB,
-                            associate_with_parent=False,
-                            input_path="$",
-                            output_path="$.Output",
+                            "Cleanup Data Path",
+                            definition=sfn.Pass(
+                                self,
+                                "Pass: Cleanup Data Path",
+                                parameters={
+                                    "handler": "aibs_informatics_aws_lambda.handlers.data_sync.remove_data_paths_handler",
+                                    "payload": sfn.JsonPath.object_at("$"),
+                                    **batch_invoked_lambda_kwargs,
+                                },
+                            ).next(
+                                sfn_tasks.StepFunctionsStartExecution(
+                                    self,
+                                    "SM: Cleanup Data Path",
+                                    state_machine=batch_invoked_lambda_state_machine,
+                                    integration_pattern=sfn.IntegrationPattern.RUN_JOB,
+                                    associate_with_parent=False,
+                                    input_path="$",
+                                    output_path="$.Output",
+                                )
+                            ),
                         )
-                    ),
+                    )
                 ),
             )
             .otherwise(sfn.Pass(self, "No Data Paths to Cleanup"))
