@@ -89,7 +89,7 @@ class SubmitJobFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
             job_definition=sfn.JsonPath.string_at("$.taskResult.register.JobDefinitionArn"),
         )
 
-        try_catch_deregister = BatchOperation.deregister_job_definition(
+        try_catch_deregister_chain = BatchOperation.deregister_job_definition(
             self,
             id + " FAIL",
             job_definition=sfn.JsonPath.string_at("$.taskResult.register.JobDefinitionArn"),
@@ -105,13 +105,19 @@ class SubmitJobFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
         deregister = CommonOperation.enclose_chainable(
             self, id + " Deregister", deregister_chain, result_path="$.taskResult.deregister"
         )
+        try_catch_deregister = CommonOperation.enclose_chainable(
+            self,
+            id + " Deregister FAIL",
+            try_catch_deregister_chain,
+            result_path="$.taskResult.deregister",
+        )
         submit.add_catch(
             try_catch_deregister.next(
                 sfn.Fail(
                     self,
                     id + " FAIL",
-                    cause_path=sfn.JsonPath.string_at("$.taskResult.submit.cause"),
-                    error_path=sfn.JsonPath.string_at("$.taskResult.submit.error"),
+                    cause_path=sfn.JsonPath.string_at("$.taskResult.submit.Cause"),
+                    error_path=sfn.JsonPath.string_at("$.taskResult.submit.Error"),
                 )
             ),
             result_path="$.taskResult.submit",

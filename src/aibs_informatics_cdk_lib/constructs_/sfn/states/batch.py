@@ -239,7 +239,7 @@ class BatchOperation:
         )
         deregister = sfn.CustomState(
             scope,
-            id + f" DeregisterJobDefinition API Call",
+            id + " DeregisterJobDefinition API Call",
             state_json={
                 "Type": "Task",
                 "Resource": "arn:aws:states:::aws-sdk:batch:deregisterJobDefinition",
