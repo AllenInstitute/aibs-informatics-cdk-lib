@@ -107,7 +107,7 @@ class SubmitJobFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
         )
         try_catch_deregister = CommonOperation.enclose_chainable(
             self,
-            id + " Deregister FAIL",
+            f"{id} Deregister FAIL",
             try_catch_deregister_chain,
             result_path="$.taskResult.deregister",
         )
