@@ -192,7 +192,7 @@ class BatchOperation:
 
         submit = sfn.CustomState(
             scope,
-            id + f" SubmitJob API Call",
+            f"{id} SubmitJob API Call",
             state_json={
                 "Type": "Task",
                 "Resource": "arn:aws:states:::batch:submitJob.sync",
@@ -239,7 +239,7 @@ class BatchOperation:
         )
         deregister = sfn.CustomState(
             scope,
-            id + f" DeregisterJobDefinition API Call",
+            f"{id} DeregisterJobDefinition API Call",
             state_json={
                 "Type": "Task",
                 "Resource": "arn:aws:states:::aws-sdk:batch:deregisterJobDefinition",
