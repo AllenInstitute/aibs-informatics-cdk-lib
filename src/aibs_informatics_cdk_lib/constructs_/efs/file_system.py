@@ -49,6 +49,7 @@ class EnvBaseFileSystem(efs.FileSystem, EnvBaseConstructMixins):
         performance_mode: Optional[PerformanceMode] = None,
         removal_policy: cdk.RemovalPolicy = cdk.RemovalPolicy.DESTROY,
         throughput_mode: Optional[ThroughputMode] = ThroughputMode.BURSTING,
+        create_root_access_point: bool = True,
         **kwargs,
     ) -> None:
         self.env_base = env_base
@@ -162,6 +163,7 @@ class EFSEcosystem(EnvBaseConstruct):
             throughput_mode=efs.ThroughputMode.BURSTING,
             removal_policy=cdk.RemovalPolicy.DESTROY,
             vpc=vpc,
+            create_root_access_point=False,
         )
 
         self.root_access_point = self.file_system.create_access_point(

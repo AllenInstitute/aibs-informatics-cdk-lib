@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Sequence, Union
 
 import constructs
 from aibs_informatics_core.env import EnvBase
@@ -33,21 +33,38 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
         scaffolding_job_queue: Union[batch.JobQueue, str],
         batch_invoked_lambda_state_machine: sfn.StateMachine,
         data_sync_state_machine: sfn.StateMachine,
-        shared_mount_point_config: Optional[MountPointConfiguration],
-        scratch_mount_point_config: Optional[MountPointConfiguration],
-        tmp_mount_point_config: Optional[MountPointConfiguration] = None,
+        shared_mount_point_config: Union[
+            MountPointConfiguration, Sequence[MountPointConfiguration]
+        ],
+        scratch_mount_point_config: Union[
+            MountPointConfiguration, Sequence[MountPointConfiguration]
+        ],
+        tmp_mount_point_config: Optional[
+            Union[MountPointConfiguration, Sequence[MountPointConfiguration]]
+        ] = None,
+        file_system_selection_strategy: Optional[Literal["RANDOM", "LEAST_UTILIZED"]] = None,
         context_manager_configuration: Optional[Dict[str, Any]] = None,
     ) -> None:
         super().__init__(scope, id, env_base)
 
         # ----------------- Validation -----------------
-        if not (shared_mount_point_config and scratch_mount_point_config) or not (
-            shared_mount_point_config or scratch_mount_point_config
-        ):
-            raise ValueError(
-                "If shared or scratch mount point configurations are provided,"
-                "Both shared and scratch mount point configurations must be provided."
-            )
+
+        shared_mount_point_configs = (
+            [shared_mount_point_config]
+            if isinstance(shared_mount_point_config, MountPointConfiguration)
+            else shared_mount_point_config
+        )
+
+        scratch_mount_point_configs = (
+            [scratch_mount_point_config]
+            if isinstance(scratch_mount_point_config, MountPointConfiguration)
+            else scratch_mount_point_config
+        )
+        tmp_mount_point_configs = (
+            [tmp_mount_point_config]
+            if isinstance(tmp_mount_point_config, MountPointConfiguration)
+            else tmp_mount_point_config
+        )
 
         # ------------------- Setup -------------------
 
@@ -71,53 +88,68 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
         }
 
         # Create request input for the demand scaffolding
-        file_system_configurations = {}
+        file_system_configurations: Dict[str, Any] = {
+            "selection_strategy": file_system_selection_strategy or "LEAST_UTILIZED",
+        }
 
-        # Update arguments with mount points and volumes if provided
-        if shared_mount_point_config or scratch_mount_point_config or tmp_mount_point_config:
-            mount_points = []
-            volumes = []
-            if shared_mount_point_config:
-                # update file system configurations for scaffolding function
-                file_system_configurations["shared"] = {
+        mount_points = []
+        volumes = []
+
+        # update file system configurations for scaffolding function
+        file_system_configurations["shared"] = []
+        for i, shared_mount_point_config in enumerate(shared_mount_point_configs):
+            file_system_configurations["shared"].append(
+                {
                     "file_system": shared_mount_point_config.file_system_id,
                     "access_point": shared_mount_point_config.access_point_id,
                     "container_path": shared_mount_point_config.mount_point,
                 }
-                # add to mount point and volumes list for batch invoked lambda functions
-                mount_points.append(
-                    shared_mount_point_config.to_batch_mount_point("shared", sfn_format=True)
-                )
-                volumes.append(
-                    shared_mount_point_config.to_batch_volume("shared", sfn_format=True)
+            )
+
+            # add to mount point and volumes list for batch invoked lambda functions
+            mount_points.append(
+                shared_mount_point_config.to_batch_mount_point(f"shared{i}", sfn_format=True)
+            )
+            volumes.append(
+                shared_mount_point_config.to_batch_volume(f"shared{i}", sfn_format=True)
+            )
+
+            file_system_configurations["scratch"] = []
+            for i, scratch_mount_point_config in enumerate(scratch_mount_point_configs):
+                file_system_configurations["scratch"].append(
+                    {
+                        "file_system": scratch_mount_point_config.file_system_id,
+                        "access_point": scratch_mount_point_config.access_point_id,
+                        "container_path": scratch_mount_point_config.mount_point,
+                    }
                 )
 
-            if scratch_mount_point_config:
-                # update file system configurations for scaffolding function
-                file_system_configurations["scratch"] = {
-                    "file_system": scratch_mount_point_config.file_system_id,
-                    "access_point": scratch_mount_point_config.access_point_id,
-                    "container_path": scratch_mount_point_config.mount_point,
-                }
                 # add to mount point and volumes list for batch invoked lambda functions
                 mount_points.append(
-                    scratch_mount_point_config.to_batch_mount_point("scratch", sfn_format=True)
+                    scratch_mount_point_config.to_batch_mount_point(f"scratch{i}", sfn_format=True)
                 )
                 volumes.append(
-                    scratch_mount_point_config.to_batch_volume("scratch", sfn_format=True)
+                    scratch_mount_point_config.to_batch_volume(f"scratch{i}", sfn_format=True)
                 )
-            if tmp_mount_point_config:
-                # update file system configurations for scaffolding function
-                file_system_configurations["tmp"] = {
-                    "file_system": tmp_mount_point_config.file_system_id,
-                    "access_point": tmp_mount_point_config.access_point_id,
-                    "container_path": tmp_mount_point_config.mount_point,
-                }
-                # add to mount point and volumes list for batch invoked lambda functions
-                mount_points.append(
-                    tmp_mount_point_config.to_batch_mount_point("tmp", sfn_format=True)
-                )
-                volumes.append(tmp_mount_point_config.to_batch_volume("tmp", sfn_format=True))
+
+            if tmp_mount_point_configs:
+                file_system_configurations["tmp"] = []
+                for i, tmp_mount_point_config in enumerate(tmp_mount_point_configs):
+                    file_system_configurations["tmp"].append(
+                        {
+                            "file_system": tmp_mount_point_config.file_system_id,
+                            "access_point": tmp_mount_point_config.access_point_id,
+                            "container_path": tmp_mount_point_config.mount_point,
+                        }
+                    )
+
+                    # add to mount point and volumes list for batch invoked lambda functions
+                    mount_points.append(
+                        tmp_mount_point_config.to_batch_mount_point(f"tmp{i}", sfn_format=True)
+                    )
+                    volumes.append(
+                        tmp_mount_point_config.to_batch_volume(f"tmp{i}", sfn_format=True)
+                    )
 
             batch_invoked_lambda_kwargs["mount_points"] = mount_points
             batch_invoked_lambda_kwargs["volumes"] = volumes

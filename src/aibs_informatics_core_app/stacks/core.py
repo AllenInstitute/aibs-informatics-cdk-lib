@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 from aibs_informatics_core.env import EnvBase
 from constructs import Construct
@@ -34,10 +34,24 @@ class CoreStack(EnvBaseStack):
             ],
         )
 
-        self._efs_ecosystem = EFSEcosystem(
-            self, id="EFS", env_base=self.env_base, file_system_name=name, vpc=self.vpc
+        self._efs_ecosystems = []
+
+        self._efs_ecosystems.append(
+            EFSEcosystem(
+                self, id="EFS", env_base=self.env_base, file_system_name=name, vpc=self.vpc
+            )
         )
-        self._file_system = self._efs_ecosystem.file_system
+
+        for i in range(1, 5):
+            self._efs_ecosystems.append(
+                EFSEcosystem(
+                    self,
+                    id=f"EFS-{i}",
+                    env_base=self.env_base,
+                    file_system_name=f"{name}-part{i}",
+                    vpc=self.vpc,
+                )
+            )
 
     @property
     def vpc(self) -> EnvBaseVpc:
@@ -48,9 +62,9 @@ class CoreStack(EnvBaseStack):
         return self._bucket
 
     @property
-    def efs_ecosystem(self) -> EFSEcosystem:
-        return self._efs_ecosystem
+    def efs_ecosystems(self) -> List[EFSEcosystem]:
+        return self._efs_ecosystems
 
     @property
-    def file_system(self) -> EnvBaseFileSystem:
-        return self._file_system
+    def file_systems(self) -> List[EnvBaseFileSystem]:
+        return [efs_ecosystem.file_system for efs_ecosystem in self.efs_ecosystems]

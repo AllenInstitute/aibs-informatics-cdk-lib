@@ -39,7 +39,8 @@ class InfraStage(ConfigBasedStage):
             vpc=core.vpc,
             buckets=[core.bucket],
             mount_point_configs=[
-                MountPointConfiguration.from_file_system(core.file_system, None, "/opt/efs"),
+                MountPointConfiguration.from_file_system(file_system, None)
+                for file_system in core.file_systems
             ],
             env=self.env,
         )
@@ -50,7 +51,7 @@ class InfraStage(ConfigBasedStage):
             env_base=self.env_base,
             assets=assets.assets,
             scaffolding_bucket=core.bucket,
-            efs_ecosystem=core.efs_ecosystem,
+            efs_ecosystems=core.efs_ecosystems,
             data_sync_job_queue=demand_execution_infra.infra_compute.lambda_medium_batch_environment.job_queue_name,
             scaffolding_job_queue=demand_execution_infra.infra_compute.primary_batch_environment.job_queue_name,
             execution_job_queue=demand_execution_infra.execution_compute.primary_batch_environment.job_queue_name,
