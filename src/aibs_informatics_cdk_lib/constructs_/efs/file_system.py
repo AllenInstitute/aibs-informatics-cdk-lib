@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from typing import Any, Literal, Optional, Tuple, TypeVar, Union, cast
+from typing import Any, Literal, Optional, Tuple, TypeVar, Union
 
 import aws_cdk as cdk
 import constructs
@@ -40,7 +40,7 @@ class EnvBaseFileSystem(efs.FileSystem, EnvBaseConstructMixins):
         id: str,
         env_base: EnvBase,
         vpc: ec2.IVpc,
-        file_system_name: Optional[str] = None,
+        file_system_name: str,
         allow_anonymous_access: Optional[bool] = None,
         enable_automatic_backups: Optional[bool] = None,
         encrypted: Optional[bool] = None,
@@ -56,9 +56,7 @@ class EnvBaseFileSystem(efs.FileSystem, EnvBaseConstructMixins):
             scope,
             id,
             vpc=vpc,
-            file_system_name=(
-                self.get_name_with_env(file_system_name) if file_system_name else None
-            ),
+            file_system_name=(full_file_system_name := self.get_name_with_env(file_system_name)),
             allow_anonymous_access=allow_anonymous_access,
             enable_automatic_backups=enable_automatic_backups,
             encrypted=encrypted,
@@ -69,12 +67,11 @@ class EnvBaseFileSystem(efs.FileSystem, EnvBaseConstructMixins):
             throughput_mode=throughput_mode,
             **kwargs,
         )
-
-        self._root_access_point = self.create_access_point(name="root", path=EFS_ROOT_PATH)
+        self._file_system_name = full_file_system_name
 
     @property
-    def root_access_point(self) -> efs.AccessPoint:
-        return self._root_access_point
+    def file_system_name(self) -> str:
+        return self._file_system_name
 
     def create_access_point(
         self, name: str, path: str, *tags: Union[EFSTag, Tuple[str, str]]
@@ -98,7 +95,7 @@ class EnvBaseFileSystem(efs.FileSystem, EnvBaseConstructMixins):
 
         cfn_access_point = efs.CfnAccessPoint(
             self.get_stack_of(self),
-            self.get_construct_id(name, "cfn-ap"),
+            self.get_construct_id(self.node.id, name, "cfn-ap"),
             file_system_id=self.file_system_id,
             access_point_tags=[
                 efs.CfnAccessPoint.AccessPointTagProperty(key=tag.key, value=tag.value)
@@ -124,14 +121,12 @@ class EnvBaseFileSystem(efs.FileSystem, EnvBaseConstructMixins):
             file_system=self,
         )  # type: ignore
 
-    def as_lambda_file_system(
-        self, access_point: Optional[efs.AccessPoint] = None
-    ) -> lambda_.FileSystem:
+    def as_lambda_file_system(self, access_point: efs.AccessPoint) -> lambda_.FileSystem:
         ap = access_point or self.root_access_point
         return lambda_.FileSystem.from_efs_access_point(
             ap=ap,
             # Must start with `/mnt` per lambda regex requirements
-            mount_path=f"/mnt/efs",
+            mount_path="/mnt/efs",
         )
 
     def grant_lambda_access(self, resource: lambda_.Function):
@@ -144,7 +139,7 @@ class EFSEcosystem(EnvBaseConstruct):
         scope: constructs.Construct,
         id: Optional[str],
         env_base: EnvBase,
-        file_system_name: Optional[str],
+        file_system_name: str,
         vpc: ec2.Vpc,
         efs_lifecycle_policy: Optional[efs.LifecyclePolicy] = None,
     ) -> None:
@@ -158,11 +153,9 @@ class EFSEcosystem(EnvBaseConstruct):
         super().__init__(scope, id, env_base)
         self._file_system = EnvBaseFileSystem(
             scope=self,
-            id="fs",
+            id=f"{file_system_name}-fs",
             env_base=self.env_base,
-            file_system_name=(
-                self.get_name_with_env(file_system_name) if file_system_name else None
-            ),
+            file_system_name=self.get_name_with_env(file_system_name),
             lifecycle_policy=efs_lifecycle_policy,
             out_of_infrequent_access_policy=efs.OutOfInfrequentAccessPolicy.AFTER_1_ACCESS,
             enable_automatic_backups=False,
@@ -171,6 +164,9 @@ class EFSEcosystem(EnvBaseConstruct):
             vpc=vpc,
         )
 
+        self.root_access_point = self.file_system.create_access_point(
+            name="root", path=EFS_ROOT_PATH
+        )
         self.shared_access_point = self.file_system.create_access_point(
             name="shared", path=EFS_SHARED_PATH
         )
@@ -186,7 +182,7 @@ class EFSEcosystem(EnvBaseConstruct):
 
     @property
     def as_lambda_file_system(self) -> lambda_.FileSystem:
-        return self.file_system.as_lambda_file_system()
+        return self.file_system.as_lambda_file_system(self.root_access_point)
 
 
 @dataclass
