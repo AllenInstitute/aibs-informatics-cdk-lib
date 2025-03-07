@@ -114,45 +114,45 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
                 shared_mount_point_config.to_batch_volume(f"shared{i}", sfn_format=True)
             )
 
-            file_system_configurations["scratch"] = []
-            for i, scratch_mount_point_config in enumerate(scratch_mount_point_configs):
-                file_system_configurations["scratch"].append(
+        file_system_configurations["scratch"] = []
+        for i, scratch_mount_point_config in enumerate(scratch_mount_point_configs):
+            file_system_configurations["scratch"].append(
+                {
+                    "file_system": scratch_mount_point_config.file_system_id,
+                    "access_point": scratch_mount_point_config.access_point_id,
+                    "container_path": scratch_mount_point_config.mount_point,
+                }
+            )
+
+            # add to mount point and volumes list for batch invoked lambda functions
+            mount_points.append(
+                scratch_mount_point_config.to_batch_mount_point(f"scratch{i}", sfn_format=True)
+            )
+            volumes.append(
+                scratch_mount_point_config.to_batch_volume(f"scratch{i}", sfn_format=True)
+            )
+
+        if tmp_mount_point_configs:
+            file_system_configurations["tmp"] = []
+            for i, tmp_mount_point_config in enumerate(tmp_mount_point_configs):
+                file_system_configurations["tmp"].append(
                     {
-                        "file_system": scratch_mount_point_config.file_system_id,
-                        "access_point": scratch_mount_point_config.access_point_id,
-                        "container_path": scratch_mount_point_config.mount_point,
+                        "file_system": tmp_mount_point_config.file_system_id,
+                        "access_point": tmp_mount_point_config.access_point_id,
+                        "container_path": tmp_mount_point_config.mount_point,
                     }
                 )
 
                 # add to mount point and volumes list for batch invoked lambda functions
                 mount_points.append(
-                    scratch_mount_point_config.to_batch_mount_point(f"scratch{i}", sfn_format=True)
+                    tmp_mount_point_config.to_batch_mount_point(f"tmp{i}", sfn_format=True)
                 )
                 volumes.append(
-                    scratch_mount_point_config.to_batch_volume(f"scratch{i}", sfn_format=True)
+                    tmp_mount_point_config.to_batch_volume(f"tmp{i}", sfn_format=True)
                 )
 
-            if tmp_mount_point_configs:
-                file_system_configurations["tmp"] = []
-                for i, tmp_mount_point_config in enumerate(tmp_mount_point_configs):
-                    file_system_configurations["tmp"].append(
-                        {
-                            "file_system": tmp_mount_point_config.file_system_id,
-                            "access_point": tmp_mount_point_config.access_point_id,
-                            "container_path": tmp_mount_point_config.mount_point,
-                        }
-                    )
-
-                    # add to mount point and volumes list for batch invoked lambda functions
-                    mount_points.append(
-                        tmp_mount_point_config.to_batch_mount_point(f"tmp{i}", sfn_format=True)
-                    )
-                    volumes.append(
-                        tmp_mount_point_config.to_batch_volume(f"tmp{i}", sfn_format=True)
-                    )
-
-            batch_invoked_lambda_kwargs["mount_points"] = mount_points
-            batch_invoked_lambda_kwargs["volumes"] = volumes
+        batch_invoked_lambda_kwargs["mount_points"] = mount_points
+        batch_invoked_lambda_kwargs["volumes"] = volumes
 
         request = {
             "demand_execution": sfn.JsonPath.object_at("$"),
