@@ -53,40 +53,6 @@ class CoreStack(EnvBaseStack):
                     vpc=self.vpc,
                 )
             )
-        
-        self.create_tmp_cfn_outputs()
-    
-    def create_tmp_cfn_outputs(self):
-        cdk.CfnOutput(
-            self,
-            "ExportsOutputFnGetAttEFSfsEfsSecurityGroup5507AE02GroupId85196D34",
-            value="sg-024523e4c7d66b1b3",
-            export_name="Infra-dev-Core:ExportsOutputFnGetAttEFSfsEfsSecurityGroup5507AE02GroupId85196D34",
-        )
-        cdk.CfnOutput(
-            self,
-            "ExportsOutputRefEFSfs83D2FD07F890E1CF",
-            value="fs-0154ef4f25db18c9b",
-            export_name="Infra-dev-Core:ExportsOutputRefEFSfs83D2FD07F890E1CF",
-        )
-        cdk.CfnOutput(
-            self,
-            "ExportsOutputFnGetAttdevscratchcfnapAccessPointIdD80AF13C",
-            value="fsap-05a37b5674def5c27",
-            export_name="Infra-dev-Core:ExportsOutputFnGetAttdevscratchcfnapAccessPointIdD80AF13C",   
-        )
-        cdk.CfnOutput(
-            self,
-            "ExportsOutputFnGetAttdevrootcfnapAccessPointIdE493928B",
-            value="fsap-036fe99dd5de7f7fe",
-            export_name="Infra-dev-Core:ExportsOutputFnGetAttdevrootcfnapAccessPointIdE493928B",
-        )
-        cdk.CfnOutput(
-            self,
-            "ExportsOutputFnGetAttdevsharedcfnapAccessPointIdF74082A0",
-            value="fsap-020a0538b9edce70a",
-            export_name="Infra-dev-Core:ExportsOutputFnGetAttdevsharedcfnapAccessPointIdF74082A0",
-        )
 
     @property
     def vpc(self) -> EnvBaseVpc:

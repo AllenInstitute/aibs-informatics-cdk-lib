@@ -147,9 +147,7 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
                 mount_points.append(
                     tmp_mount_point_config.to_batch_mount_point(f"tmp{i}", sfn_format=True)
                 )
-                volumes.append(
-                    tmp_mount_point_config.to_batch_volume(f"tmp{i}", sfn_format=True)
-                )
+                volumes.append(tmp_mount_point_config.to_batch_volume(f"tmp{i}", sfn_format=True))
 
         batch_invoked_lambda_kwargs["mount_points"] = mount_points
         batch_invoked_lambda_kwargs["volumes"] = volumes

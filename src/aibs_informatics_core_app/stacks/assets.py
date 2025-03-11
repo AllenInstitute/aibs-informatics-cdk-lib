@@ -5,8 +5,6 @@ from aibs_informatics_core.env import EnvBase
 
 from aibs_informatics_cdk_lib.constructs_.assets.code_asset_definitions import (
     AIBSInformaticsAssets,
-    AIBSInformaticsCodeAssets,
-    AIBSInformaticsDockerAssets,
 )
 from aibs_informatics_cdk_lib.stacks.base import EnvBaseStack
 
