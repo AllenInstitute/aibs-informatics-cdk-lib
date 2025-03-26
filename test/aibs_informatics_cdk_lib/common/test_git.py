@@ -31,6 +31,11 @@ from aibs_informatics_cdk_lib.common.git import (
             id="https @branch/name no .git",
         ),
         param(
+            "https://github.com/org/package.git@branch/name",
+            ("https://github.com/org/package.git", "branch/name"),
+            id="https @branch/name",
+        ),
+        param(
             "https://github.com/org/package.git#branch",
             ("https://github.com/org/package.git", "branch"),
             id="https #branch",
@@ -69,6 +74,11 @@ from aibs_informatics_cdk_lib.common.git import (
             "git@github.com:org/package.git@branch",
             ("git@github.com:org/package.git", "branch"),
             id="ssh branch",
+        ),
+        param(
+            "git@github.com:org/package.git@branch/name",
+            ("git@github.com:org/package.git", "branch/name"),
+            id="ssh branch/name",
         ),
         param(
             "git@github.com:github/octoforce-actions.git@v1.0.0",

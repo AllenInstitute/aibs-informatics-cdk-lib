@@ -12,7 +12,7 @@ from aws_cdk import aws_ecr_assets
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_s3_assets
 
-from aibs_informatics_cdk_lib.common.git import clone_repo, is_local_repo
+from aibs_informatics_cdk_lib.common.git import clone_repo, is_local_repo, is_repo_url
 from aibs_informatics_cdk_lib.constructs_.assets.code_asset import (
     GLOBAL_GLOB_EXCLUDES,
     PYTHON_GLOB_EXCLUDES,
@@ -40,20 +40,23 @@ class AssetsMixin:
         Args:
             repo_url (str): The git repo url. This is required.
                 If the repo path is not in the environment, the repo will be cloned from this url.
-            repo_path_env_var (Optional[str]): The environment variable that contains the repo path.
-                This is optional. This is useful for local development.
+            repo_path_env_var (Optional[str]): The environment variable that contains the
+                repo path or alternative repo url. This is optional.
+                This is useful for local development.
 
         Returns:
             Path: The path to the repo
         """
         if repo_path_env_var and (repo_path := os.getenv(repo_path_env_var)) is not None:
             logger.info(f"Using {repo_path_env_var} from environment")
-            if not is_local_repo(repo_path):
+            if is_local_repo(repo_path):
+                return Path(repo_path)
+            elif is_repo_url(str(repo_path)):
+                return clone_repo(repo_path, skip_if_exists=True)
+            else:
                 raise ValueError(f"Env variable {repo_path_env_var} is not a valid git repo")
-            repo_path = Path(repo_path)
         else:
-            repo_path = clone_repo(repo_url, skip_if_exists=True)
-        return repo_path
+            return clone_repo(repo_url, skip_if_exists=True)
 
 
 class AIBSInformaticsCodeAssets(constructs.Construct, AssetsMixin):
@@ -63,10 +66,14 @@ class AIBSInformaticsCodeAssets(constructs.Construct, AssetsMixin):
         construct_id: str,
         env_base: EnvBase,
         runtime: Optional[lambda_.Runtime] = None,
+        aibs_informatics_aws_lambda_repo: Optional[str] = None,
     ) -> None:
         super().__init__(scope, construct_id)
         self.env_base = env_base
         self.runtime = runtime or lambda_.Runtime.PYTHON_3_11
+        self.AIBS_INFORMATICS_AWS_LAMBDA_REPO = (
+            aibs_informatics_aws_lambda_repo or AIBS_INFORMATICS_AWS_LAMBDA_REPO
+        )
 
     @cached_property
     def AIBS_INFORMATICS_AWS_LAMBDA(self) -> CodeAsset:
@@ -77,7 +84,7 @@ class AIBSInformaticsCodeAssets(constructs.Construct, AssetsMixin):
         """
 
         repo_path = self.resolve_repo_path(
-            AIBS_INFORMATICS_AWS_LAMBDA_REPO, AIBS_INFORMATICS_AWS_LAMBDA_REPO_ENV_VAR
+            self.AIBS_INFORMATICS_AWS_LAMBDA_REPO, AIBS_INFORMATICS_AWS_LAMBDA_REPO_ENV_VAR
         )
 
         asset_hash = generate_path_hash(
@@ -103,7 +110,7 @@ class AIBSInformaticsCodeAssets(constructs.Construct, AssetsMixin):
             ],
             bundling=cdk.BundlingOptions(
                 image=bundling_image,
-                working_directory=f"/asset-input",
+                working_directory="/asset-input",
                 entrypoint=["/bin/bash", "-c"],
                 command=[
                     # This makes the following commands run together as one
@@ -150,9 +157,13 @@ class AIBSInformaticsDockerAssets(constructs.Construct, AssetsMixin):
         scope: constructs.Construct,
         construct_id: str,
         env_base: EnvBase,
+        aibs_informatics_aws_lambda_repo: Optional[str] = None,
     ) -> None:
         super().__init__(scope, construct_id)
         self.env_base = env_base
+        self.AIBS_INFORMATICS_AWS_LAMBDA_REPO = (
+            aibs_informatics_aws_lambda_repo or AIBS_INFORMATICS_AWS_LAMBDA_REPO
+        )
 
     @cached_property
     def AIBS_INFORMATICS_AWS_LAMBDA(self) -> aws_ecr_assets.DockerImageAsset:
@@ -162,8 +173,9 @@ class AIBSInformaticsDockerAssets(constructs.Construct, AssetsMixin):
             aws_ecr_assets.DockerImageAsset: The docker asset
         """
         repo_path = self.resolve_repo_path(
-            AIBS_INFORMATICS_AWS_LAMBDA_REPO, AIBS_INFORMATICS_AWS_LAMBDA_REPO_ENV_VAR
+            self.AIBS_INFORMATICS_AWS_LAMBDA_REPO, AIBS_INFORMATICS_AWS_LAMBDA_REPO_ENV_VAR
         )
+
         return aws_ecr_assets.DockerImageAsset(
             self,
             "aibs-informatics-aws-lambda",
