@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class GitUrl(ValidatedStr):
     regex_pattern: ClassVar[re.Pattern] = re.compile(
-        r"((?:(?:git|ssh|http(?:s)?)(?::\/\/)(?:[\w\.]+)\/|(?:git@(?:[\w\.]+)):)(?:[\w\.-]+)\/(?:[\w\.-]+)(?:\.git)?)(?:(?:\#|@|\/tree\/)([\/\w\.]+))?"
+        r"((?:(?:git|ssh|http(?:s)?)(?::\/\/)(?:[\w\.]+)\/|(?:git@(?:[\w\.]+)):)(?:[\w\.-]+)\/(?:[\w\.-]+)(?:\.git)?)(?:(?:\#|@|\/tree\/)([\w\./-]+))?"
     )
 
     @property
