@@ -64,7 +64,7 @@ def is_local_repo(repo_path: Union[str, Path]) -> bool:
         return False
 
 
-def get_commit_hash(repo_url_or_path: Union[str, Path]) -> str:
+def get_commit_hash(repo_url_or_path: Union[str, Path]) -> Optional[str]:
     """
     Get the commit hash of the HEAD reference of a Git repository.
 
@@ -116,7 +116,15 @@ def get_commit_hash_from_local(repo_path: Union[str, Path]) -> str:
         )
         return commit_hash
     except subprocess.CalledProcessError as e:
-        logger.error(f"An error occurred while trying to get the commit hash from local: {e}")
+        logger.error(
+            f"An error occurred while trying to get the commit hash from local path {repo_path}: {e}"
+        )
+        raise e
+    except Exception as e:
+        logger.error(
+            "An unexpected error occurred while trying to get the commit hash from local path "
+            f"{repo_path}: {e}"
+        )
         raise e
 
 
@@ -191,13 +199,26 @@ def clone_repo(
     target_path = construct_repo_path(repo_url, target_dir)
 
     if target_path.exists():
-        if skip_if_exists and get_commit_hash(target_path) == get_commit_hash(repo_url):
-            logger.info(
-                f"Skipping cloning of repository as target path already exists: {target_path}"
-            )
-            return target_path
-        else:
-            remove_path(target_path)
+        if skip_if_exists:
+            repo_url_commit_hash = get_commit_hash(repo_url)
+            try:
+                target_path_commit_hash = get_commit_hash(target_path)
+            except Exception as e:
+                logger.warning(
+                    f"An error occurred while checking the commit hash of the existing repository: {e}"
+                    "Removing the existing path and proceeding with cloning into the following path: "
+                    f"{target_path}"
+                )
+
+            else:
+                if target_path_commit_hash == repo_url_commit_hash:
+                    # If the commit hashes match, return the existing path
+                    logger.info(
+                        f"Skipping cloning of repository as target path already exists: {target_path}"
+                    )
+                return target_path
+        # If the target path exists but the commit hashes do not match, remove the existing path
+        remove_path(target_path)
     try:
         # Clone the repository into the target directory
         base_url, branch = get_repo_url_components(repo_url)
