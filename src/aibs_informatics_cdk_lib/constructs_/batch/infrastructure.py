@@ -113,7 +113,7 @@ class Batch(EnvBaseConstruct):
     ) -> iam.Role:
         instance_role = iam.Role(
             self,
-            self.get_child_id(self, f"instance-role"),
+            self.get_child_id(self, "instance-role"),
             role_name=role_name,
             description="Role used by ec2 instance in batch compute environment",
             assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"),  # type: ignore  # Interface not inferred
@@ -153,7 +153,7 @@ class Batch(EnvBaseConstruct):
         # Used for S3 / Lambda
         iam.Policy(
             self,
-            f"s3-lambda-env",
+            "s3-ecs-env",
             statements=[
                 # allow read access from all buckets
                 iam.PolicyStatement(
@@ -161,8 +161,8 @@ class Batch(EnvBaseConstruct):
                     actions=S3_READ_ONLY_ACCESS_ACTIONS,
                     effect=iam.Effect.ALLOW,
                     resources=[
-                        f"arn:aws:s3:::*",
-                        f"arn:aws:s3:::*/*",
+                        "arn:aws:s3:::*",
+                        "arn:aws:s3:::*/*",
                     ],
                 ),
                 iam.PolicyStatement(
@@ -203,7 +203,7 @@ class Batch(EnvBaseConstruct):
     def create_instance_profile(self, instance_role_name: str) -> iam.CfnInstanceProfile:
         return iam.CfnInstanceProfile(
             self,
-            f"instance-profile",
+            "instance-profile",
             roles=[instance_role_name],
         )
 
