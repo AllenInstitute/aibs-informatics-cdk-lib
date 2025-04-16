@@ -13,7 +13,64 @@ from aibs_informatics_cdk_lib.constructs_.efs.file_system import (
 )
 
 
-class EFSDebugInstanceConstruct(EnvBaseConstruct):
+class DebugInstanceConstruct(EnvBaseConstruct):
+    """
+    DebugInstanceConstruct is a CDK construct that creates an EC2 instance pre-configured for debugging and troubleshooting purposes within a given VPC. This instance is designed primarily to facilitate runtime inspection, diagnostics, and interactions with attached resources, including optional file system mounts (EFS) for scenarios such as shared storage debugging or configuration verification.
+
+    The construct provisions:
+      - A dedicated security group for the instance.
+      - An IAM role with necessary policies (including AmazonSSMManagedInstanceCore and AmazonS3ReadOnlyAccess), optionally supplemented by user-specified inline policies.
+      - A Linux-based EC2 instance (defaulting to the latest Amazon Linux 2) with user data commands to perform system updates, install EFS utilities, and debugging tools (e.g., jq, tree).
+
+    Parameters:
+      - scope (Construct): The scope in which this construct is defined.
+      - id (Optional[str]): The unique identifier for the construct.
+      - env_base (EnvBase): The environment configuration required for the construct.
+      - vpc (ec2.Vpc): The VPC within which the instance is launched.
+      - name (str, optional): Base name for resources. Defaults to "DebugInstance".
+      - efs_filesystems (Optional[List[Union[efs.IFileSystem, EnvBaseFileSystem]]], optional): A list of EFS file systems to mount on the instance. If provided, each file system is mounted at a dedicated path under /mnt/efs/.
+      - instance_type (ec2.InstanceType, optional): The EC2 instance type for the debug instance. Defaults to t3.medium.
+      - machine_image (Optional[ec2.IMachineImage], optional): The machine image used for the instance. Defaults to the latest Amazon Linux 2 image.
+      - instance_name (Optional[str], optional): A custom name for the EC2 instance. If not provided, a name is generated based on the base name.
+      - instance_role_name (Optional[str], optional): The name of the IAM role assigned to the instance. If not provided, a default name derived from the base name is used.
+      - instance_role_policy_statements (Optional[List[iam.PolicyStatement]], optional): Additional IAM policy statements to attach inline to the instance role.
+
+    Usage Examples:
+        1. Minimal usage:
+         >>> instance = DebugInstanceConstruct(
+                 scope=app,
+                 id="DebugInstance",
+                 env_base=env,
+                 vpc=my_vpc
+             )
+         This creates an EC2 instance with default parameters and without mounting any EFS file systems.
+
+        2. Advanced usage with custom instance details and EFS mounting:
+         >>> instance = DebugInstanceConstruct(
+                 scope=app,
+                 id="CustomDebugInstance",
+                 env_base=env,
+                 vpc=my_vpc,
+                 name="CustomDebug",
+                 instance_type=ec2.InstanceType("t3.large"),
+                 instance_name="CustomDebugEC2",
+                 instance_role_policy_statements=[custom_policy_statement],
+                 efs_filesystems=[my_efs]
+             )
+         This creates an EC2 instance with a custom instance type, a specified instance name, an inline policy, and mounts the provided EFS file system.
+
+        3. Using a custom machine image:
+         >>> custom_image = ec2.MachineImage.from_lookup(name="MyCustomAMI")
+         >>> instance = DebugInstanceConstruct(
+                 scope=app,
+                 id="CustomImageInstance",
+                 env_base=env,
+                 vpc=my_vpc,
+                 machine_image=custom_image
+             )
+        This example shows how to specify a custom machine image instead of using the default Amazon Linux 2 image.
+    """
+
     def __init__(
         self,
         scope: Construct,
