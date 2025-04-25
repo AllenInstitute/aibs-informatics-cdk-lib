@@ -243,8 +243,8 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
                     "JobQueue.$": sfn.JsonPath.string_at(f"$.{config_batch_args_path}.job_queue_arn"),
                     "Parameters.$": sfn.JsonPath.object_at(f"$.{config_batch_args_path}.parameters"),
                     "ContainerOverrides.$": sfn.JsonPath.object_at(f"$.{config_batch_args_path}.container_overrides"),
-                    # TODO: should I pass this through the config_batch_args_path?
                     "Tags.$": sfn.JsonPath.object_at("$.request.demand_execution.execution_metadata.tags"),
+                    "PropagateTags": True,
                 },
                 # fmt: on
                 "ResultPath": "$.tasks.batch_submit_task",
