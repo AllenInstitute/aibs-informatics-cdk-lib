@@ -113,7 +113,7 @@ class DemandExecutionStack(EnvBaseStack):
         self._assets = assets
 
         root_mount_point_config = MountPointConfiguration.from_access_point(
-            self.efs_ecosystem.file_system.root_access_point, EFS_MOUNT_PATH
+            self.efs_ecosystem.root_access_point, EFS_MOUNT_PATH
         )
         shared_mount_point_config = MountPointConfiguration.from_access_point(
             self.efs_ecosystem.shared_access_point, "/opt/shared", read_only=True
@@ -158,6 +158,11 @@ class DemandExecutionStack(EnvBaseStack):
             data_sync_state_machine=self.data_sync_state_machine,
             shared_mount_point_config=shared_mount_point_config,
             scratch_mount_point_config=scratch_mount_point_config,
+            tags={
+                "ai:cost-allocation:aibs-informatics-service": "n/a",
+                "ai:cost-allocation:aibs-informatics-workflow-type": "$.execution_type",
+                "ai:cost-allocation:aibs-informatics-workflow-id": "$.execution_id",
+            },
         )
         self.demand_execution_state_machine = demand_execution.to_state_machine("demand-execution")
 
