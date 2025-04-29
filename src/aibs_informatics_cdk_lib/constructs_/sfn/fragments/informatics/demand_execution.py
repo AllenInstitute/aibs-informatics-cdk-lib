@@ -16,10 +16,12 @@ from aibs_informatics_cdk_lib.common.aws.iam_utils import (
     s3_policy_statement,
     sfn_policy_statement,
 )
+from aibs_informatics_cdk_lib.common.aws.sfn_utils import JsonReferencePath
 from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstructMixins
 from aibs_informatics_cdk_lib.constructs_.efs.file_system import MountPointConfiguration
 from aibs_informatics_cdk_lib.constructs_.sfn.fragments.base import EnvBaseStateMachineFragment
 from aibs_informatics_cdk_lib.constructs_.sfn.states.common import CommonOperation
+from aibs_informatics_cdk_lib.constructs_.sfn.utils import convert_reference_paths
 
 
 class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixins):
@@ -37,6 +39,7 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
         scratch_mount_point_config: Optional[MountPointConfiguration],
         tmp_mount_point_config: Optional[MountPointConfiguration] = None,
         context_manager_configuration: Optional[Dict[str, Any]] = None,
+        tags: Optional[Dict[str, str]] = None,
     ) -> None:
         super().__init__(scope, id, env_base)
 
@@ -137,6 +140,17 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
             },
         )
 
+        # normalization steps:
+        # - merge build and runtime tags
+
+        norm_parallel = CommonOperation.enclose_chainable(
+            self,
+            "Normalize Demand Execution",
+            self.demand_execution_normalize_tags_chain(tags),
+            input_path="$.request.demand_execution",
+            result_path="$.request.demand_execution",
+        )
+
         prep_scaffolding_task = CommonOperation.enclose_chainable(
             self,
             "Prepare Demand Scaffolding",
@@ -229,6 +243,8 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
                     "JobQueue.$": sfn.JsonPath.string_at(f"$.{config_batch_args_path}.job_queue_arn"),
                     "Parameters.$": sfn.JsonPath.object_at(f"$.{config_batch_args_path}.parameters"),
                     "ContainerOverrides.$": sfn.JsonPath.object_at(f"$.{config_batch_args_path}.container_overrides"),
+                    "Tags.$": sfn.JsonPath.object_at("$.request.demand_execution.execution_metadata.tags"),
+                    "PropagateTags": True,
                 },
                 # fmt: on
                 "ResultPath": "$.tasks.batch_submit_task",
@@ -296,6 +312,7 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
         # fmt: off
         definition = (
             start_state
+            .next(norm_parallel)
             .next(prep_scaffolding_task)
             .next(setup_tasks)
             .next(execution_task)
@@ -303,6 +320,41 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
         )
         # fmt: on
         self.definition = definition
+
+    def demand_execution_normalize_tags_chain(
+        self, tags: Optional[Dict[str, str]]
+    ) -> sfn.IChainable:
+        """Merge build and runtime tags.
+
+        Chain Assumptions/Expectations:
+            - input is the demand execution request
+            - output is the demand execution request with merged tags
+
+        If runtime tags are not provided, only build‑time tags are used.
+
+        Args:
+            tags (Optional[Dict[str, str]]): build‑time tags
+        Returns:
+            sfn.IChainable: the state machine fragment
+        """
+
+        static_tags: dict[str, str] = tags or {}  # build‑time default
+        execution_tags_path = JsonReferencePath("execution_metadata.tags")
+
+        static_tags = {
+            f"{k}.$" if isinstance(v, str) and v.startswith("$") else k: v
+            for k, v in static_tags.items()
+        }
+
+        merge_tags_chain = CommonOperation.merge_defaults(
+            self,
+            "Merge Tags",
+            input_path="$",
+            target_path=execution_tags_path.as_reference,
+            defaults=static_tags,
+            check_if_target_present=True,
+        )
+        return merge_tags_chain
 
     @property
     def required_inline_policy_statements(self) -> List[iam.PolicyStatement]:
