@@ -19,8 +19,8 @@ dynamic = [
     "version",
 ]
 dependencies = [
-    "aibs-informatics-aws-utils~=0.0.4",
-    "aibs-informatics-core~=0.0.8",
+    "aibs-informatics-aws-utils~=0.0.8",
+    "aibs-informatics-core~=0.1.0",
     "aws-cdk-lib~=2.96",
     "constructs~=10.0",
     "pydantic~=2.0",
