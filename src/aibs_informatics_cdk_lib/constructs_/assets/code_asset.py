@@ -219,7 +219,7 @@ class CodeAsset:
             else:
                 package_install_commands += [
                     "uv export --frozen --no-dev --no-editable -o requirements-autogen.txt",
-                    "uv pip install -r requirements-autogen.txt --target /asset-output",
+                    "uv pip install -r requirements-autogen.txt --no-cache --target /asset-output",
                 ]
         else:
             package_install_commands += [
