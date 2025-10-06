@@ -214,7 +214,7 @@ class CodeAsset:
                     f"make sure that all dependencies are compatible with uv!"
                 )
                 package_install_commands.append(
-                    f"uv pip install {'-r ' + requirements_file.as_posix()} --no-cache --target /asset-output",
+                    f"uv pip install -r {requirements_file.as_posix()} --no-cache --target /asset-output",
                 )
             else:
                 package_install_commands += [
