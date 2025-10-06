@@ -172,10 +172,64 @@ class CodeAsset:
         environment: Optional[Mapping[str, str]] = None,
         use_uv: bool = False,
     ) -> "CodeAsset":
-        """Returns a NEW code asset
+        """Create and bundle a Python Lambda code asset
+
+        This factory method prepares a Lambda code asset whose source may live in a subdirectory of a
+        larger repository. It computes a stable hash (excluding common Python / build artifacts) to
+        maximize CDK asset caching, then leverages CDK's Docker bundling to install dependencies into
+        /asset-output so they are packaged alongside the function code.
+
+        Dependency installation strategies:
+            * Standard pip (default): Installs either the provided requirements file or the local package (.)
+                into /asset-output.
+            * uv (if use_uv=True): Uses uv for faster, deterministic resolution. If a requirements_file is
+                supplied it is installed directly; otherwise uv export produces a frozen requirements file
+                which is then installed.
+
+        Private Git dependencies:
+            The host's ~/.ssh directory is mounted read‑only into the bundling container so that private
+            repositories referenced in dependency specifications (e.g., git+ssh URLs) can be resolved.
+            Diagnostic SSH output (ssh -vT git@github.com) is executed to aid debugging but does not fail
+            the build.
+
+        File permissions:
+            Directory permissions are normalized to 755 and file permissions to 644 to ensure the Lambda
+            runtime can read all packaged artifacts.
+
+        Parameters:
+            path (Path):
+                Path to the Python project or module root you want to package (the leaf containing setup.cfg,
+                pyproject.toml, requirements, or the code itself).
+            context_path (Optional[Path]):
+                Root directory used as the asset's source context (often the monorepo root). If None, defaults
+                to path. Everything under this directory (minus excluded patterns) is made available during
+                bundling so that relative/local path dependencies can resolve correctly.
+            requirements_file (Optional[Path]):
+                Path to a requirements file (e.g., requirements.txt). If provided:
+                    * pip mode: installs with pip -r <file>
+                    * uv mode: installs with uv pip install -r <file>
+                If omitted:
+                    * pip mode: installs the local project (.)
+                    * uv mode: uv export produces a frozen requirements-autogen.txt, then that is installed.
+            includes (Optional[Sequence[str]]):
+                Additional glob patterns to explicitly include when generating the asset hash. Useful for
+                forcing hash sensitivity to files that might otherwise be excluded.
+            excludes (Optional[Sequence[str]]):
+                Additional glob patterns to exclude (beyond built-in Python / tooling ignores) for hashing
+                and packaging. Helps reduce asset size and improve cache hits.
+            runtime (aws_cdk.aws_lambda.Runtime):
+                Lambda runtime whose bundling image will be used (default: PYTHON_3_11).
+            platform (Optional[str]):
+                Docker platform string (e.g., linux/amd64) to enforce architecture consistency when building
+                on heterogeneous hosts (e.g., Apple Silicon).
+            environment (Optional[Mapping[str, str]]):
+                Default environment variables to associate with the resulting CodeAsset (may be applied when
+                the asset is used in Lambda functions).
+            use_uv (bool):
+                If True, use uv for dependency resolution and installation; otherwise fall back to pip.
 
         Returns:
-            CodeAsset: The code asset
+            CodeAsset: A new instance encapsulating the bundled Python code and dependencies.
         """
 
         if context_path is None:
