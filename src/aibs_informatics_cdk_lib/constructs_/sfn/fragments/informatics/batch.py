@@ -244,8 +244,6 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
             defaults["mount_points"] = mount_points
             defaults["volumes"] = volumes
 
-        print(defaults)
-
         fragment = BatchInvokedLambdaFunction(
             scope,
             id,
