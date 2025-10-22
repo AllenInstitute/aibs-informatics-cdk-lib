@@ -34,6 +34,7 @@ class BatchOperation:
         command: Optional[Union[List[str], str]],
         image: str,
         job_definition_name: str,
+        job_role_arn: Optional[str] = None,
         environment: Optional[Union[Mapping[str, str], str]] = None,
         memory: Optional[Union[int, str]] = None,
         vcpus: Optional[Union[int, str]] = None,
@@ -67,6 +68,8 @@ class BatchOperation:
                 Supports reference paths (e.g. "$.foo.bar")
             job_definition_name (str): name of job definition.
                 Supports reference paths (e.g. "$.foo.bar")
+            job_role_arn (Optional[str], optional): Optional job role arn to use for the job.
+                Supports reference paths (e.g. "$.foo.bar")
             environment (Optional[Union[Mapping[str, str], str]], optional): Optional environment variables.
                 Supports reference paths both as individual values as well as for the entire list of variables.
                 However, if a reference path is used for the entire list, the list must be a list of mappings with Name/Value keys".
@@ -82,7 +85,7 @@ class BatchOperation:
         """
 
         job_definition_name = sfn.JsonPath.format(
-            f"{{}}-{{}}", job_definition_name, sfn.JsonPath.uuid()
+            "{}-{}", job_definition_name, sfn.JsonPath.uuid()
         )
         if not isinstance(environment, str):
             environment_pairs = to_key_value_pairs(dict(environment or {}))
@@ -104,7 +107,9 @@ class BatchOperation:
         }  # type: ignore
         if platform_capabilities:
             request["platformCapabilities"] = platform_capabilities
-
+        if job_role_arn:
+            assert "containerProperties" in request  # mollifies mypy
+            request["containerProperties"]["jobRoleArn"] = job_role_arn
         parameters = convert_key_case(request, pascalcase)
 
         start = sfn.Pass(
@@ -152,6 +157,7 @@ class BatchOperation:
         job_name: str,
         job_definition: str,
         job_queue: str,
+        job_role_arn: Optional[str] = None,
         parameters: Optional[Mapping[str, str]] = None,
         command: Optional[Union[List[str], str]] = None,
         environment: Optional[Union[Mapping[str, str], str]] = None,
@@ -172,6 +178,8 @@ class BatchOperation:
             "environment": environment_pairs,
             "resourceRequirements": to_resource_requirements(gpu, memory, vcpus),  # type: ignore # must be string
         }  # type: ignore
+        if job_role_arn:
+            container_overrides["jobRoleArn"] = job_role_arn
 
         request = {
             "JobName": job_name,
@@ -180,7 +188,6 @@ class BatchOperation:
             "Parameters": parameters or {},
             "ContainerOverrides": container_overrides,
         }
-
         start = sfn.Pass(
             scope,
             id + " SubmitJob Prep",

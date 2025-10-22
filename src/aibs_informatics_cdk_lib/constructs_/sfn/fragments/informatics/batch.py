@@ -68,6 +68,7 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
         volumes: Optional[Union[List[VolumeTypeDef], str]] = None,
         mount_point_configs: Optional[List[MountPointConfiguration]] = None,
         platform_capabilities: Optional[Union[List[Literal["EC2", "FARGATE"]], str]] = None,
+        job_role_arn: Optional[str] = None,
     ) -> None:
         """Invoke a command on image via batch with a payload from s3
 
@@ -106,6 +107,8 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
             vcpus (int | str | None): Number of vCPUs (either int or reference path str). Defaults to None.
             mount_points (List[MountPointTypeDef] | None): List of mount points to add to state machine. Defaults to None.
             volumes (List[VolumeTypeDef] | None): List of volumes to add to state machine. Defaults to None.
+            platform_capabilities (List[Literal["EC2", "FARGATE"]] | str | None): platform capabilities to use. This can be a reference path (e.g. "$.platform_capabilities")
+            job_role_arn (str | None): Job role arn to use for the job. This can be a reference path (e.g. "$.job_role_arn")
         """
         super().__init__(scope, id, env_base)
         key_prefix = key_prefix or S3_SCRATCH_KEY_PREFIX
@@ -179,6 +182,7 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
             mount_points=mount_points or [],
             volumes=volumes or [],
             platform_capabilities=platform_capabilities,
+            job_role_arn=job_role_arn,
         )
 
         get_response = S3Operation.get_payload(
@@ -221,6 +225,7 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
         environment: Optional[Mapping[str, str]] = None,
         mount_point_configs: Optional[List[MountPointConfiguration]] = None,
         platform_capabilities: Optional[List[Literal["EC2", "FARGATE"]]] = None,
+        job_role_arn: Optional[Union[iam.Role, str]] = None,
     ) -> "BatchInvokedLambdaFunction":
         defaults: dict[str, Any] = {}
 
@@ -230,6 +235,7 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
         defaults["environment"] = environment or {}
         defaults["platform_capabilities"] = platform_capabilities or ["EC2"]
         defaults["bucket_name"] = bucket_name
+        defaults["job_role_arn"] = job_role_arn
 
         defaults["command"] = command if command else []
 
@@ -237,6 +243,8 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
             mount_points, volumes = cls.convert_to_mount_point_and_volumes(mount_point_configs)
             defaults["mount_points"] = mount_points
             defaults["volumes"] = volumes
+
+        print(defaults)
 
         fragment = BatchInvokedLambdaFunction(
             scope,
@@ -260,6 +268,7 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
             mount_points=sfn.JsonPath.string_at("$.merged.mount_points"),
             volumes=sfn.JsonPath.string_at("$.merged.volumes"),
             platform_capabilities=sfn.JsonPath.string_at("$.merged.platform_capabilities"),
+            job_role_arn=sfn.JsonPath.string_at("$.merged.job_role_arn"),
         )
 
         start = sfn.Pass(
@@ -305,6 +314,8 @@ class BatchInvokedExecutorFragment(BatchInvokedBaseFragment, AWSBatchMixins):
         mount_point_configs: Optional[List[MountPointConfiguration]] = None,
         mount_points: Optional[List[MountPointTypeDef]] = None,
         volumes: Optional[List[VolumeTypeDef]] = None,
+        platform_capabilities: Optional[Union[List[Literal["EC2", "FARGATE"]], str]] = None,
+        job_role_arn: Optional[str] = None,
     ) -> None:
         """Invoke an executor in an image via batch with a payload from s3
 
@@ -340,6 +351,8 @@ class BatchInvokedExecutorFragment(BatchInvokedBaseFragment, AWSBatchMixins):
             vcpus (int | str | None): Number of vCPUs (either int or reference path str). Defaults to None.
             mount_points (List[MountPointTypeDef] | None): List of mount points to add to state machine. Defaults to None.
             volumes (List[VolumeTypeDef] | None): List of volumes to add to state machine. Defaults to None.
+            platform_capabilities (List[Literal["EC2", "FARGATE"]] | str | None): platform capabilities to use. This can be a reference path (e.g. "$.platform_capabilities")
+            job_role_arn (str | None): Job role arn to use for the job. This can be a reference path (e.g. "$.job_role_arn")
         """
         super().__init__(scope, id, env_base)
         key_prefix = key_prefix or S3_SCRATCH_KEY_PREFIX
@@ -399,6 +412,8 @@ class BatchInvokedExecutorFragment(BatchInvokedBaseFragment, AWSBatchMixins):
             vcpus=vcpus,
             mount_points=mount_points or [],
             volumes=volumes or [],
+            platform_capabilities=platform_capabilities,
+            job_role_arn=job_role_arn,
         )
 
         get_response = S3Operation.get_payload(
