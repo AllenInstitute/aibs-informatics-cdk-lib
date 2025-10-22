@@ -157,7 +157,6 @@ class BatchOperation:
         job_name: str,
         job_definition: str,
         job_queue: str,
-        job_role_arn: Optional[str] = None,
         parameters: Optional[Mapping[str, str]] = None,
         command: Optional[Union[List[str], str]] = None,
         environment: Optional[Union[Mapping[str, str], str]] = None,
@@ -178,8 +177,6 @@ class BatchOperation:
             "environment": environment_pairs,
             "resourceRequirements": to_resource_requirements(gpu, memory, vcpus),  # type: ignore # must be string
         }  # type: ignore
-        if job_role_arn:
-            container_overrides["jobRoleArn"] = job_role_arn
 
         request = {
             "JobName": job_name,
