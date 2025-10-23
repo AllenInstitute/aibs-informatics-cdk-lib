@@ -248,7 +248,10 @@ class CodeAsset:
 
         ssh_setup_commands = [
             # Copy in host ssh keys that are needed to clone private git repos
-            f"cp -r {host_ssh_dir} /root/.ssh",
+            # first we make the .ssh directory if it doesn't exist
+            "mkdir -p /root/.ssh",
+            # then we copy in all files from host ssh dir to container ssh dir
+            f"cp -a {host_ssh_dir}/. /root/.ssh/",
             # Useful debug if anything goes wrong with github SSH related things
             "ssh -vT git@github.com || true",
         ]
