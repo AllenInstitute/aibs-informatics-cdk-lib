@@ -21,7 +21,6 @@ from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstructMixins
 from aibs_informatics_cdk_lib.constructs_.efs.file_system import MountPointConfiguration
 from aibs_informatics_cdk_lib.constructs_.sfn.fragments.base import EnvBaseStateMachineFragment
 from aibs_informatics_cdk_lib.constructs_.sfn.states.common import CommonOperation
-from aibs_informatics_cdk_lib.constructs_.sfn.utils import convert_reference_paths
 
 
 class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixins):
@@ -365,5 +364,14 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
             sfn_policy_statement(
                 self.env_base,
                 actions=SFN_STATES_EXECUTION_ACTIONS + SFN_STATES_READ_ACCESS_ACTIONS,
+            ),
+            # iam:PassRole needed to support passing batch job role ARNs to batch jobs
+            iam.PolicyStatement(
+                sid="PassRoleForBatchJobs",
+                actions=["iam:PassRole"],
+                effect=iam.Effect.ALLOW,
+                resources=[
+                    f"arn:aws:iam::*:role/{self.env_base or ''}*",
+                ],
             ),
         ]

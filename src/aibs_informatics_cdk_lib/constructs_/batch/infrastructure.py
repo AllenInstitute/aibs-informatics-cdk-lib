@@ -130,7 +130,7 @@ class Batch(EnvBaseConstruct):
         # Used for EBS autoscaling.
         iam.Policy(
             self,
-            f"ebs-autoscale-policy",
+            "ebs-autoscale-policy",
             statements=[
                 iam.PolicyStatement(
                     actions=[

@@ -51,6 +51,7 @@ class SubmitJobFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
         mount_points: Optional[Union[List[MountPointTypeDef], str]] = None,
         volumes: Optional[Union[List[VolumeTypeDef], str]] = None,
         platform_capabilities: Optional[Union[List[Literal["EC2", "FARGATE"]], str]] = None,
+        job_role_arn: Optional[str] = None,
     ) -> None:
         super().__init__(scope, id, env_base)
 
@@ -66,7 +67,7 @@ class SubmitJobFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
             mount_points=mount_points,
             volumes=volumes,
             platform_capabilities=platform_capabilities,
-            # result_path="$.taskResult.register",
+            job_role_arn=job_role_arn,
         )
 
         submit_chain = BatchOperation.submit_job(
@@ -80,7 +81,6 @@ class SubmitJobFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
             vcpus=vcpus,
             memory=memory,
             gpu=gpu,
-            # result_path="$.taskResult.submit",
         )
 
         deregister_chain = BatchOperation.deregister_job_definition(
@@ -140,6 +140,7 @@ class SubmitJobFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
         vcpus: str = "1",
         environment: Optional[Mapping[str, str]] = None,
         mount_point_configs: Optional[List[MountPointConfiguration]] = None,
+        job_role_arn: Optional[str] = None,
     ) -> "SubmitJobFragment":
         defaults: dict[str, Any] = {}
         defaults["command"] = command
@@ -150,6 +151,7 @@ class SubmitJobFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
         defaults["vcpus"] = vcpus
         defaults["gpu"] = "0"
         defaults["platform_capabilities"] = ["EC2"]
+        defaults["job_role_arn"] = job_role_arn
 
         if mount_point_configs:
             mount_points, volumes = cls.convert_to_mount_point_and_volumes(mount_point_configs)
@@ -174,6 +176,7 @@ class SubmitJobFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
             mount_points=sfn.JsonPath.string_at("$.request.mount_points"),
             volumes=sfn.JsonPath.string_at("$.request.volumes"),
             platform_capabilities=sfn.JsonPath.string_at("$.request.platform_capabilities"),
+            job_role_arn=sfn.JsonPath.string_at("$.request.job_role_arn"),
         )
 
         # Now we need to add the start and merge states and add to the definition
@@ -211,6 +214,8 @@ class SubmitJobWithDefaultsFragment(EnvBaseStateMachineFragment, AWSBatchMixins)
         vcpus: str = "1",
         environment: Optional[Mapping[str, str]] = None,
         mount_point_configs: Optional[List[MountPointConfiguration]] = None,
+        platform_capabilities: Optional[Union[List[Literal["EC2", "FARGATE"]], str]] = None,
+        job_role_arn: Optional[str] = None,
     ):
         super().__init__(scope, id, env_base)
         defaults: dict[str, Any] = {}
@@ -220,7 +225,8 @@ class SubmitJobWithDefaultsFragment(EnvBaseStateMachineFragment, AWSBatchMixins)
         defaults["memory"] = memory
         defaults["vcpus"] = vcpus
         defaults["gpu"] = "0"
-        defaults["platform_capabilities"] = ["EC2"]
+        defaults["platform_capabilities"] = platform_capabilities or ["EC2"]
+        defaults["job_role_arn"] = job_role_arn
 
         if mount_point_configs:
             mount_points, volumes = self.convert_to_mount_point_and_volumes(mount_point_configs)
@@ -257,6 +263,7 @@ class SubmitJobWithDefaultsFragment(EnvBaseStateMachineFragment, AWSBatchMixins)
             mount_points=sfn.JsonPath.string_at("$.request.mount_points"),
             volumes=sfn.JsonPath.string_at("$.request.volumes"),
             platform_capabilities=sfn.JsonPath.string_at("$.request.platform_capabilities"),
+            job_role_arn=sfn.JsonPath.string_at("$.request.job_role_arn"),
         ).to_single_state()
 
         self.definition = start.next(merge_chain).next(submit_job)

@@ -30,6 +30,7 @@ class DataSyncFragment(BatchInvokedBaseFragment, EnvBaseConstructMixins):
         aibs_informatics_docker_asset: Union[ecr_assets.DockerImageAsset, str],
         batch_job_queue: Union[batch.JobQueue, str],
         scaffolding_bucket: s3.Bucket,
+        batch_job_role: Optional[Union[iam.Role, str]] = None,
         mount_point_configs: Optional[Iterable[MountPointConfiguration]] = None,
     ) -> None:
         """Sync data from one s3 bucket to another
@@ -43,8 +44,11 @@ class DataSyncFragment(BatchInvokedBaseFragment, EnvBaseConstructMixins):
                 str for the aibs informatics aws lambda
             batch_job_queue (JobQueue|str): Default batch job queue or job queue name str that
                 the batch job will be submitted to. This can be override by the payload.
-            primary_bucket (Bucket): Primary bucket used for request/response json blobs used in
-                the batch invoked lambda function.
+            scaffolding_bucket (Bucket): Primary bucket used for request/response json blobs used
+                in the batch invoked lambda function.
+            batch_job_role (Optional[IRole|str], optional): Optional role to use for the batch job.
+                If not provided, the default role created by the batch compute construct will be
+                used.
             mount_point_configs (Optional[Iterable[MountPointConfiguration]], optional):
                 List of mount point configurations to use. These can be overridden in the payload.
 
@@ -84,6 +88,11 @@ class DataSyncFragment(BatchInvokedBaseFragment, EnvBaseConstructMixins):
             memory="1024",
             vcpus="1",
             mount_point_configs=list(mount_point_configs) if mount_point_configs else None,
+            job_role_arn=(
+                batch_job_role if isinstance(batch_job_role, str) else batch_job_role.role_arn
+            )
+            if batch_job_role
+            else None,
             environment={
                 EnvBase.ENV_BASE_KEY: self.env_base,
                 "AWS_REGION": self.aws_region,
@@ -121,8 +130,27 @@ class DistributedDataSyncFragment(BatchInvokedBaseFragment):
         aibs_informatics_docker_asset: Union[ecr_assets.DockerImageAsset, str],
         batch_job_queue: Union[batch.JobQueue, str],
         scaffolding_bucket: s3.Bucket,
+        batch_job_role: Optional[Union[str, iam.Role]] = None,
         mount_point_configs: Optional[Iterable[MountPointConfiguration]] = None,
     ) -> None:
+        """Sync data from one s3 bucket to another using distributed batch jobs
+
+        Args:
+            scope (constructs.Construct): construct scope
+            id (str): id
+            env_base (EnvBase): env base
+            aibs_informatics_docker_asset (DockerImageAsset|str): Docker image asset or image uri
+                str for the aibs informatics aws lambda
+            batch_job_queue (JobQueue|str): Default batch job queue or job queue name str that
+                the batch job will be submitted to. This can be override by the payload.
+            scaffolding_bucket (Bucket): Primary bucket used for request/response json blobs used
+                in the batch invoked lambda function.
+            batch_job_role (Optional[IRole|str], optional): Optional role to use for the batch job.
+                If not provided, the default role created by the batch compute construct will be
+                used.
+            mount_point_configs (Optional[Iterable[MountPointConfiguration]], optional):
+                List of mount point configurations to use. These can be overridden in the payload.
+        """
         super().__init__(scope, id, env_base)
         start_pass_state = sfn.Pass(
             self,
@@ -154,6 +182,11 @@ class DistributedDataSyncFragment(BatchInvokedBaseFragment):
             memory=1024,
             vcpus=1,
             mount_point_configs=list(mount_point_configs) if mount_point_configs else None,
+            job_role_arn=(
+                batch_job_role if isinstance(batch_job_role, str) else batch_job_role.role_arn
+            )
+            if batch_job_role
+            else None,
         ).enclose(result_path=f"$.tasks.{prep_batch_sync_task_name}.response")
 
         batch_sync_map_state = sfn.Map(
@@ -186,6 +219,11 @@ class DistributedDataSyncFragment(BatchInvokedBaseFragment):
                 memory=4096,
                 vcpus=2,
                 mount_point_configs=list(mount_point_configs) if mount_point_configs else None,
+                job_role_arn=(
+                    batch_job_role if isinstance(batch_job_role, str) else batch_job_role.role_arn
+                )
+                if batch_job_role
+                else None,
             )
         )
         # fmt: off
