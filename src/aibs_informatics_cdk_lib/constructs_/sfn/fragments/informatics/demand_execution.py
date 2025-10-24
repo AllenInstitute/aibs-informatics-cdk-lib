@@ -371,6 +371,6 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
                 actions=["iam:PassRole"],
                 effect=iam.Effect.ALLOW,
                 resources=["*"],
-                conditions={"StringLike": {"iam:PassedToService": "batch.amazonaws.com"}},
+                conditions={"StringLike": {"iam:PassedToService": "ecs-tasks.amazonaws.com"}},
             ),
         ]
