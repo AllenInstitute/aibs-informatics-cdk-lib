@@ -184,6 +184,36 @@ S3_READ_ONLY_ACCESS_ACTIONS = [
     "s3-object-lambda:List*",
 ]
 
+SECRETSMANAGER_READ_ONLY_ACTIONS = [
+    "secretsmanager:DescribeSecret",
+    "secretsmanager:GetRandomPassword",
+    "secretsmanager:GetResourcePolicy",
+    "secretsmanager:GetSecretValue",
+    "secretsmanager:ListSecretVersionIds",
+    "secretsmanager:ListSecrets",
+]
+
+SECRETSMANAGER_WRITE_ACTIONS = [
+    "secretsmanager:CancelRotateSecret",
+    "secretsmanager:CreateSecret",
+    "secretsmanager:DeleteSecret",
+    "secretsmanager:GetResourcePolicy",
+    "secretsmanager:PutSecretValue",
+    "secretsmanager:RemoveRegionsFromReplication",
+    "secretsmanager:ReplicateSecretToRegions",
+    "secretsmanager:RestoreSecret",
+    "secretsmanager:RotateSecret",
+    "secretsmanager:StopReplicationToReplica",
+    "secretsmanager:UpdateSecret",
+    "secretsmanager:UpdateSecretVersionStage",
+]
+
+SECRETSMANAGER_FULL_ACCESS_ACTIONS = [
+    *SECRETSMANAGER_READ_ONLY_ACTIONS,
+    *SECRETSMANAGER_WRITE_ACTIONS,
+]
+
+
 SES_FULL_ACCESS_ACTIONS = ["ses:*"]
 
 SFN_STATES_READ_ACCESS_ACTIONS = [
