@@ -44,6 +44,13 @@ class BatchInvokedBaseFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixi
             *super().required_inline_policy_statements,
             batch_policy_statement(self.env_base),
             s3_policy_statement(self.env_base),
+            iam.PolicyStatement(
+                sid="PassRoleForBatchJobs",
+                actions=["iam:PassRole"],
+                effect=iam.Effect.ALLOW,
+                resources=["*"],
+                conditions={"StringLike": {"iam:PassedToService": "batch.amazonaws.com"}},
+            ),
         ]
 
 
