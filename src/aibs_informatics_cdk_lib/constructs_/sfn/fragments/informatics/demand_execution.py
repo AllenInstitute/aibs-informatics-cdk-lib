@@ -370,8 +370,7 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
                 sid="PassRoleForBatchJobs",
                 actions=["iam:PassRole"],
                 effect=iam.Effect.ALLOW,
-                resources=[
-                    f"arn:aws:iam::*:role/{self.env_base or ''}*",
-                ],
+                resources=["*"],
+                conditions={"StringLike": {"iam:PassedToService": "batch.amazonaws.com"}},
             ),
         ]
