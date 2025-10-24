@@ -49,6 +49,7 @@ class BatchInvokedBaseFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixi
                 actions=["iam:PassRole"],
                 effect=iam.Effect.ALLOW,
                 resources=[f"arn:aws:iam::*:role/{self.env_base}*"],
+                conditions={"StringLike": {"iam:PassedToService": "batch.amazonaws.com"}},
             ),
         ]
 
