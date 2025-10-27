@@ -381,6 +381,28 @@ def s3_policy_statement(
     )
 
 
+def secretsmanager_policy_statement(
+    actions: List[str] = SECRETSMANAGER_READ_ONLY_ACTIONS,
+    sid: str = "SecretsManagerReadOnly",
+    resource_id: str = "*",
+    region: str = None,
+    account: str = None,
+) -> iam.PolicyStatement:
+    return iam.PolicyStatement(
+        sid=sid,
+        actions=actions,
+        effect=iam.Effect.ALLOW,
+        resources=[
+            build_arn(
+                service="secretsmanager",
+                resource_id=resource_id,
+                region=region,
+                account=account,
+            ),
+        ],
+    )
+
+
 def ses_policy_statement(
     actions: List[str] = SES_FULL_ACCESS_ACTIONS,
     sid: str = "SESFullAccess",
