@@ -194,23 +194,31 @@ SECRETSMANAGER_READ_ONLY_ACTIONS = [
 ]
 
 SECRETSMANAGER_WRITE_ACTIONS = [
-    "secretsmanager:CancelRotateSecret",
     "secretsmanager:CreateSecret",
-    "secretsmanager:DeleteSecret",
-    "secretsmanager:GetResourcePolicy",
     "secretsmanager:PutSecretValue",
-    "secretsmanager:RemoveRegionsFromReplication",
     "secretsmanager:ReplicateSecretToRegions",
     "secretsmanager:RestoreSecret",
     "secretsmanager:RotateSecret",
-    "secretsmanager:StopReplicationToReplica",
     "secretsmanager:UpdateSecret",
     "secretsmanager:UpdateSecretVersionStage",
 ]
 
-SECRETSMANAGER_FULL_ACCESS_ACTIONS = [
+SECRETSMANAGER_DELETE_ACTIONS = [
+    "secretsmanager:CancelRotateSecret",
+    "secretsmanager:DeleteSecret",
+    "secretsmanager:RemoveRegionsFromReplication",
+    "secretsmanager:StopReplicationToReplica",
+]
+
+SECRETSMANAGER_READ_WRITE_ACTIONS = [
     *SECRETSMANAGER_READ_ONLY_ACTIONS,
     *SECRETSMANAGER_WRITE_ACTIONS,
+]
+
+SECRETSMANAGER_FULL_ADMIN_ACTIONS = [
+    *SECRETSMANAGER_READ_ONLY_ACTIONS,
+    *SECRETSMANAGER_WRITE_ACTIONS,
+    *SECRETSMANAGER_DELETE_ACTIONS,
 ]
 
 

@@ -2,8 +2,8 @@ import aws_cdk as cdk
 import pytest
 
 from aibs_informatics_cdk_lib.common.aws.iam_utils import (
-    SECRETSMANAGER_FULL_ACCESS_ACTIONS,
     SECRETSMANAGER_READ_ONLY_ACTIONS,
+    SECRETSMANAGER_READ_WRITE_ACTIONS,
     secretsmanager_policy_statement,
 )
 
@@ -33,10 +33,10 @@ generate_policy_test_cases = [
         dict(
             resource_id="stage/db-password",
             account="123456789012",
-            actions=SECRETSMANAGER_FULL_ACCESS_ACTIONS,
+            actions=SECRETSMANAGER_READ_WRITE_ACTIONS,
         ),
         f"arn:aws:secretsmanager:{cdk.Aws.REGION}:123456789012:stage/db-password",
-        SECRETSMANAGER_FULL_ACCESS_ACTIONS,
+        SECRETSMANAGER_READ_WRITE_ACTIONS,
     ),
 ]
 
