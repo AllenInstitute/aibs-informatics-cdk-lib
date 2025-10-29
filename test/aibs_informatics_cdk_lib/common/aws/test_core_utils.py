@@ -1,7 +1,5 @@
 import aws_cdk as cdk
-import constructs
 import pytest
-from aibs_informatics_test_resources.base import BaseTest
 
 from aibs_informatics_cdk_lib.common.aws.core_utils import build_arn
 

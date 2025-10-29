@@ -184,6 +184,44 @@ S3_READ_ONLY_ACCESS_ACTIONS = [
     "s3-object-lambda:List*",
 ]
 
+SECRETSMANAGER_READ_ONLY_ACTIONS = [
+    "secretsmanager:DescribeSecret",
+    "secretsmanager:GetRandomPassword",
+    "secretsmanager:GetResourcePolicy",
+    "secretsmanager:GetSecretValue",
+    "secretsmanager:ListSecretVersionIds",
+    "secretsmanager:ListSecrets",
+]
+
+SECRETSMANAGER_WRITE_ACTIONS = [
+    "secretsmanager:CreateSecret",
+    "secretsmanager:PutSecretValue",
+    "secretsmanager:ReplicateSecretToRegions",
+    "secretsmanager:RestoreSecret",
+    "secretsmanager:RotateSecret",
+    "secretsmanager:UpdateSecret",
+    "secretsmanager:UpdateSecretVersionStage",
+]
+
+SECRETSMANAGER_DELETE_ACTIONS = [
+    "secretsmanager:CancelRotateSecret",
+    "secretsmanager:DeleteSecret",
+    "secretsmanager:RemoveRegionsFromReplication",
+    "secretsmanager:StopReplicationToReplica",
+]
+
+SECRETSMANAGER_READ_WRITE_ACTIONS = [
+    *SECRETSMANAGER_READ_ONLY_ACTIONS,
+    *SECRETSMANAGER_WRITE_ACTIONS,
+]
+
+SECRETSMANAGER_FULL_ADMIN_ACTIONS = [
+    *SECRETSMANAGER_READ_ONLY_ACTIONS,
+    *SECRETSMANAGER_WRITE_ACTIONS,
+    *SECRETSMANAGER_DELETE_ACTIONS,
+]
+
+
 SES_FULL_ACCESS_ACTIONS = ["ses:*"]
 
 SFN_STATES_READ_ACCESS_ACTIONS = [
@@ -346,6 +384,28 @@ def s3_policy_statement(
             build_s3_arn(
                 resource_id=f"{env_base or ''}*",
                 resource_type="bucket",
+            ),
+        ],
+    )
+
+
+def secretsmanager_policy_statement(
+    actions: List[str] = SECRETSMANAGER_READ_ONLY_ACTIONS,
+    sid: str = "SecretsManagerReadOnly",
+    resource_id: str = "*",
+    region: str = None,
+    account: str = None,
+) -> iam.PolicyStatement:
+    return iam.PolicyStatement(
+        sid=sid,
+        actions=actions,
+        effect=iam.Effect.ALLOW,
+        resources=[
+            build_arn(
+                service="secretsmanager",
+                resource_id=resource_id,
+                region=region,
+                account=account,
             ),
         ],
     )
