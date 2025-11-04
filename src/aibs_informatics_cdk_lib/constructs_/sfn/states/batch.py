@@ -39,11 +39,8 @@ class BatchOperation:
         memory: Optional[Union[int, str]] = None,
         vcpus: Optional[Union[int, str]] = None,
         gpu: Optional[Union[int, str]] = None,
-        # mount_points: Optional[List[MountPointTypeDef]] = None,
         mount_points: Optional[Union[List[MountPointTypeDef], str]] = None,
-        # volumes: Optional[List[VolumeTypeDef]] = None,
         volumes: Optional[Union[List[VolumeTypeDef], str]] = None,
-        # platform_capabilities: Optional[List[Literal["EC2", "FARGATE"]]] = None,
         platform_capabilities: Optional[Union[List[Literal["EC2", "FARGATE"]], str]] = None,
         result_path: Optional[str] = "$",
         output_path: Optional[str] = "$",
@@ -223,7 +220,17 @@ class BatchOperation:
                 ],
             },
         )
-        return start.next(submit)
+        chain = start
+        if gpu is not None:
+            chain = chain.next(
+                sfn.Pass(
+                    scope,
+                    id + " SubmitJob Filter Resource Requirements",
+                    input_path="$.ContainerOverrides.ResourceRequirements[?(@.Value != 0 && @.Value != '0')]",
+                    result_path="$.ContainerOverrides.ResourceRequirements",
+                )
+            )
+        return chain.next(submit)
 
     @classmethod
     def deregister_job_definition(
