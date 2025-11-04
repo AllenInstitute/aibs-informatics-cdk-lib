@@ -58,6 +58,16 @@ class EnvBaseBucket(s3.Bucket, EnvBaseConstructMixins):
         *permissions: Literal["rw", "r", "w", "d"],
         objects_key_pattern: Optional[str] = None,
     ):
+        """Grant Bucket access (r,w,d) to a role, optionally specifying a key pattern
+
+        Args:
+            role (iam.IRole | None): role to grant access to
+            objects_key_pattern (Optional[str], optional): Optional pattern to constrain access to.
+                The pattern is applied to object keys within the bucket. You can use '*' and '?'
+                wildcards. For more information, see the following link:
+                https://docs.aws.amazon.com/AmazonS3/latest/userguide/security_iam_service-with-iam.html#security_iam_service-with-iam-id-based-policies-resources # noqa: E501
+        """
+
         grant_bucket_access(self, role, *permissions, objects_key_pattern=objects_key_pattern)
 
 
@@ -67,6 +77,17 @@ def grant_bucket_access(
     *permissions: Literal["rw", "r", "w", "d"],
     objects_key_pattern: Optional[str] = None,
 ):
+    """Grant Bucket access (r,w,d) to a role, optionally specifying a key pattern
+
+    Args:
+        bucket (s3.Bucket | Sequence[s3.Bucket]): bucket or buckets to grant access to
+        role (iam.IRole | None): role to grant access to
+        objects_key_pattern (Optional[str], optional): Optional pattern to constrain access to.
+            The pattern is applied to object keys within the bucket. You can use '*' and '?'
+            wildcards. For more information, see the following link:
+            https://docs.aws.amazon.com/AmazonS3/latest/userguide/security_iam_service-with-iam.html#security_iam_service-with-iam-id-based-policies-resources # noqa: E501
+            Defaults to None (which in turn represents '*').
+    """
     if not role:
         return
     for bucket in [bucket] if isinstance(bucket, s3.Bucket) else bucket:
