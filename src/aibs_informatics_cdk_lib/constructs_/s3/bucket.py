@@ -56,24 +56,26 @@ class EnvBaseBucket(s3.Bucket, EnvBaseConstructMixins):
         self,
         role: Optional[iam.IRole],
         *permissions: Literal["rw", "r", "w", "d"],
+        objects_key_pattern: Optional[str] = None,
     ):
-        grant_bucket_access(self, role, *permissions)
+        grant_bucket_access(self, role, *permissions, objects_key_pattern=objects_key_pattern)
 
 
 def grant_bucket_access(
     bucket: Union[s3.Bucket, Sequence[s3.Bucket]],
     role: Optional[iam.IRole],
     *permissions: Literal["rw", "r", "w", "d"],
+    objects_key_pattern: Optional[str] = None,
 ):
     if not role:
         return
     for bucket in [bucket] if isinstance(bucket, s3.Bucket) else bucket:
         for bucket_permission in permissions:
             if bucket_permission == "rw":
-                bucket.grant_read_write(role)
+                bucket.grant_read_write(role, objects_key_pattern=objects_key_pattern)
             elif bucket_permission == "r":
-                bucket.grant_read(role)
+                bucket.grant_read(role, objects_key_pattern=objects_key_pattern)
             elif bucket_permission == "w":
-                bucket.grant_write(role)
+                bucket.grant_write(role, objects_key_pattern=objects_key_pattern)
             elif bucket_permission == "d":
-                bucket.grant_delete(role)
+                bucket.grant_delete(role, objects_key_pattern=objects_key_pattern)
