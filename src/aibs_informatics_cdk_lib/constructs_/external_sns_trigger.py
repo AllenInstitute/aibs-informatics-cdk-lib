@@ -12,12 +12,53 @@ from aws_cdk.aws_sns_subscriptions import SqsSubscription
 
 
 class ExternalSnsTrigger(constructs.Construct):
+    """This intended to be a generic CDK construct that defines resources necessary to
+    implement a trigger system that listens for events from an external
+    (some other AWS account) SNS Topic and fires off a lambda in the
+    account where this stack is deployed.
+
+    ``` Diagram:
+                                ┌---- ExternalSNSTrigger ----┐
+                                |                            |
+        (other AWS account)     |           (SQS)            | (optional provided Lambda)
+        external_sns_topic -----> external_sns_event_queue -----> triggered_lambda_fn
+                                |             |              |
+                                |             v              |
+                                |         (SQS DLQ)          |
+                                |   external_sns_event_dlq   |
+                                |             |              |
+                                |             v              |
+                                |        (Cloudwatch)        |
+                                | triggered_lambda_dlq_alarm |
+                                |                            |
+                                └----------------------------┘
+
+    ```
+
+    The main intended use case is to provide a simple template for setting up automation
+    based on PTS SNS Topic notifications in a separate AWS account (e.g. in an informatics processing pipeline)
+
+    Example usage:
+    self.external_sns_trigger_construct = ExternalSnsTrigger(
+        scope=self,
+        id=self.env_base.get_construct_id("merscope-imaging-process-sns-trigger"),
+        env_base=self.env_base,
+        triggered_lambda_fn=self.pts_listener_fn,
+        external_sns_event_name="merscope-imaging-process",
+        external_sns_topic_arn=f"arn:aws:sns:us-west-2:{account_id}:{sns_topic_name}",
+    )
+
+    NOTE: The `triggered_lambda_fn` is optional and if you have an alternative arrangement
+          for triggering off of SQS messages (e.g. Airflow SQS Sensor) you can provide None as the
+          `triggered_lambda_fn` when instantiating the ExternalSnsTrigger construct.
+    """
+
     def __init__(
         self,
         scope: constructs.Construct,
         id: str,
         env_base: EnvBase,
-        triggered_lambda_fn: lambda_.Function,
+        triggered_lambda_fn: Optional[lambda_.Function],
         external_sns_event_name: Union[str, ResourceNameBaseEnum],
         external_sns_topic_arn: str,
         external_sns_event_queue_filters: Optional[Sequence[Mapping[str, Any]]] = None,
@@ -27,40 +68,6 @@ class ExternalSnsTrigger(constructs.Construct):
         sqs_event_source_enabled: Optional[bool] = None,
         **kwargs,
     ) -> None:
-        """This intended to be a generic CDK construct that defines resources necessary to
-        implement a trigger system that listens for events from an external
-        (some other AWS account) SNS Topic and fires off a lambda in the
-        account where this stack is deployed.
-
-
-                              ┌---- ExternalSNSTrigger ----┐
-                              |                            |
-        (other AWS account)   |           (SQS)            |       (provided Lambda)
-        external_sns_topic -----> external_sns_event_queue -----> triggered_lambda_fn
-                              |             |              |
-                              |             v              |
-                              |         (SQS DLQ)          |
-                              |   external_sns_event_dlq   |
-                              |             |              |
-                              |             v              |
-                              |        (Cloudwatch)        |
-                              | triggered_lambda_dlq_alarm |
-                              |                            |
-                              └----------------------------┘
-
-        The main intended use case is to provide a simple template for setting up automation
-        based on PTS SNS Topic notifications in a separate AWS account (e.g. in an informatics processing pipeline)
-
-        Example usage:
-        self.external_sns_trigger_construct = ExternalSnsTrigger(
-            scope=self,
-            id=self.env_base.get_construct_id("merscope-imaging-process-sns-trigger"),
-            env_base=self.env_base,
-            triggered_lambda_fn=self.pts_listener_fn,
-            external_sns_event_name="merscope-imaging-process",
-            external_sns_topic_arn=f"arn:aws:sns:us-west-2:{account_id}:{sns_topic_name}",
-        )
-        """
         super().__init__(scope=scope, id=id)
 
         if external_sns_event_queue_name is None:
@@ -112,15 +119,16 @@ class ExternalSnsTrigger(constructs.Construct):
             )
         )
 
-        triggered_lambda_fn.add_event_source(
-            source=SqsEventSource(
-                queue=self.external_sns_event_queue,
-                report_batch_item_failures=True,
-                filters=external_sns_event_queue_filters,
-                enabled=sqs_event_source_enabled,
+        if triggered_lambda_fn is not None:
+            triggered_lambda_fn.add_event_source(
+                source=SqsEventSource(
+                    queue=self.external_sns_event_queue,
+                    report_batch_item_failures=True,
+                    filters=external_sns_event_queue_filters,
+                    enabled=sqs_event_source_enabled,
+                )
             )
-        )
-        self.external_sns_event_queue.grant_consume_messages(triggered_lambda_fn)
+            self.external_sns_event_queue.grant_consume_messages(triggered_lambda_fn)
 
         # Alarm that fires if external_sns_event_queue fails delivery or if lambda fails to process
         # Further actions can be configured by accessing ExternalSnsTrigger.triggered_lambda_dlq_alarm resource
