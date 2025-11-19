@@ -467,3 +467,22 @@ def ssm_policy_statement(
     return iam.PolicyStatement(
         sid=sid, actions=actions, effect=iam.Effect.ALLOW, resources=[build_arn(service="ssm")]
     )
+
+
+def sqs_policy_statement(
+    env_base: Optional[EnvBase] = None,
+    actions: List[str] = SQS_FULL_ACCESS_ACTIONS,
+    sid: str = "SQSFullAccess",
+) -> iam.PolicyStatement:
+    return iam.PolicyStatement(
+        sid=sid,
+        actions=actions,
+        effect=iam.Effect.ALLOW,
+        resources=[
+            build_arn(
+                service="sqs",
+                resource_id=f"{env_base or ''}*",
+                resource_type="*",
+            )
+        ],
+    )

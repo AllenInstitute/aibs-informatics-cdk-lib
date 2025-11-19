@@ -1,10 +1,16 @@
+import re
+from typing import Optional
+
 import aws_cdk as cdk
 import pytest
+from aibs_informatics_core.env import EnvBase
 
 from aibs_informatics_cdk_lib.common.aws.iam_utils import (
     SECRETSMANAGER_READ_ONLY_ACTIONS,
     SECRETSMANAGER_READ_WRITE_ACTIONS,
+    SQS_FULL_ACCESS_ACTIONS,
     secretsmanager_policy_statement,
+    sqs_policy_statement,
 )
 
 
@@ -48,3 +54,54 @@ def test__secrets_manager_policy_args(generate_policy_args, expected_resource, e
     generated_policy_statement = secretsmanager_policy_statement(**generate_policy_args)
     assert generated_policy_statement.resources == [expected_resource]
     assert set(generated_policy_statement.actions) == set(expected_actions)
+
+
+@pytest.mark.parametrize(
+    "env_base, expected_actions, expected_resource_patterns",
+    [
+        pytest.param(
+            # env_base
+            None,
+            # expected_actions
+            SQS_FULL_ACCESS_ACTIONS,
+            # expected_resource_patterns
+            [
+                r"arn:aws:sqs:\$\{Token\[AWS\.Region\.[\d]+\]\}:\$\{Token\[AWS\.AccountId\.[\d]+\]\}:\*:\*"
+            ],
+            id="Test SQS policystatment (env_base=None)",
+        ),
+        pytest.param(
+            # env_base
+            EnvBase("dev"),
+            # expected_actions
+            SQS_FULL_ACCESS_ACTIONS,
+            # expected_resource_patterns
+            [
+                r"arn:aws:sqs:\$\{Token\[AWS\.Region\.[\d]+\]\}:\$\{Token\[AWS\.AccountId\.[\d]+\]\}:\*:dev\*"
+            ],
+            id="Test SQS policystatment (env_base=dev)",
+        ),
+        pytest.param(
+            # env_base
+            EnvBase("test"),
+            # expected_actions
+            SQS_FULL_ACCESS_ACTIONS,
+            # expected_resource_patterns
+            [
+                r"arn:aws:sqs:\$\{Token\[AWS\.Region\.[\d]+\]\}:\$\{Token\[AWS\.AccountId\.[\d]+\]\}:\*:test\*"
+            ],
+            id="Test SQS policystatment (env_base=test)",
+        ),
+    ],
+)
+def test__sqs_policy_statement(
+    env_base: Optional[EnvBase], expected_actions, expected_resource_patterns
+):
+    obt = sqs_policy_statement(env_base=env_base)
+
+    assert expected_actions == obt.actions
+    for indx, expected_pattern in enumerate(expected_resource_patterns):
+        obt_resource = obt.resources[indx]
+        assert re.fullmatch(
+            expected_pattern, obt_resource
+        ), f"expected_pattern: {expected_pattern}, obt: {obt_resource}"
