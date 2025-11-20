@@ -56,6 +56,8 @@ def test__secrets_manager_policy_args(generate_policy_args, expected_resource, e
     assert set(generated_policy_statement.actions) == set(expected_actions)
 
 
+# https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-overview-of-managing-access.html#sqs-resource-and-operations
+# https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-basic-examples-of-sqs-policies.html
 @pytest.mark.parametrize(
     "env_base, expected_actions, expected_resource_patterns",
     [
@@ -66,9 +68,9 @@ def test__secrets_manager_policy_args(generate_policy_args, expected_resource, e
             SQS_FULL_ACCESS_ACTIONS,
             # expected_resource_patterns
             [
-                r"arn:aws:sqs:\$\{Token\[AWS\.Region\.[\d]+\]\}:\$\{Token\[AWS\.AccountId\.[\d]+\]\}:\*:\*"
+                r"arn:aws:sqs:\$\{Token\[AWS\.Region\.[\d]+\]\}:\$\{Token\[AWS\.AccountId\.[\d]+\]\}:\*"
             ],
-            id="Test SQS policystatment (env_base=None)",
+            id="Test SQS policystatement (env_base=None)",
         ),
         pytest.param(
             # env_base
@@ -77,9 +79,9 @@ def test__secrets_manager_policy_args(generate_policy_args, expected_resource, e
             SQS_FULL_ACCESS_ACTIONS,
             # expected_resource_patterns
             [
-                r"arn:aws:sqs:\$\{Token\[AWS\.Region\.[\d]+\]\}:\$\{Token\[AWS\.AccountId\.[\d]+\]\}:\*:dev\*"
+                r"arn:aws:sqs:\$\{Token\[AWS\.Region\.[\d]+\]\}:\$\{Token\[AWS\.AccountId\.[\d]+\]\}:dev\*"
             ],
-            id="Test SQS policystatment (env_base=dev)",
+            id="Test SQS policystatement (env_base=dev)",
         ),
         pytest.param(
             # env_base
@@ -88,9 +90,9 @@ def test__secrets_manager_policy_args(generate_policy_args, expected_resource, e
             SQS_FULL_ACCESS_ACTIONS,
             # expected_resource_patterns
             [
-                r"arn:aws:sqs:\$\{Token\[AWS\.Region\.[\d]+\]\}:\$\{Token\[AWS\.AccountId\.[\d]+\]\}:\*:test\*"
+                r"arn:aws:sqs:\$\{Token\[AWS\.Region\.[\d]+\]\}:\$\{Token\[AWS\.AccountId\.[\d]+\]\}:test\*"
             ],
-            id="Test SQS policystatment (env_base=test)",
+            id="Test SQS policystatement (env_base=test)",
         ),
     ],
 )
@@ -104,4 +106,4 @@ def test__sqs_policy_statement(
         obt_resource = obt.resources[indx]
         assert re.fullmatch(
             expected_pattern, obt_resource
-        ), f"expected_pattern: {expected_pattern}, obt: {obt_resource}"
+        ), f"expected_pattern: {expected_pattern}, obtained: {obt_resource}"
