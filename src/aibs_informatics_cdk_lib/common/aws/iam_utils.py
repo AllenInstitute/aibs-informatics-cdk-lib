@@ -482,7 +482,6 @@ def sqs_policy_statement(
             build_arn(
                 service="sqs",
                 resource_id=f"{env_base or ''}*",
-                resource_type="*",
             )
         ],
     )
