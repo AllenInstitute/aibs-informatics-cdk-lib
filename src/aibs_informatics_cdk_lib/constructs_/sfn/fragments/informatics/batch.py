@@ -9,6 +9,7 @@ from aibs_informatics_aws_utils.constants.lambda_ import (
 )
 from aibs_informatics_aws_utils.constants.s3 import S3_SCRATCH_KEY_PREFIX
 from aibs_informatics_core.env import EnvBase
+from aws_cdk import JsonNull
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_stepfunctions as sfn
 
@@ -247,7 +248,7 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
         defaults["environment"] = environment or {}
         defaults["platform_capabilities"] = platform_capabilities or ["EC2"]
         defaults["bucket_name"] = bucket_name
-        defaults["job_role_arn"] = job_role_arn
+        defaults["job_role_arn"] = job_role_arn or JsonNull.INSTANCE
 
         defaults["command"] = command if command else []
 

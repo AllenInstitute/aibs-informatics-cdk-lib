@@ -4,6 +4,7 @@ import constructs
 from aibs_informatics_core.env import EnvBase
 from aibs_informatics_core.utils.tools.dicttools import convert_key_case
 from aibs_informatics_core.utils.tools.strtools import pascalcase
+from aws_cdk import JsonNull
 from aws_cdk import aws_stepfunctions as sfn
 
 from aibs_informatics_cdk_lib.constructs_.efs.file_system import MountPointConfiguration
@@ -151,7 +152,7 @@ class SubmitJobFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
         defaults["vcpus"] = vcpus
         defaults["gpu"] = "0"
         defaults["platform_capabilities"] = ["EC2"]
-        defaults["job_role_arn"] = job_role_arn
+        defaults["job_role_arn"] = job_role_arn or JsonNull.INSTANCE
 
         if mount_point_configs:
             mount_points, volumes = cls.convert_to_mount_point_and_volumes(mount_point_configs)
@@ -226,7 +227,7 @@ class SubmitJobWithDefaultsFragment(EnvBaseStateMachineFragment, AWSBatchMixins)
         defaults["vcpus"] = vcpus
         defaults["gpu"] = "0"
         defaults["platform_capabilities"] = platform_capabilities or ["EC2"]
-        defaults["job_role_arn"] = job_role_arn
+        defaults["job_role_arn"] = job_role_arn or JsonNull.INSTANCE
 
         if mount_point_configs:
             mount_points, volumes = self.convert_to_mount_point_and_volumes(mount_point_configs)
