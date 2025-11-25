@@ -144,7 +144,17 @@ class BatchOperation:
                 ],
             },
         )
-        return start.next(register)
+        chain = start
+        if gpu is not None:
+            chain = chain.next(
+                sfn.Pass(
+                    scope,
+                    id + " Register Definition Filter Resource Requirements",
+                    input_path=f"{result_path or '$'}.ContainerProperties.ResourceRequirements[?(@.Value != 0 && @.Value != '0')]",
+                    result_path=f"{result_path or '$'}.ContainerProperties.ResourceRequirements",
+                )
+            )
+        return chain.next(register)
 
     @classmethod
     def submit_job(
@@ -226,8 +236,8 @@ class BatchOperation:
                 sfn.Pass(
                     scope,
                     id + " SubmitJob Filter Resource Requirements",
-                    input_path="$.ContainerOverrides.ResourceRequirements[?(@.Value != 0 && @.Value != '0')]",
-                    result_path="$.ContainerOverrides.ResourceRequirements",
+                    input_path=f"{result_path or '$'}.ContainerOverrides.ResourceRequirements[?(@.Value != 0 && @.Value != '0')]",
+                    result_path=f"{result_path or '$'}.ContainerOverrides.ResourceRequirements",
                 )
             )
         return chain.next(submit)

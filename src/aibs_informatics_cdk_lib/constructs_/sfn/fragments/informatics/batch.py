@@ -231,9 +231,9 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
         payload_path: Optional[str] = None,
         overrides_path: Optional[str] = None,
         command: Optional[List[str]] = None,
-        memory: str = "1024",
-        vcpus: str = "1",
-        gpu: Optional[str] = None,
+        memory: Union[int, str] = "1024",
+        vcpus: Union[int, str] = "1",
+        gpu: Union[int, str] = "0",
         environment: Optional[Mapping[str, str]] = None,
         mount_point_configs: Optional[List[MountPointConfiguration]] = None,
         platform_capabilities: Optional[List[Literal["EC2", "FARGATE"]]] = None,
@@ -242,9 +242,9 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
         defaults: dict[str, Any] = {}
 
         defaults["job_queue"] = job_queue
-        defaults["memory"] = memory
-        defaults["vcpus"] = vcpus
-        defaults["gpu"] = gpu
+        defaults["memory"] = str(memory)
+        defaults["vcpus"] = str(vcpus)
+        defaults["gpu"] = str(gpu)
         defaults["environment"] = environment or {}
         defaults["platform_capabilities"] = platform_capabilities or ["EC2"]
         defaults["bucket_name"] = bucket_name
