@@ -150,9 +150,6 @@ format: format-isort format-black  ## Run all formatters (black, isort)
 pytest: $(INSTALL_STAMP)  ## Run test (pytest)
 	$(VENV_BIN)/pytest -vv --durations=10
 
-tox: $(INSTALL_STAMP)  ## Run Test in tox environment
-	$(VENV_BIN)/tox
-
 test: pytest  ## Run Standard Tests
 
 .PHONY: pytest tox test
