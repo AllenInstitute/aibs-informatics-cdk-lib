@@ -92,7 +92,7 @@ class TestBatchOperation(CdkBaseTest):
                 },
                 "PlatformCapabilities": ["EC2"],
             },
-            "Next": "Register RegisterJobDefinition API Call",
+            "Next": "Register Register Definition Filter Resource Requirements",
         }
 
         end_state = cast(sfn.State, chain.end_states[0])
@@ -156,7 +156,7 @@ class TestBatchOperation(CdkBaseTest):
                     "EvaluateOnExit": DEFAULT_EVALUATE_ON_EXIT,
                 },
             },
-            "Next": "RegisterRefs RegisterJobDefinition API Call",
+            "Next": "RegisterRefs Register Definition Filter Resource Requirements",
         }
 
     def test__submit_job__includes_gpu_filter_state(self):
