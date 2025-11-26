@@ -137,8 +137,9 @@ class SubmitJobFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
         job_queue: str,
         image: str,
         command: str = "",
-        memory: str = "1024",
-        vcpus: str = "1",
+        memory: Union[str, int] = 1024,
+        vcpus: Union[str, int] = 1,
+        gpu: Union[str, int] = 0,
         environment: Optional[Mapping[str, str]] = None,
         mount_point_configs: Optional[List[MountPointConfiguration]] = None,
         job_role_arn: Optional[str] = None,
@@ -147,10 +148,10 @@ class SubmitJobFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
         defaults["command"] = command
         defaults["job_queue"] = job_queue
         defaults["environment"] = environment or {}
-        defaults["memory"] = memory
         defaults["image"] = image
-        defaults["vcpus"] = vcpus
-        defaults["gpu"] = "0"
+        defaults["memory"] = str(memory)
+        defaults["vcpus"] = str(vcpus)
+        defaults["gpu"] = str(gpu)
         defaults["platform_capabilities"] = ["EC2"]
         defaults["job_role_arn"] = job_role_arn or JsonNull.INSTANCE
 
@@ -170,10 +171,7 @@ class SubmitJobFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
             environment=sfn.JsonPath.string_at("$.request.environment"),
             memory=sfn.JsonPath.string_at("$.request.memory"),
             vcpus=sfn.JsonPath.string_at("$.request.vcpus"),
-            # TODO: Handle GPU parameter better - right now, we cannot handle cases where it is
-            # not specified. Setting to zero causes issues with the Batch API.
-            # If it is set to zero, then the json list of resources are not properly set.
-            # gpu=sfn.JsonPath.string_at("$.request.gpu"),
+            gpu=sfn.JsonPath.string_at("$.request.gpu"),
             mount_points=sfn.JsonPath.string_at("$.request.mount_points"),
             volumes=sfn.JsonPath.string_at("$.request.volumes"),
             platform_capabilities=sfn.JsonPath.string_at("$.request.platform_capabilities"),
@@ -201,70 +199,3 @@ class SubmitJobFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
 
         submit_job.definition = start.next(merge).next(submit_job.definition)
         return submit_job
-
-
-class SubmitJobWithDefaultsFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
-    def __init__(
-        self,
-        scope: constructs.Construct,
-        id: str,
-        env_base: EnvBase,
-        job_queue: str,
-        command: str = "",
-        memory: str = "1024",
-        vcpus: str = "1",
-        environment: Optional[Mapping[str, str]] = None,
-        mount_point_configs: Optional[List[MountPointConfiguration]] = None,
-        platform_capabilities: Optional[Union[List[Literal["EC2", "FARGATE"]], str]] = None,
-        job_role_arn: Optional[str] = None,
-    ):
-        super().__init__(scope, id, env_base)
-        defaults: dict[str, Any] = {}
-        defaults["command"] = command
-        defaults["job_queue"] = job_queue
-        defaults["environment"] = environment or {}
-        defaults["memory"] = memory
-        defaults["vcpus"] = vcpus
-        defaults["gpu"] = "0"
-        defaults["platform_capabilities"] = platform_capabilities or ["EC2"]
-        defaults["job_role_arn"] = job_role_arn or JsonNull.INSTANCE
-
-        if mount_point_configs:
-            mount_points, volumes = self.convert_to_mount_point_and_volumes(mount_point_configs)
-            defaults["mount_points"] = mount_points
-            defaults["volumes"] = volumes
-
-        start = sfn.Pass(
-            self,
-            "Start",
-            parameters={
-                "input": sfn.JsonPath.object_at("$"),
-                "default": defaults,
-            },
-        )
-        merge_chain = CommonOperation.merge_defaults(
-            self, f"{id}", defaults=defaults, input_path="$.input", result_path="$.request"
-        )
-
-        submit_job = SubmitJobFragment(
-            self,
-            "SubmitJobCore",
-            env_base=self.env_base,
-            name="SubmitJobCore",
-            image=sfn.JsonPath.string_at("$.request.image"),
-            command=sfn.JsonPath.string_at("$.request.command"),
-            job_queue=sfn.JsonPath.string_at("$.request.job_queue"),
-            environment=sfn.JsonPath.string_at("$.request.environment"),
-            memory=sfn.JsonPath.string_at("$.request.memory"),
-            vcpus=sfn.JsonPath.string_at("$.request.vcpus"),
-            # TODO: Handle GPU parameter better - right now, we cannot handle cases where it is
-            # not specified. Setting to zero causes issues with the Batch API.
-            # If it is set to zero, then the json list of resources are not properly set.
-            # gpu=sfn.JsonPath.string_at("$.request.gpu"),
-            mount_points=sfn.JsonPath.string_at("$.request.mount_points"),
-            volumes=sfn.JsonPath.string_at("$.request.volumes"),
-            platform_capabilities=sfn.JsonPath.string_at("$.request.platform_capabilities"),
-            job_role_arn=sfn.JsonPath.string_at("$.request.job_role_arn"),
-        ).to_single_state()
-
-        self.definition = start.next(merge_chain).next(submit_job)

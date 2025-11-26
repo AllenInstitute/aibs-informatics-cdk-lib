@@ -72,6 +72,7 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
         environment: Optional[Mapping[str, str]] = None,
         memory: Optional[Union[int, str]] = None,
         vcpus: Optional[Union[int, str]] = None,
+        gpu: Optional[Union[int, str]] = None,
         mount_points: Optional[Union[List[MountPointTypeDef], str]] = None,
         volumes: Optional[Union[List[VolumeTypeDef], str]] = None,
         mount_point_configs: Optional[List[MountPointConfiguration]] = None,
@@ -113,6 +114,7 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
             environment (Mapping[str, str] | None): Additional environment variables to specify. These are added to default environment variables.
             memory (int | str | None): Memory in MiB (either int or reference path str). Defaults to None.
             vcpus (int | str | None): Number of vCPUs (either int or reference path str). Defaults to None.
+            gpu (int | str | None): Number of GPUs (either int or reference path str). Defaults to None.
             mount_points (List[MountPointTypeDef] | None): List of mount points to add to state machine. Defaults to None.
             volumes (List[VolumeTypeDef] | None): List of volumes to add to state machine. Defaults to None.
             platform_capabilities (List[Literal["EC2", "FARGATE"]] | str | None): platform capabilities to use. This can be a reference path (e.g. "$.platform_capabilities")
@@ -187,6 +189,7 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
             },
             memory=memory,
             vcpus=vcpus,
+            gpu=gpu,
             mount_points=mount_points or [],
             volumes=volumes or [],
             platform_capabilities=platform_capabilities,
@@ -228,8 +231,9 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
         payload_path: Optional[str] = None,
         overrides_path: Optional[str] = None,
         command: Optional[List[str]] = None,
-        memory: str = "1024",
-        vcpus: str = "1",
+        memory: Union[int, str] = "1024",
+        vcpus: Union[int, str] = "1",
+        gpu: Union[int, str] = "0",
         environment: Optional[Mapping[str, str]] = None,
         mount_point_configs: Optional[List[MountPointConfiguration]] = None,
         platform_capabilities: Optional[List[Literal["EC2", "FARGATE"]]] = None,
@@ -238,8 +242,9 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
         defaults: dict[str, Any] = {}
 
         defaults["job_queue"] = job_queue
-        defaults["memory"] = memory
-        defaults["vcpus"] = vcpus
+        defaults["memory"] = str(memory)
+        defaults["vcpus"] = str(vcpus)
+        defaults["gpu"] = str(gpu)
         defaults["environment"] = environment or {}
         defaults["platform_capabilities"] = platform_capabilities or ["EC2"]
         defaults["bucket_name"] = bucket_name
@@ -270,7 +275,7 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
             # TODO: Handle GPU parameter better - right now, we cannot handle cases where it is
             # not specified. Setting to zero causes issues with the Batch API.
             # If it is set to zero, then the json list of resources are not properly set.
-            # gpu=sfn.JsonPath.string_at("$.merged.gpu"),
+            gpu=sfn.JsonPath.string_at("$.merged.gpu"),
             mount_points=sfn.JsonPath.string_at("$.merged.mount_points"),
             volumes=sfn.JsonPath.string_at("$.merged.volumes"),
             platform_capabilities=sfn.JsonPath.string_at("$.merged.platform_capabilities"),
