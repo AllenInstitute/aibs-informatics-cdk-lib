@@ -53,6 +53,18 @@ class ExternalSnsTrigger(constructs.Construct):
           `triggered_lambda_fn` when instantiating the ExternalSnsTrigger construct.
     """
 
+    @property
+    def queue_name(self) -> str:
+        if self._external_sns_event_queue_name is not None:
+            return self._env_base.prefixed(self._external_sns_event_queue_name)
+        return self._env_base.prefixed(self._external_sns_event_name, "sns-event-queue")
+
+    @property
+    def dlq_name(self) -> str:
+        if self._external_sns_event_dlq_name is not None:
+            return self._env_base.prefixed(self._external_sns_event_dlq_name)
+        return self._env_base.prefixed(self._external_sns_event_name, "sns-event-dlq")
+
     def __init__(
         self,
         scope: constructs.Construct,
@@ -70,28 +82,25 @@ class ExternalSnsTrigger(constructs.Construct):
     ) -> None:
         super().__init__(scope=scope, id=id)
 
-        if external_sns_event_queue_name is None:
-            external_sns_event_queue_name = env_base.prefixed(
-                external_sns_event_name, "sns-event-queue"
-            )
-        if external_sns_event_dlq_name is None:
-            external_sns_event_dlq_name = env_base.prefixed(
-                external_sns_event_name, "sns-event-dlq"
-            )
+        self._env_base = env_base
+        self._external_sns_event_name = external_sns_event_name
+        self._external_sns_event_queue_name = external_sns_event_queue_name
+        self._external_sns_event_dlq_name = external_sns_event_dlq_name
+
         if sqs_event_source_enabled is None:
             sqs_event_source_enabled = env_base.env_type is EnvType.PROD
 
         self.external_sns_event_dlq = sqs.Queue(
             scope=self,
-            id=env_base.get_construct_id(external_sns_event_name, "sns-event-dlq"),
-            queue_name=external_sns_event_dlq_name,
+            id=env_base.get_construct_id(self.dlq_name),
+            queue_name=self.dlq_name,
             retention_period=cdk.Duration.days(14),
         )
 
         self.external_sns_event_queue = sqs.Queue(
             scope=self,
-            id=env_base.get_construct_id(external_sns_event_name, "sns-event-queue"),
-            queue_name=env_base.prefixed(external_sns_event_name, "sns-event-queue"),
+            id=env_base.get_construct_id(self.queue_name),
+            queue_name=self.queue_name,
             retention_period=external_sns_event_queue_retention_period,
             dead_letter_queue=sqs.DeadLetterQueue(
                 max_receive_count=2,
@@ -137,7 +146,7 @@ class ExternalSnsTrigger(constructs.Construct):
             scope=self,
             id=env_base.get_construct_id(external_sns_event_name, "sns-event-dlq-alarm"),
             alarm_description=(
-                f"Alarm if more than 1 message in {external_sns_event_dlq_name} in 10 minute period"
+                f"Alarm if more than 1 message in {self.dlq_name} in 10 minute period"
             ),
             metric=self.external_sns_event_dlq.metric_approximate_number_of_messages_visible(
                 statistic=cloudwatch.Stats.MAXIMUM,
