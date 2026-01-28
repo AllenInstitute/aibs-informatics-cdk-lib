@@ -92,14 +92,14 @@ class ExternalSnsTrigger(constructs.Construct):
 
         self.external_sns_event_dlq = sqs.Queue(
             scope=self,
-            id=env_base.get_construct_id(self.dlq_name),
+            id=env_base.get_construct_id(external_sns_event_name, "sns-event-dlq"),
             queue_name=self.dlq_name,
             retention_period=cdk.Duration.days(14),
         )
 
         self.external_sns_event_queue = sqs.Queue(
             scope=self,
-            id=env_base.get_construct_id(self.queue_name),
+            id=env_base.get_construct_id(external_sns_event_name, "sns-event-queue"),
             queue_name=self.queue_name,
             retention_period=external_sns_event_queue_retention_period,
             dead_letter_queue=sqs.DeadLetterQueue(
