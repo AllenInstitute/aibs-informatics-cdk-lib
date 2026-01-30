@@ -1,7 +1,11 @@
-"""
-The list of actions for each service is incomplete and based on our needs so far.
-A helpful resource to research actions is:
-https://www.awsiamactions.io/
+"""IAM utilities for building policy statements and granting permissions.
+
+This module provides predefined IAM actions lists and helper functions for
+creating policy statements for various AWS services.
+
+Note:
+    The list of actions for each service is incomplete and based on project needs.
+    A helpful resource to research actions is: https://www.awsiamactions.io/
 """
 
 from typing import List, Optional, Union
@@ -26,7 +30,16 @@ from aibs_informatics_cdk_lib.common.aws.core_utils import (
 def grant_managed_policies(
     role: Optional[iam.IRole],
     *managed_policies: Union[str, iam.ManagedPolicy],
-):
+) -> None:
+    """Grant managed policies to an IAM role.
+
+    Args:
+        role (Optional[iam.IRole]): The IAM role to grant policies to.
+            If None, no action is taken.
+        *managed_policies (Union[str, iam.ManagedPolicy]): Variable number of
+            managed policies to grant. Can be policy names (str) or
+            ManagedPolicy objects.
+    """
     if not role:
         return
 
@@ -284,6 +297,18 @@ def batch_policy_statement(
     actions: List[str] = BATCH_FULL_ACCESS_ACTIONS,
     sid: str = "BatchReadWrite",
 ) -> iam.PolicyStatement:
+    """Create an IAM policy statement for AWS Batch.
+
+    Args:
+        env_base (Optional[EnvBase]): Environment base for resource prefix.
+            Defaults to None (matches all).
+        actions (List[str]): List of Batch actions to allow.
+            Defaults to BATCH_FULL_ACCESS_ACTIONS.
+        sid (str): Statement ID. Defaults to "BatchReadWrite".
+
+    Returns:
+        IAM policy statement for Batch resources.
+    """
     resource_id = f"{env_base or ''}*"
 
     return iam.PolicyStatement(
@@ -322,6 +347,18 @@ def dynamodb_policy_statement(
     actions: List[str] = DYNAMODB_READ_WRITE_ACTIONS,
     sid: str = "DynamoDBReadWrite",
 ) -> iam.PolicyStatement:
+    """Create an IAM policy statement for DynamoDB.
+
+    Args:
+        env_base (Optional[EnvBase]): Environment base for resource prefix.
+            Defaults to None (matches all).
+        actions (List[str]): List of DynamoDB actions to allow.
+            Defaults to DYNAMODB_READ_WRITE_ACTIONS.
+        sid (str): Statement ID. Defaults to "DynamoDBReadWrite".
+
+    Returns:
+        IAM policy statement for DynamoDB tables.
+    """
     return iam.PolicyStatement(
         sid=sid,
         actions=actions,
@@ -338,6 +375,16 @@ def dynamodb_policy_statement(
 def ecs_policy_statement(
     actions: List[str] = ECS_READ_ACTIONS, sid: str = "ECSDescribe"
 ) -> iam.PolicyStatement:
+    """Create an IAM policy statement for ECS.
+
+    Args:
+        actions (List[str]): List of ECS actions to allow.
+            Defaults to ECS_READ_ACTIONS.
+        sid (str): Statement ID. Defaults to "ECSDescribe".
+
+    Returns:
+        IAM policy statement for ECS resources.
+    """
     return iam.PolicyStatement(
         sid=sid,
         actions=actions,
@@ -358,6 +405,18 @@ def lambda_policy_statement(
     actions: List[str] = LAMBDA_FULL_ACCESS_ACTIONS,
     sid: str = "LambdaReadWrite",
 ) -> iam.PolicyStatement:
+    """Create an IAM policy statement for Lambda.
+
+    Args:
+        env_base (Optional[EnvBase]): Environment base for resource prefix.
+            Defaults to None (matches all).
+        actions (List[str]): List of Lambda actions to allow.
+            Defaults to LAMBDA_FULL_ACCESS_ACTIONS.
+        sid (str): Statement ID. Defaults to "LambdaReadWrite".
+
+    Returns:
+        IAM policy statement for Lambda functions.
+    """
     return iam.PolicyStatement(
         sid=sid,
         actions=actions,
@@ -376,6 +435,18 @@ def s3_policy_statement(
     actions: List[str] = S3_FULL_ACCESS_ACTIONS,
     sid: str = "S3FullAccess",
 ) -> iam.PolicyStatement:
+    """Create an IAM policy statement for S3.
+
+    Args:
+        env_base (Optional[EnvBase]): Environment base for resource prefix.
+            Defaults to None (matches all).
+        actions (List[str]): List of S3 actions to allow.
+            Defaults to S3_FULL_ACCESS_ACTIONS.
+        sid (str): Statement ID. Defaults to "S3FullAccess".
+
+    Returns:
+        IAM policy statement for S3 buckets.
+    """
     return iam.PolicyStatement(
         sid=sid,
         actions=actions,
@@ -396,6 +467,19 @@ def secretsmanager_policy_statement(
     region: str = None,
     account: str = None,
 ) -> iam.PolicyStatement:
+    """Create an IAM policy statement for Secrets Manager.
+
+    Args:
+        actions (List[str]): List of Secrets Manager actions to allow.
+            Defaults to SECRETSMANAGER_READ_ONLY_ACTIONS.
+        sid (str): Statement ID. Defaults to "SecretsManagerReadOnly".
+        resource_id (str): Resource identifier. Defaults to "*".
+        region (str): AWS region. Defaults to None (current region).
+        account (str): AWS account ID. Defaults to None (current account).
+
+    Returns:
+        IAM policy statement for Secrets Manager resources.
+    """
     return iam.PolicyStatement(
         sid=sid,
         actions=actions,
@@ -415,6 +499,16 @@ def ses_policy_statement(
     actions: List[str] = SES_FULL_ACCESS_ACTIONS,
     sid: str = "SESFullAccess",
 ) -> iam.PolicyStatement:
+    """Create an IAM policy statement for SES.
+
+    Args:
+        actions (List[str]): List of SES actions to allow.
+            Defaults to SES_FULL_ACCESS_ACTIONS.
+        sid (str): Statement ID. Defaults to "SESFullAccess".
+
+    Returns:
+        IAM policy statement for SES resources.
+    """
     return iam.PolicyStatement(
         sid=sid,
         actions=actions,
@@ -432,6 +526,18 @@ def sfn_policy_statement(
     actions: List[str] = SFN_STATES_READ_ACCESS_ACTIONS,
     sid: str = "SfnFullAccess",
 ) -> iam.PolicyStatement:
+    """Create an IAM policy statement for Step Functions.
+
+    Args:
+        env_base (Optional[EnvBase]): Environment base for resource prefix.
+            Defaults to None (matches all).
+        actions (List[str]): List of Step Functions actions to allow.
+            Defaults to SFN_STATES_READ_ACCESS_ACTIONS.
+        sid (str): Statement ID. Defaults to "SfnFullAccess".
+
+    Returns:
+        IAM policy statement for Step Functions resources.
+    """
     return iam.PolicyStatement(
         sid=sid,
         actions=actions,
@@ -449,6 +555,16 @@ def sns_policy_statement(
     actions: List[str] = SNS_FULL_ACCESS_ACTIONS,
     sid: str = "SNSFullAccess",
 ) -> iam.PolicyStatement:
+    """Create an IAM policy statement for SNS.
+
+    Args:
+        actions (List[str]): List of SNS actions to allow.
+            Defaults to SNS_FULL_ACCESS_ACTIONS.
+        sid (str): Statement ID. Defaults to "SNSFullAccess".
+
+    Returns:
+        IAM policy statement for SNS resources.
+    """
     return iam.PolicyStatement(
         sid=sid,
         actions=actions,
@@ -464,6 +580,16 @@ def sns_policy_statement(
 def ssm_policy_statement(
     actions: List[str] = SSM_READ_ACTIONS, sid: str = "SSMParamReadActions"
 ) -> iam.PolicyStatement:
+    """Create an IAM policy statement for SSM Parameter Store.
+
+    Args:
+        actions (List[str]): List of SSM actions to allow.
+            Defaults to SSM_READ_ACTIONS.
+        sid (str): Statement ID. Defaults to "SSMParamReadActions".
+
+    Returns:
+        IAM policy statement for SSM resources.
+    """
     return iam.PolicyStatement(
         sid=sid, actions=actions, effect=iam.Effect.ALLOW, resources=[build_arn(service="ssm")]
     )
@@ -474,6 +600,18 @@ def sqs_policy_statement(
     actions: List[str] = SQS_FULL_ACCESS_ACTIONS,
     sid: str = "SQSFullAccess",
 ) -> iam.PolicyStatement:
+    """Create an IAM policy statement for SQS.
+
+    Args:
+        env_base (Optional[EnvBase]): Environment base for resource prefix.
+            Defaults to None (matches all).
+        actions (List[str]): List of SQS actions to allow.
+            Defaults to SQS_FULL_ACCESS_ACTIONS.
+        sid (str): Statement ID. Defaults to "SQSFullAccess".
+
+    Returns:
+        IAM policy statement for SQS queues.
+    """
     return iam.PolicyStatement(
         sid=sid,
         actions=actions,

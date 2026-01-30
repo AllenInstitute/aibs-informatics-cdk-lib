@@ -1,3 +1,9 @@
+"""EFS file system constructs and utilities.
+
+This module provides CDK constructs for creating and managing EFS file systems,
+access points, and mount point configurations.
+"""
+
 import logging
 from dataclasses import dataclass
 from typing import Any, Literal, Optional, Tuple, TypeVar, Union
@@ -34,6 +40,15 @@ T = TypeVar("T")
 
 
 class EnvBaseFileSystem(efs.FileSystem, EnvBaseConstructMixins):
+    """Environment-aware EFS file system construct.
+
+    Extends the standard EFS FileSystem with environment base naming conventions
+    and helper methods for access point creation.
+
+    Attributes:
+        env_base: Environment base for resource naming.
+    """
+
     def __init__(
         self,
         scope: constructs.Construct,
@@ -51,6 +66,27 @@ class EnvBaseFileSystem(efs.FileSystem, EnvBaseConstructMixins):
         throughput_mode: Optional[ThroughputMode] = ThroughputMode.BURSTING,
         **kwargs,
     ) -> None:
+        """Initialize an environment-aware EFS file system.
+
+        Args:
+            scope (constructs.Construct): The construct scope.
+            id (str): The construct ID.
+            env_base (EnvBase): Environment base for resource naming.
+            vpc (ec2.IVpc): VPC for the file system.
+            file_system_name (str): Name for the file system.
+            allow_anonymous_access (Optional[bool]): Allow anonymous access.
+            enable_automatic_backups (Optional[bool]): Enable automatic backups.
+            encrypted (Optional[bool]): Enable encryption.
+            lifecycle_policy (Optional[LifecyclePolicy]): Lifecycle policy.
+            out_of_infrequent_access_policy (Optional[OutOfInfrequentAccessPolicy]):
+                Policy for moving files out of infrequent access.
+            performance_mode (Optional[PerformanceMode]): Performance mode.
+            removal_policy (cdk.RemovalPolicy): Removal policy.
+                Defaults to DESTROY.
+            throughput_mode (Optional[ThroughputMode]): Throughput mode.
+                Defaults to BURSTING.
+            **kwargs: Additional arguments passed to parent.
+        """
         self.env_base = env_base
         super().__init__(
             scope,
@@ -71,23 +107,29 @@ class EnvBaseFileSystem(efs.FileSystem, EnvBaseConstructMixins):
 
     @property
     def file_system_name(self) -> str:
+        """Get the full file system name including environment prefix.
+
+        Returns:
+            The file system name.
+        """
         return self._file_system_name
 
     def create_access_point(
         self, name: str, path: str, *tags: Union[EFSTag, Tuple[str, str]]
     ) -> efs.AccessPoint:
-        """Create an EFS access point
+        """Create an EFS access point.
 
-        Note:   We use CfnAccessPoint because the AccessPoint construct does not support tagging
-                or naming. We use tags to name it.
+        Uses CfnAccessPoint because the AccessPoint construct does not support
+        tagging or naming. Tags are used to set the name.
 
         Args:
-            name (str): name used for construct id
-            path (str): access point path
-            tags (List[EFSTag]): tags to add to the access point
+            name (str): Name used for construct ID and as default Name tag.
+            path (str): Access point path within the file system.
+            *tags (Union[EFSTag, Tuple[str, str]]): Variable number of tags
+                to add to the access point.
 
         Returns:
-            efs.AccessPoint: _description_
+            The created access point.
         """
         ap_tags = [tag if isinstance(tag, EFSTag) else EFSTag(*tag) for tag in tags]
         if not any(tag.key == "Name" for tag in ap_tags):
@@ -122,6 +164,14 @@ class EnvBaseFileSystem(efs.FileSystem, EnvBaseConstructMixins):
         )  # type: ignore
 
     def as_lambda_file_system(self, access_point: efs.AccessPoint) -> lambda_.FileSystem:
+        """Convert to a Lambda file system configuration.
+
+        Args:
+            access_point (efs.AccessPoint): The access point to use.
+
+        Returns:
+            Lambda FileSystem configured for the access point.
+        """
         ap = access_point or self.root_access_point
         return lambda_.FileSystem.from_efs_access_point(
             ap=ap,
@@ -129,11 +179,27 @@ class EnvBaseFileSystem(efs.FileSystem, EnvBaseConstructMixins):
             mount_path="/mnt/efs",
         )
 
-    def grant_lambda_access(self, resource: lambda_.Function):
+    def grant_lambda_access(self, resource: lambda_.Function) -> None:
+        """Grant a Lambda function access to this file system.
+
+        Args:
+            resource (lambda_.Function): The Lambda function to grant access to.
+        """
         grant_file_system_access(self, resource)
 
 
 class EFSEcosystem(EnvBaseConstruct):
+    """Complete EFS ecosystem with predefined access points.
+
+    Creates an EFS file system with root, shared, scratch, and tmp access points.
+
+    Attributes:
+        root_access_point: Access point for the root directory.
+        shared_access_point: Access point for shared data.
+        scratch_access_point: Access point for scratch data.
+        tmp_access_point: Access point for temporary data.
+    """
+
     def __init__(
         self,
         scope: constructs.Construct,
@@ -143,12 +209,21 @@ class EFSEcosystem(EnvBaseConstruct):
         vpc: ec2.Vpc,
         efs_lifecycle_policy: Optional[efs.LifecyclePolicy] = None,
     ) -> None:
-        """Construct for setting up an EFS file system
+        """Initialize an EFS ecosystem.
 
-        NOTE: If the EFS filesystem is intended to be deployed in efs.ThroughputMode.BURSTING
-              it may be counterproductive to set an efs_lifecycle_policy other than None because
-              EFS files in IA tier DO NOT count towards burst credit accumulation calculations.
-              See: https://docs.aws.amazon.com/efs/latest/ug/performance.html#bursting
+        Args:
+            scope (constructs.Construct): The construct scope.
+            id (Optional[str]): The construct ID.
+            env_base (EnvBase): Environment base for resource naming.
+            file_system_name (str): Name for the file system.
+            vpc (ec2.Vpc): VPC for the file system.
+            efs_lifecycle_policy (Optional[efs.LifecyclePolicy]): Lifecycle policy.
+
+        Note:
+            If the EFS filesystem is intended to be deployed in BURSTING throughput mode,
+            it may be counterproductive to set an efs_lifecycle_policy other than None
+            because EFS files in IA tier DO NOT count towards burst credit accumulation.
+            See: https://docs.aws.amazon.com/efs/latest/ug/performance.html#bursting
         """
         super().__init__(scope, id, env_base)
         self._file_system = EnvBaseFileSystem(
@@ -178,15 +253,41 @@ class EFSEcosystem(EnvBaseConstruct):
 
     @property
     def file_system(self) -> EnvBaseFileSystem:
+        """Get the underlying EFS file system.
+
+        Returns:
+            The EFS file system instance.
+        """
         return self._file_system
 
     @property
     def as_lambda_file_system(self) -> lambda_.FileSystem:
+        """Get the file system configured for Lambda.
+
+        Returns:
+            Lambda FileSystem using the root access point.
+        """
         return self.file_system.as_lambda_file_system(self.root_access_point)
 
 
 @dataclass
 class MountPointConfiguration:
+    """Configuration for mounting an EFS file system.
+
+    Attributes:
+        file_system (Optional[Union[efs.FileSystem, efs.IFileSystem]]):
+            The EFS file system to mount.
+        access_point (Optional[Union[efs.AccessPoint, efs.IAccessPoint]]):
+            The access point to use for mounting.
+        mount_point (str): The path where the file system will be mounted.
+        root_directory (Optional[str]): Root directory within the file system.
+        read_only (bool): Whether to mount as read-only. Defaults to False.
+
+    Raises:
+        ValueError: If neither file system nor access point is provided,
+            or if access point's file system doesn't match the provided file system.
+    """
+
     file_system: Optional[Union[efs.FileSystem, efs.IFileSystem]]
     access_point: Optional[Union[efs.AccessPoint, efs.IAccessPoint]]
     mount_point: str
@@ -213,6 +314,18 @@ class MountPointConfiguration:
         mount_point: Optional[str] = None,
         read_only: bool = False,
     ) -> "MountPointConfiguration":
+        """Create configuration from a file system.
+
+        Args:
+            file_system (Union[efs.FileSystem, efs.IFileSystem]): The file system.
+            root_directory (Optional[str]): Root directory. Defaults to "/".
+            mount_point (Optional[str]): Mount point path.
+                Defaults to /opt/efs/{file_system_id}.
+            read_only (bool): Mount as read-only. Defaults to False.
+
+        Returns:
+            MountPointConfiguration for the file system.
+        """
         if not root_directory:
             root_directory = "/"
         if not mount_point:
@@ -232,6 +345,17 @@ class MountPointConfiguration:
         mount_point: Optional[str] = None,
         read_only: bool = False,
     ) -> "MountPointConfiguration":
+        """Create configuration from an access point.
+
+        Args:
+            access_point (Union[efs.AccessPoint, efs.IAccessPoint]): The access point.
+            mount_point (Optional[str]): Mount point path.
+                Defaults to /opt/efs/{access_point_id}.
+            read_only (bool): Mount as read-only. Defaults to False.
+
+        Returns:
+            MountPointConfiguration for the access point.
+        """
         if not mount_point:
             mount_point = f"/opt/efs/{access_point.access_point_id}"
         return cls(
@@ -244,6 +368,14 @@ class MountPointConfiguration:
 
     @property
     def file_system_id(self) -> str:
+        """Get the file system ID.
+
+        Returns:
+            The EFS file system ID.
+
+        Raises:
+            ValueError: If no file system or access point is configured.
+        """
         if self.access_point:
             return self.access_point.file_system.file_system_id
         elif self.file_system:
@@ -253,11 +385,25 @@ class MountPointConfiguration:
 
     @property
     def access_point_id(self) -> Optional[str]:
+        """Get the access point ID.
+
+        Returns:
+            The access point ID, or None if using file system directly.
+        """
         if self.access_point:
             return self.access_point.access_point_id
         return None
 
     def to_batch_mount_point(self, name: str, sfn_format: bool = False) -> dict[str, Any]:
+        """Convert to Batch mount point configuration.
+
+        Args:
+            name (str): Name of the volume.
+            sfn_format (bool): Use Step Functions API case. Defaults to False.
+
+        Returns:
+            Dictionary containing the mount point configuration.
+        """
         mount_point: dict[str, Any] = to_mount_point(
             self.mount_point, self.read_only, source_volume=name
         )  # type: ignore[arg-type]  # typed dict should be accepted
@@ -266,6 +412,15 @@ class MountPointConfiguration:
         return mount_point
 
     def to_batch_volume(self, name: str, sfn_format: bool = False) -> dict[str, Any]:
+        """Convert to Batch volume configuration.
+
+        Args:
+            name (str): Name of the volume.
+            sfn_format (bool): Use Step Functions API case. Defaults to False.
+
+        Returns:
+            Dictionary containing the volume configuration.
+        """
         efs_volume_configuration: dict[str, Any] = {
             "fileSystemId": self.file_system_id,
         }
@@ -295,18 +450,20 @@ def create_access_point(
     path: str,
     *tags: Union[EFSTag, Tuple[str, str]],
 ) -> efs.AccessPoint:
-    """Create an EFS access point
+    """Create an EFS access point.
 
-    Note:   We use CfnAccessPoint because the AccessPoint construct does not support tagging
-            or naming. We use tags to name it.
+    Uses CfnAccessPoint because the AccessPoint construct does not support
+    tagging or naming. Tags are used to set the name.
 
     Args:
-        name (str): name used for construct id
-        path (str): access point path
-        tags (List[EFSTag]): tags to add to the access point
+        scope (constructs.Construct): The construct scope.
+        file_system (Union[efs.FileSystem, efs.IFileSystem]): The file system.
+        name (str): Name used for construct ID and as default Name tag.
+        path (str): Access point path within the file system.
+        *tags (Union[EFSTag, Tuple[str, str]]): Variable number of tags.
 
     Returns:
-        efs.AccessPoint: _description_
+        The created access point.
     """
     ap_tags = [tag if isinstance(tag, EFSTag) else EFSTag(*tag) for tag in tags]
 
@@ -346,7 +503,14 @@ def grant_connectable_file_system_access(
     file_system: Union[efs.IFileSystem, efs.FileSystem],
     connectable: ec2.IConnectable,
     permissions: Literal["r", "rw"] = "rw",
-):
+) -> None:
+    """Grant a connectable resource access to an EFS file system.
+
+    Args:
+        file_system (Union[efs.IFileSystem, efs.FileSystem]): The file system.
+        connectable (ec2.IConnectable): The connectable resource.
+        permissions (Literal["r", "rw"]): Permission level. Defaults to "rw".
+    """
     file_system.connections.allow_default_port_from(connectable)
     repair_connectable_efs_dependency(file_system, connectable)
 
@@ -355,7 +519,14 @@ def grant_role_file_system_access(
     file_system: Union[efs.IFileSystem, efs.FileSystem],
     role: Optional[iam.IRole],
     permissions: Literal["r", "rw"] = "rw",
-):
+) -> None:
+    """Grant an IAM role access to an EFS file system.
+
+    Args:
+        file_system (Union[efs.IFileSystem, efs.FileSystem]): The file system.
+        role (Optional[iam.IRole]): The IAM role to grant access to.
+        permissions (Literal["r", "rw"]): Permission level. Defaults to "rw".
+    """
     grant_managed_policies(role, "AmazonElasticFileSystemReadOnlyAccess")
     if "w" in permissions:
         grant_managed_policies(role, "AmazonElasticFileSystemClientReadWriteAccess")
@@ -365,7 +536,14 @@ def grant_grantable_file_system_access(
     file_system: Union[efs.IFileSystem, efs.FileSystem],
     grantable: iam.IGrantable,
     permissions: Literal["r", "rw"] = "rw",
-):
+) -> None:
+    """Grant a grantable principal access to an EFS file system.
+
+    Args:
+        file_system (Union[efs.IFileSystem, efs.FileSystem]): The file system.
+        grantable (iam.IGrantable): The grantable principal.
+        permissions (Literal["r", "rw"]): Permission level. Defaults to "rw".
+    """
     actions = []
     if "w" in permissions:
         actions.append("elasticfilesystem:ClientWrite")
@@ -374,7 +552,15 @@ def grant_grantable_file_system_access(
 
 def grant_file_system_access(
     file_system: Union[efs.IFileSystem, efs.FileSystem], resource: lambda_.Function
-):
+) -> None:
+    """Grant a Lambda function full access to an EFS file system.
+
+    Grants grantable, role, and connectable access.
+
+    Args:
+        file_system (Union[efs.IFileSystem, efs.FileSystem]): The file system.
+        resource (lambda_.Function): The Lambda function.
+    """
     grant_grantable_file_system_access(file_system, resource)
     grant_role_file_system_access(file_system, resource.role)
     grant_connectable_file_system_access(file_system, resource)
@@ -382,31 +568,29 @@ def grant_file_system_access(
 
 def repair_connectable_efs_dependency(
     file_system: Union[efs.IFileSystem, efs.FileSystem], connectable: ec2.IConnectable
-):
-    """Repairs cyclical dependency between EFS and dependent connectable
+) -> None:
+    """Repair cyclical dependency between EFS and dependent connectable.
 
-    Reusing code written in this comment
+    When an EFS filesystem is added to a Lambda Function (via the file_system= param)
+    it automatically sets up networking access between the two by adding an ingress
+    rule on the EFS security group. However, the ingress rule resource gets attached
+    to whichever CDK Stack the EFS security group is defined on.
 
-    https://github.com/aws/aws-cdk/issues/18759#issuecomment-1268689132
+    If the Lambda Function is defined on a different stack, it creates a circular
+    dependency issue, where the EFS stack is dependent on the Lambda security group's
+    ID and the Lambda stack is dependent on the EFS stack's file system object.
 
-    From the github comment:
+    To resolve this, we manually remove the ingress rule that gets automatically
+    created and recreate it on the Lambda's stack instead.
 
-        When an EFS filesystem is added to a Lambda Function (via the file_system= param)
-        it automatically sets up networking access between the two by adding
-        an ingress rule on the EFS security group. However, the ingress rule resource
-        gets attached to whichever CDK Stack the EFS security group is defined on.
-        If the Lambda Function is defined on a different stack, it then creates
-        a circular dependency issue, where the EFS stack is dependent on the Lambda
-        security group's ID and the Lambda stack is dependent on the EFS stack's file
-        system object.
-
-        To resolve this, we manually remove the ingress rule that gets automatically created
-        and recreate it on the Lambda's stack instead.
-
+    Based on: https://github.com/aws/aws-cdk/issues/18759#issuecomment-1268689132
 
     Args:
-        connectable (ec2.IConnectable): Connectable
+        file_system (Union[efs.IFileSystem, efs.FileSystem]): The EFS file system.
+        connectable (ec2.IConnectable): The connectable resource.
 
+    Raises:
+        RuntimeError: If unable to remove the child node.
     """
     connections = connectable.connections
     # Collect IDs of all security groups attached to the connections

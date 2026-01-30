@@ -1,3 +1,9 @@
+"""Git utilities for repository operations.
+
+This module provides functions for working with Git repositories,
+including URL parsing, cloning, and commit hash retrieval.
+"""
+
 import logging
 import os
 import re
@@ -13,6 +19,15 @@ logger = logging.getLogger(__name__)
 
 
 class GitUrl(ValidatedStr):
+    """Validated string representing a Git repository URL.
+
+    Supports various Git URL formats including HTTPS, SSH, and git protocols.
+    Can extract repository name and optional ref (branch/tag/commit).
+
+    Attributes:
+        regex_pattern: Compiled regex pattern for URL validation.
+    """
+
     regex_pattern: ClassVar[re.Pattern] = re.compile(
         r"((?:(?:git|ssh|http(?:s)?)(?::\/\/)(?:[\w\.]+)\/|(?:git@(?:[\w\.]+)):)(?:[\w\.-]+)\/(?:[\w\.-]+)(?:\.git)?)(?:(?:\#|@|\/tree\/)([\w\./-]+))?"
     )
@@ -34,27 +49,25 @@ class GitUrl(ValidatedStr):
 
 
 def is_repo_url(url: str) -> bool:
-    """
-    Checks if a given URL is a valid Git repository URL.
+    """Check if a URL is a valid Git repository URL.
 
     Args:
-        url (str): The URL to check.
+        url (str): The URL to validate.
 
     Returns:
-    True if the URL is a valid Git repository URL, False otherwise.
+        True if the URL is a valid Git repository URL, False otherwise.
     """
     return GitUrl.is_valid(url)
 
 
 def is_local_repo(repo_path: Union[str, Path]) -> bool:
-    """
-    Checks if a given path is a local Git repository.
+    """Check if a path is a local Git repository.
 
     Args:
-    repo_path (Path): The file system path to check.
+        repo_path (Union[str, Path]): The file system path to check.
 
     Returns:
-    True if the path is a local Git repository, False otherwise.
+        True if the path is a local Git repository, False otherwise.
     """
     repo_path = Path(repo_path)
     try:
@@ -65,14 +78,16 @@ def is_local_repo(repo_path: Union[str, Path]) -> bool:
 
 
 def get_commit_hash(repo_url_or_path: Union[str, Path]) -> Optional[str]:
-    """
-    Get the commit hash of the HEAD reference of a Git repository.
+    """Get the HEAD commit hash of a Git repository.
 
     Args:
-        repo_url_or_path (Union[str, Path]): The URL or local path of the Git repository.
+        repo_url_or_path (Union[str, Path]): The repository URL or local path.
 
     Returns:
-    The commit hash of the HEAD reference.
+        The commit hash of the HEAD reference.
+
+    Raises:
+        ValueError: If the input is neither a valid URL nor a local repository.
     """
     if isinstance(repo_url_or_path, str) and is_repo_url(repo_url_or_path):
         return get_commit_hash_from_url(repo_url_or_path)
@@ -84,11 +99,32 @@ def get_commit_hash(repo_url_or_path: Union[str, Path]) -> Optional[str]:
 
 
 def get_repo_url_components(repo_url: str) -> tuple[str, Optional[str]]:
+    """Extract base URL and ref from a Git repository URL.
+
+    Args:
+        repo_url (str): The full repository URL.
+
+    Returns:
+        Tuple of (base_url, ref) where ref may be None.
+    """
     git_url = GitUrl(repo_url)
     return (git_url.repo_base_url, git_url.ref)
 
 
 def get_commit_hash_from_url(repo_url: str) -> str:
+    """Get the commit hash from a remote Git repository URL.
+
+    Uses git ls-remote to fetch the commit hash without cloning.
+
+    Args:
+        repo_url (str): The repository URL.
+
+    Returns:
+        The commit hash of the HEAD or specified branch.
+
+    Raises:
+        subprocess.CalledProcessError: If git ls-remote fails.
+    """
     try:
         url = GitUrl(repo_url)
         branch = url.ref or "HEAD"
@@ -107,6 +143,17 @@ def get_commit_hash_from_url(repo_url: str) -> str:
 
 
 def get_commit_hash_from_local(repo_path: Union[str, Path]) -> str:
+    """Get the HEAD commit hash from a local Git repository.
+
+    Args:
+        repo_path (Union[str, Path]): Path to the local repository.
+
+    Returns:
+        The commit hash of HEAD.
+
+    Raises:
+        subprocess.CalledProcessError: If git rev-parse fails.
+    """
     try:
         # Get the latest commit hash
         commit_hash = (
@@ -129,14 +176,17 @@ def get_commit_hash_from_local(repo_path: Union[str, Path]) -> str:
 
 
 def get_repo_name(repo_url_or_path: Union[str, Path]) -> str:
-    """
-    Get the name of a Git repository from its URL or local path.
+    """Get the repository name from a URL or local path.
 
     Args:
-        repo_url_or_path (Union[str, Path]): The URL or local path of the Git repository.
+        repo_url_or_path (Union[str, Path]): The repository URL or local path.
 
     Returns:
-    The name of the repository.
+        The repository name.
+
+    Raises:
+        ValueError: If the input is neither a valid URL nor a local repository.
+        subprocess.CalledProcessError: If git commands fail.
     """
     if isinstance(repo_url_or_path, str) and is_repo_url(repo_url_or_path):
         return GitUrl(repo_url_or_path).repo_name
@@ -168,6 +218,19 @@ def get_repo_name(repo_url_or_path: Union[str, Path]) -> str:
 
 
 def construct_repo_path(repo_url: str, target_dir: Optional[Union[str, Path]] = None) -> Path:
+    """Construct a deterministic path for a cloned repository.
+
+    The path includes the repository name and commit hash to ensure
+    unique paths for different versions.
+
+    Args:
+        repo_url (str): The repository URL.
+        target_dir (Optional[Union[str, Path]]): Base directory for the path.
+            Defaults to system temp directory.
+
+    Returns:
+        Path where the repository should be cloned.
+    """
     target_dir = Path(target_dir) if target_dir else Path(tempfile.gettempdir())
 
     repo_name = get_repo_name(repo_url)
@@ -187,14 +250,13 @@ def clone_repo(
 
     Args:
         repo_url (str): The URL of the Git repository.
-        target_dir (Optional[Union[str, Path]], optional): Target prefix to store repo under.
-            The repo will be written to a subdirectory. Defaults to None (defaut tmp dir used).
-        skip_if_exists (bool, optional): Skip cloning if the target directory already exists.
-            If the target directory exists and the commit hash matches, the function will return
-            the existing path. Defaults to True.
+        target_dir (Optional[Union[str, Path]]): Target directory to store repo under.
+            The repo will be written to a subdirectory. Defaults to temp directory.
+        skip_if_exists (bool): Skip cloning if the target directory already exists
+            and the commit hash matches. Defaults to True.
 
     Returns:
-        The path to the cloned repository.
+        Path to the cloned repository.
     """
     target_path = construct_repo_path(repo_url, target_dir)
 

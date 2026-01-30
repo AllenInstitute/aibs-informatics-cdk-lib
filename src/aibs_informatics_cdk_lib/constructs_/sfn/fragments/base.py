@@ -1,3 +1,9 @@
+"""Step Functions state machine fragment constructs.
+
+This module provides base classes and utilities for building Step Functions
+state machine fragments and workflows.
+"""
+
 from abc import abstractmethod
 from typing import Any, Dict, List, Mapping, Optional, Sequence, TypeVar, Union, cast
 
@@ -26,6 +32,20 @@ def create_log_options(
     removal_policy: Optional[cdk.RemovalPolicy] = None,
     retention: Optional[logs_.RetentionDays] = None,
 ) -> sfn.LogOptions:
+    """Create log options for a state machine.
+
+    Args:
+        scope (constructs.Construct): The construct scope.
+        id (str): Identifier for the log group.
+        env_base (EnvBase): Environment base for naming.
+        removal_policy (Optional[cdk.RemovalPolicy]): Removal policy.
+            Defaults to DESTROY.
+        retention (Optional[logs_.RetentionDays]): Log retention period.
+            Defaults to ONE_MONTH.
+
+    Returns:
+        Log options configured with a CloudWatch log group.
+    """
     return sfn.LogOptions(
         destination=logs_.LogGroup(
             scope,
@@ -47,6 +67,26 @@ def create_role(
     inline_policies_from_statements: Optional[Mapping[str, Sequence[iam.PolicyStatement]]] = None,
     include_default_managed_policies: bool = True,
 ) -> iam.Role:
+    """Create an IAM role for a state machine.
+
+    Args:
+        scope (constructs.Construct): The construct scope.
+        id (str): Identifier for the role.
+        env_base (EnvBase): Environment base for naming.
+        assumed_by (iam.IPrincipal): Principal that can assume the role.
+            Defaults to states.amazonaws.com.
+        managed_policies (Optional[Sequence[Union[iam.IManagedPolicy, str]]]):
+            Managed policies to attach.
+        inline_policies (Optional[Mapping[str, iam.PolicyDocument]]):
+            Inline policy documents.
+        inline_policies_from_statements (Optional[Mapping[str, Sequence[iam.PolicyStatement]]]):
+            Inline policies from statements.
+        include_default_managed_policies (bool): Include default Step Functions
+            managed policies. Defaults to True.
+
+    Returns:
+        The created IAM role.
+    """
     construct_id = env_base.get_construct_id(id, "role")
 
     if managed_policies is not None:
@@ -92,7 +132,21 @@ def create_role(
 
 
 class StateMachineMixins(EnvBaseConstructMixins):
+    """Mixin class providing state machine helper methods.
+
+    Provides methods for retrieving Lambda functions and state machines
+    with caching support.
+    """
+
     def get_fn(self, function_name: str) -> lambda_.IFunction:
+        """Get a Lambda function by name.
+
+        Args:
+            function_name (str): The function name.
+
+        Returns:
+            The Lambda function interface.
+        """
         cache_attr = "_function_cache"
         if not hasattr(self, cache_attr):
             setattr(self, cache_attr, {})
@@ -109,6 +163,14 @@ class StateMachineMixins(EnvBaseConstructMixins):
         return resource_cache[function_name]
 
     def get_state_machine_from_name(self, state_machine_name: str) -> sfn.IStateMachine:
+        """Get a state machine by name.
+
+        Args:
+            state_machine_name (str): The state machine name.
+
+        Returns:
+            The state machine interface.
+        """
         cache_attr = "_state_machine_cache"
         if not hasattr(self, cache_attr):
             setattr(self, cache_attr, {})
@@ -132,6 +194,21 @@ def create_state_machine(
     logs: Optional[sfn.LogOptions] = None,
     timeout: Optional[cdk.Duration] = None,
 ) -> sfn.StateMachine:
+    """Create a state machine from a definition.
+
+    Args:
+        scope (constructs.Construct): The construct scope.
+        env_base (EnvBase): Environment base for naming.
+        id (str): Construct identifier.
+        name (Optional[str]): State machine name.
+        definition (sfn.IChainable): The state machine definition.
+        role (Optional[iam.Role]): IAM role for the state machine.
+        logs (Optional[sfn.LogOptions]): Log options.
+        timeout (Optional[cdk.Duration]): Execution timeout.
+
+    Returns:
+        The created state machine.
+    """
     return sfn.StateMachine(
         scope,
         env_base.get_construct_id(id),
@@ -155,20 +232,46 @@ def create_state_machine(
 
 
 class StateMachineFragment(sfn.StateMachineFragment):
+    """Base class for state machine fragments.
+
+    Provides common functionality for building reusable state machine
+    fragments with definition management.
+    """
+
     @property
     def definition(self) -> sfn.IChainable:
+        """Get the state machine definition.
+
+        Returns:
+            The chainable definition.
+        """
         return self._definition
 
     @definition.setter
     def definition(self, value: sfn.IChainable):
+        """Set the state machine definition.
+
+        Args:
+            value (sfn.IChainable): The definition to set.
+        """
         self._definition = value
 
     @property
     def start_state(self) -> sfn.State:
+        """Get the start state.
+
+        Returns:
+            The definition's start state.
+        """
         return self.definition.start_state
 
     @property
     def end_states(self) -> List[sfn.INextable]:
+        """Get the end states.
+
+        Returns:
+            List of nextable end states.
+        """
         return self.definition.end_states
 
     def enclose(
@@ -177,21 +280,18 @@ class StateMachineFragment(sfn.StateMachineFragment):
         input_path: Optional[str] = None,
         result_path: Optional[str] = None,
     ) -> sfn.Chain:
-        """Enclose the current state machine fragment within a parallel state.
-
-        Notes:
-            - If input_path is not provided, it will default to "$"
-            - If result_path is not provided, it will default to input_path
+        """Enclose the fragment within a parallel state.
 
         Args:
-            id (str): an identifier for the parallel state
-            input_path (Optional[str], optional): input path for the enclosed state.
+            id (Optional[str]): Identifier for the parallel state.
+                Defaults to the node ID.
+            input_path (Optional[str]): Input path for the enclosed state.
                 Defaults to "$".
-            result_path (Optional[str], optional): result path to put output of enclosed state.
+            result_path (Optional[str]): Result path for output.
                 Defaults to same as input_path.
 
         Returns:
-            sfn.Chain: the new state machine fragment
+            The enclosed state machine fragment as a chain.
         """
         id = id or self.node.id
 
@@ -227,12 +327,28 @@ class StateMachineFragment(sfn.StateMachineFragment):
 
 
 class EnvBaseStateMachineFragment(StateMachineFragment, StateMachineMixins):
+    """Environment-aware state machine fragment.
+
+    Combines StateMachineFragment with environment base naming conventions
+    and state machine mixins.
+
+    Attributes:
+        env_base: Environment base for resource naming.
+    """
+
     def __init__(
         self,
         scope: constructs.Construct,
         id: str,
         env_base: EnvBase,
     ) -> None:
+        """Initialize an environment-aware state machine fragment.
+
+        Args:
+            scope (constructs.Construct): The construct scope.
+            id (str): The construct ID.
+            env_base (EnvBase): Environment base for resource naming.
+        """
         super().__init__(scope, id)
         self.env_base = env_base
 
@@ -247,6 +363,20 @@ class EnvBaseStateMachineFragment(StateMachineFragment, StateMachineMixins):
         result_path: Optional[str] = None,
         result_selector: Optional[Mapping[str, Any]] = None,
     ) -> sfn.Parallel:
+        """Convert the fragment to a single parallel state.
+
+        Args:
+            prefix_states (Optional[str]): Prefix for state names.
+            state_id (Optional[str]): ID for the parallel state.
+            comment (Optional[str]): Comment for the state.
+            input_path (Optional[str]): Input path.
+            output_path (Optional[str]): Output path. Defaults to "$[0]".
+            result_path (Optional[str]): Result path.
+            result_selector (Optional[Mapping[str, Any]]): Result selector.
+
+        Returns:
+            A parallel state containing the fragment.
+        """
         return super().to_single_state(
             prefix_states=prefix_states,
             state_id=state_id,
@@ -264,6 +394,17 @@ class EnvBaseStateMachineFragment(StateMachineFragment, StateMachineMixins):
         logs: Optional[sfn.LogOptions] = None,
         timeout: Optional[cdk.Duration] = None,
     ) -> sfn.StateMachine:
+        """Convert the fragment to a complete state machine.
+
+        Args:
+            state_machine_name (str): Name for the state machine.
+            role (Optional[iam.Role]): IAM role. Creates default if None.
+            logs (Optional[sfn.LogOptions]): Log options.
+            timeout (Optional[cdk.Duration]): Execution timeout.
+
+        Returns:
+            The created state machine.
+        """
         if role is None:
             role = create_role(
                 self,
@@ -297,16 +438,36 @@ class EnvBaseStateMachineFragment(StateMachineFragment, StateMachineMixins):
 
     @property
     def required_managed_policies(self) -> Sequence[Union[iam.ManagedPolicy, str]]:
+        """Get required managed policies for this fragment.
+
+        Returns:
+            Sequence of required managed policies.
+        """
         return []
 
     @property
     def required_inline_policy_statements(self) -> Sequence[iam.PolicyStatement]:
+        """Get required inline policy statements for this fragment.
+
+        Returns:
+            Sequence of required policy statements.
+        """
         return []
 
 
 class LazyLoadStateMachineFragment(EnvBaseStateMachineFragment):
+    """State machine fragment with lazy-loaded definition.
+
+    The definition is built on first access via build_definition().
+    """
+
     @property
     def definition(self) -> sfn.IChainable:
+        """Get the state machine definition, building if needed.
+
+        Returns:
+            The chainable definition.
+        """
         try:
             return self._definition
         except AttributeError:
@@ -315,14 +476,36 @@ class LazyLoadStateMachineFragment(EnvBaseStateMachineFragment):
 
     @definition.setter
     def definition(self, value: sfn.IChainable):
+        """Set the state machine definition.
+
+        Args:
+            value (sfn.IChainable): The definition to set.
+        """
         self._definition = value
 
     @abstractmethod
     def build_definition(self) -> sfn.IChainable:
+        """Build the state machine definition.
+
+        Subclasses must implement this method.
+
+        Returns:
+            The built definition.
+        """
         raise NotImplementedError("Must implement")
 
 
 class TaskWithPrePostStatus(LazyLoadStateMachineFragment):
+    """State machine fragment with pre/post status tracking.
+
+    Wraps a task with status updates for started, failed, and completed states.
+
+    Attributes:
+        task: The wrapped task.
+        task_name: Name of the task.
+        raw_task_input_path: Path for raw task input.
+    """
+
     def __init__(
         self,
         scope: constructs.Construct,
@@ -330,6 +513,14 @@ class TaskWithPrePostStatus(LazyLoadStateMachineFragment):
         env_base: EnvBase,
         task: Optional[sfn.IChainable],
     ) -> None:
+        """Initialize a task with pre/post status tracking.
+
+        Args:
+            scope (constructs.Construct): The construct scope.
+            id (str): The construct ID.
+            env_base (EnvBase): Environment base for resource naming.
+            task (Optional[sfn.IChainable]): The task to wrap.
+        """
         super().__init__(scope, id, env_base)
         self.task = task
         self.task_name = id
@@ -338,22 +529,50 @@ class TaskWithPrePostStatus(LazyLoadStateMachineFragment):
 
     @property
     def task(self) -> sfn.IChainable:
+        """Get the wrapped task.
+
+        Returns:
+            The task.
+
+        Raises:
+            AssertionError: If task is not set.
+        """
         assert self._task, "Task must be set"
         return self._task
 
     @task.setter
     def task(self, value: Optional[sfn.IChainable]):
+        """Set the wrapped task.
+
+        Args:
+            value (Optional[sfn.IChainable]): The task to set.
+        """
         self._task = value
 
     @property
     def task_name(self) -> str:
+        """Get the task name.
+
+        Returns:
+            The task name.
+        """
         return self._task_name
 
     @task_name.setter
     def task_name(self, value: str):
+        """Set the task name.
+
+        Args:
+            value (str): The name to set.
+        """
         self._task_name = value
 
     def build_definition(self) -> sfn.IChainable:
+        """Build the task definition with status tracking.
+
+        Returns:
+            The complete task definition with pre/post status states.
+        """
         # Should only evaluate once, otherwise errors for duplicate construct will be raised\
         task__augment_input = self.task__augment_input
         task__status_started = self.task__status_started

@@ -1,3 +1,9 @@
+"""Base stack classes for environment-aware CDK stacks.
+
+This module provides the foundational stack classes that enable
+environment-aware deployments with automatic tagging and resource naming.
+"""
+
 __all__ = [
     "EnvBaseStack",
     "EnvBaseStackMixins",
@@ -15,26 +21,51 @@ from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstructMixins
 
 
 def get_all_stacks(scope: constructs.Construct) -> List[cdk.Stack]:
+    """Get all CDK stacks from a construct scope.
+
+    Args:
+        scope (constructs.Construct): The construct scope to search.
+
+    Returns:
+        List of all Stack children in the scope.
+    """
     children = scope.node.children
     return [cast(cdk.Stack, child) for child in children if isinstance(child, cdk.Stack)]
 
 
 def add_stack_dependencies(source_stack: cdk.Stack, dependent_stacks: List[cdk.Stack]):
-    """Add dependencies between stacks
+    """Add dependencies between stacks.
+
+    Makes the dependent stacks depend on the source stack,
+    ensuring proper deployment order.
 
     Args:
-        source_stack (Stack): target stack on which a dependency is made
-        dependent_stacks (List[Stack]): the stacks adding the dependency
+        source_stack (cdk.Stack): The stack that others depend on.
+        dependent_stacks (List[cdk.Stack]): Stacks that depend on the source.
     """
     for dependent_stack in dependent_stacks:
         dependent_stack.add_dependency(source_stack)
 
 
 class EnvBaseStackMixins(EnvBaseConstructMixins):
+    """Mixin class for environment-aware stack functionality.
+
+    Inherits all functionality from EnvBaseConstructMixins for use in stacks.
+    """
+
     pass
 
 
 class EnvBaseStack(cdk.Stack, EnvBaseStackMixins):
+    """Base stack class with environment awareness.
+
+    Provides automatic tagging with environment information and
+    environment-specific removal policies.
+
+    Attributes:
+        env_base (EnvBase): The environment base configuration.
+    """
+
     def __init__(
         self,
         scope: constructs.Construct,
@@ -43,6 +74,15 @@ class EnvBaseStack(cdk.Stack, EnvBaseStackMixins):
         env: Optional[cdk.Environment] = None,
         **kwargs,
     ) -> None:
+        """Initialize an environment-aware stack.
+
+        Args:
+            scope (constructs.Construct): The parent construct scope.
+            id (Optional[str]): The stack ID. Auto-generated if None.
+            env_base (EnvBase): The environment base configuration.
+            env (Optional[cdk.Environment]): AWS environment settings.
+            **kwargs: Additional arguments passed to cdk.Stack.
+        """
         super().__init__(
             scope,
             id or env_base.get_construct_id(str(self.__class__)),

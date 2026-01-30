@@ -1,3 +1,9 @@
+"""Compute service constructs for AWS Batch.
+
+This module provides high-level constructs for creating Batch compute
+environments with various configurations.
+"""
+
 from abc import abstractmethod
 from typing import Iterable, List, Optional, Union
 
@@ -28,6 +34,16 @@ from aibs_informatics_cdk_lib.constructs_.efs.file_system import MountPointConfi
 
 
 class BaseBatchComputeConstruct(EnvBaseConstruct):
+    """Base class for Batch compute constructs.
+
+    Abstract base class that provides common functionality for creating
+    and managing AWS Batch compute environments.
+
+    Attributes:
+        batch_name: Name for the batch infrastructure.
+        batch: The underlying Batch construct.
+    """
+
     def __init__(
         self,
         scope: Construct,
@@ -42,6 +58,24 @@ class BaseBatchComputeConstruct(EnvBaseConstruct):
         instance_role_policy_statements: Optional[List[iam.PolicyStatement]] = None,
         **kwargs,
     ) -> None:
+        """Initialize a Batch compute construct.
+
+        Args:
+            scope (Construct): The construct scope.
+            id (Optional[str]): The construct ID.
+            env_base (EnvBase): Environment base for resource naming.
+            vpc (ec2.Vpc): VPC for the compute environments.
+            batch_name (str): Name for the batch infrastructure.
+            buckets (Optional[Iterable[s3.Bucket]]): S3 buckets to grant access to.
+            file_systems (Optional[Iterable[Union[efs.FileSystem, efs.IFileSystem]]]):
+                EFS file systems to grant access to.
+            mount_point_configs (Optional[Iterable[MountPointConfiguration]]):
+                Mount point configurations for EFS.
+            instance_role_name (Optional[str]): Name for the instance role.
+            instance_role_policy_statements (Optional[List[iam.PolicyStatement]]):
+                Additional IAM policy statements.
+            **kwargs: Additional arguments passed to parent.
+        """
         super().__init__(scope, id, env_base, **kwargs)
         self.batch_name = batch_name
         self.batch = Batch(
@@ -75,17 +109,40 @@ class BaseBatchComputeConstruct(EnvBaseConstruct):
     @property
     @abstractmethod
     def primary_batch_environment(self) -> BatchEnvironment:
+        """Get the primary batch environment.
+
+        Returns:
+            The primary BatchEnvironment for this compute construct.
+        """
         raise NotImplementedError()
 
     @abstractmethod
-    def create_batch_environments(self):
+    def create_batch_environments(self) -> None:
+        """Create the batch environments.
+
+        Subclasses must implement this to create their specific
+        batch environment configurations.
+        """
         raise NotImplementedError()
 
     @property
     def name(self) -> str:
+        """Get the batch name.
+
+        Returns:
+            The batch infrastructure name.
+        """
         return self.batch_name
 
-    def grant_storage_access(self, *resources: Union[s3.Bucket, efs.FileSystem, efs.IFileSystem]):
+    def grant_storage_access(
+        self, *resources: Union[s3.Bucket, efs.FileSystem, efs.IFileSystem]
+    ) -> None:
+        """Grant access to storage resources.
+
+        Args:
+            *resources (Union[s3.Bucket, efs.FileSystem, efs.IFileSystem]):
+                Variable number of storage resources to grant access to.
+        """
         self.batch.grant_instance_role_permissions(read_write_resources=list(resources))
 
         for batch_environment in self.batch.environments:
@@ -93,7 +150,17 @@ class BaseBatchComputeConstruct(EnvBaseConstruct):
                 if isinstance(resource, efs.FileSystem):
                     batch_environment.grant_file_system_access(resource)
 
-    def _validate_mount_point_configs(self, mount_point_configs: List[MountPointConfiguration]):
+    def _validate_mount_point_configs(
+        self, mount_point_configs: List[MountPointConfiguration]
+    ) -> None:
+        """Validate mount point configurations for duplicates.
+
+        Args:
+            mount_point_configs (List[MountPointConfiguration]): Configs to validate.
+
+        Raises:
+            ValueError: If duplicate mount points are found.
+        """
         _ = {}
         for mpc in mount_point_configs:
             if mpc.mount_point in _ and _[mpc.mount_point] != mpc:
@@ -106,6 +173,15 @@ class BaseBatchComputeConstruct(EnvBaseConstruct):
     def _get_mount_point_configs(
         self, file_systems: Optional[List[Union[efs.FileSystem, efs.IFileSystem]]]
     ) -> List[MountPointConfiguration]:
+        """Get mount point configurations from file systems.
+
+        Args:
+            file_systems (Optional[List[Union[efs.FileSystem, efs.IFileSystem]]]):
+                File systems to create mount configs for.
+
+        Returns:
+            List of MountPointConfiguration objects.
+        """
         mount_point_configs = []
         if file_systems:
             for fs in file_systems:
@@ -117,6 +193,18 @@ class BaseBatchComputeConstruct(EnvBaseConstruct):
         file_systems: List[Union[efs.FileSystem, efs.IFileSystem]],
         mount_point_configs: List[MountPointConfiguration],
     ) -> List[Union[efs.FileSystem, efs.IFileSystem]]:
+        """Update file systems list from mount point configurations.
+
+        Args:
+            file_systems (List[Union[efs.FileSystem, efs.IFileSystem]]): Existing file systems.
+            mount_point_configs (List[MountPointConfiguration]): Mount configs to process.
+
+        Returns:
+            Updated list of file systems.
+
+        Raises:
+            ValueError: If mount config has neither file system nor access point.
+        """
         file_system_map: dict[str, Union[efs.FileSystem, efs.IFileSystem]] = {
             fs.file_system_id: fs for fs in file_systems
         }
@@ -135,11 +223,28 @@ class BaseBatchComputeConstruct(EnvBaseConstruct):
 
 
 class BatchCompute(BaseBatchComputeConstruct):
+    """Standard Batch compute construct with on-demand, spot, and Fargate environments.
+
+    Provides a complete Batch compute setup with three environment types:
+    on-demand, spot, and Fargate.
+
+    Attributes:
+        on_demand_batch_environment: On-demand compute environment.
+        spot_batch_environment: Spot compute environment.
+        fargate_batch_environment: Fargate compute environment.
+    """
+
     @property
     def primary_batch_environment(self) -> BatchEnvironment:
+        """Get the primary batch environment.
+
+        Returns:
+            The on-demand batch environment.
+        """
         return self.on_demand_batch_environment
 
-    def create_batch_environments(self):
+    def create_batch_environments(self) -> None:
+        """Create on-demand, spot, and Fargate batch environments."""
         lt_builder = BatchLaunchTemplateBuilder(
             self, f"{self.name}-lt-builder", env_base=self.env_base
         )
@@ -181,11 +286,29 @@ class BatchCompute(BaseBatchComputeConstruct):
 
 
 class LambdaCompute(BatchCompute):
+    """Lambda-optimized Batch compute construct.
+
+    Provides Batch environments optimized for Lambda-like workloads with
+    small, medium, and large instance type configurations.
+
+    Attributes:
+        lambda_batch_environment: Primary Lambda environment with all instance types.
+        lambda_small_batch_environment: Small instance type environment.
+        lambda_medium_batch_environment: Medium instance type environment.
+        lambda_large_batch_environment: Large instance type environment.
+    """
+
     @property
     def primary_batch_environment(self) -> BatchEnvironment:
+        """Get the primary batch environment.
+
+        Returns:
+            The main Lambda batch environment.
+        """
         return self.lambda_batch_environment
 
-    def create_batch_environments(self):
+    def create_batch_environments(self) -> None:
+        """Create Lambda-optimized batch environments."""
         lt_builder = BatchLaunchTemplateBuilder(
             self, f"{self.name}-lt-builder", env_base=self.env_base
         )

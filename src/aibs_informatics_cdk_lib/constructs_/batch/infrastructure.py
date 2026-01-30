@@ -1,3 +1,9 @@
+"""AWS Batch infrastructure constructs.
+
+This module provides CDK constructs for creating and managing AWS Batch
+compute environments, job queues, and related infrastructure.
+"""
+
 from dataclasses import dataclass
 from typing import (
     Iterable,
@@ -37,17 +43,22 @@ from aibs_informatics_cdk_lib.constructs_.efs.file_system import (
 
 
 class Batch(EnvBaseConstruct):
-    """
-    Out of the box Batch construct that can be used to create multiple Batch Environments.
+    """AWS Batch infrastructure construct for creating multiple Batch environments.
 
-    This construct creates simplifies the creation of Batch Environments.
-    It allows for the creation of multiple Batch Environments with different configurations
-    and launch templates, but using the same instance role and security group.
+    This construct simplifies the creation of Batch Environments.
+    It allows for the creation of multiple Batch Environments with different
+    configurations and launch templates, but using the same instance role
+    and security group.
 
-    Notes:
-    - Instance Roles are created with a set of managed policies that are commonly used
-        by Batch jobs. It also includes custom resources to allow access to S3, Lambda, and DynamoDB.
+    Attributes:
+        vpc: The VPC for the Batch infrastructure.
+        instance_role: IAM role used by EC2 instances.
+        instance_profile: Instance profile for the EC2 instances.
+        security_group: Security group for Batch instances.
 
+    Note:
+        Instance Roles are created with managed policies commonly used
+        by Batch jobs, including access to S3, Lambda, and DynamoDB.
 
     Defines:
         - Batch Compute Environment (Spot and OnDemand)
@@ -65,21 +76,20 @@ class Batch(EnvBaseConstruct):
         instance_role_name: Optional[str] = None,
         instance_role_policy_statements: Optional[List[iam.PolicyStatement]] = None,
     ) -> None:
-        """Batch Infrastructure Construct
+        """Initialize Batch infrastructure construct.
 
         Creates the shared infrastructure for Batch Environments.
         Has the ability to create multiple Batch Environments with different configurations.
 
-
         Args:
-            scope (constructs.Construct): scope
-            id (str): id
-            env_base (EnvBase): env base to use
-            vpc (ec2.IVpc): vpc to use
-            instance_role_name (Optional[str]): Optionally can specify the name of the instance
-                role created. Defaults to None (will be auto-generated).
-            instance_role_policy_statements (Optional[List[iam.PolicyStatement]]): Optionally can
-                specify additional policy statements to add to the instance role
+            scope (constructs.Construct): The construct scope.
+            id (str): The construct ID.
+            env_base (EnvBase): Environment base to use for resource naming.
+            vpc (ec2.IVpc): VPC to use for Batch infrastructure.
+            instance_role_name (Optional[str]): Name for the instance role.
+                Defaults to None (auto-generated).
+            instance_role_policy_statements (Optional[List[iam.PolicyStatement]]):
+                Additional policy statements for the instance role.
                 Defaults to None.
         """
         super().__init__(scope, id, env_base)
@@ -102,6 +112,11 @@ class Batch(EnvBaseConstruct):
 
     @property
     def environments(self) -> List["BatchEnvironment"]:
+        """Get all Batch environments sorted by name.
+
+        Returns:
+            List of BatchEnvironment instances.
+        """
         return sorted(
             self._batch_environment_mapping.values(), key=lambda be: be.descriptor.get_name()
         )
@@ -111,6 +126,16 @@ class Batch(EnvBaseConstruct):
         role_name: Optional[str] = None,
         statements: Optional[List[iam.PolicyStatement]] = None,
     ) -> iam.Role:
+        """Create an IAM role for Batch EC2 instances.
+
+        Args:
+            role_name (Optional[str]): Name for the role. Defaults to None.
+            statements (Optional[List[iam.PolicyStatement]]): Additional policy
+                statements to attach. Defaults to None.
+
+        Returns:
+            The created IAM role.
+        """
         instance_role = iam.Role(
             self,
             self.get_child_id(self, "instance-role"),
@@ -201,6 +226,14 @@ class Batch(EnvBaseConstruct):
         return instance_role
 
     def create_instance_profile(self, instance_role_name: str) -> iam.CfnInstanceProfile:
+        """Create an instance profile for the Batch instance role.
+
+        Args:
+            instance_role_name (str): Name of the IAM role to associate.
+
+        Returns:
+            The created instance profile.
+        """
         return iam.CfnInstanceProfile(
             self,
             "instance-profile",
@@ -208,6 +241,11 @@ class Batch(EnvBaseConstruct):
         )
 
     def create_security_group(self) -> ec2.SecurityGroup:
+        """Create a security group for Batch instances.
+
+        Returns:
+            The created security group with all outbound and self-ingress allowed.
+        """
         security_group = ec2.SecurityGroup(
             self,
             self.get_construct_id("batch", "sg"),
@@ -226,7 +264,18 @@ class Batch(EnvBaseConstruct):
         read_only_resources: Optional[
             Iterable[Union[s3.Bucket, efs.FileSystem, efs.IFileSystem]]
         ] = None,
-    ):
+    ) -> None:
+        """Grant the instance role permissions to access resources.
+
+        Args:
+            read_write_resources (Optional[Iterable[Union[s3.Bucket, efs.FileSystem, efs.IFileSystem]]]):
+                Resources to grant read/write access to.
+            read_only_resources (Optional[Iterable[Union[s3.Bucket, efs.FileSystem, efs.IFileSystem]]]):
+                Resources to grant read-only access to.
+
+        Raises:
+            ValueError: If an unsupported resource type is provided.
+        """
         for resource in read_write_resources or []:
             if isinstance(resource, s3.Bucket):
                 resource.grant_read_write(self.instance_role)
@@ -249,6 +298,17 @@ class Batch(EnvBaseConstruct):
         config: "BatchEnvironmentConfig",
         launch_template_builder: Optional[IBatchLaunchTemplateBuilder] = None,
     ) -> "BatchEnvironment":
+        """Set up a new Batch environment.
+
+        Args:
+            descriptor (IBatchEnvironmentDescriptor): Descriptor defining the environment.
+            config (BatchEnvironmentConfig): Configuration for the environment.
+            launch_template_builder (Optional[IBatchLaunchTemplateBuilder]): Optional
+                builder for creating a launch template.
+
+        Returns:
+            The created BatchEnvironment construct.
+        """
         if launch_template_builder:
             launch_template_builder.grant_instance_role_permissions(self.instance_role)
 
@@ -277,6 +337,22 @@ DEFAULT_MINV_CPUS = 0
 
 @dataclass
 class BatchEnvironmentConfig:
+    """Configuration for a Batch compute environment.
+
+    Attributes:
+        allocation_strategy (Optional[batch.AllocationStrategy]): The allocation
+            strategy for the compute environment.
+        instance_types (Optional[List[Union[str, ec2.InstanceType]]]): Instance
+            types to use in the compute environment.
+        use_public_subnets (bool): Whether to use public subnets.
+        use_spot (bool): Whether to use spot instances.
+        use_fargate (bool): Whether to use Fargate. Defaults to False.
+        maxv_cpus (Optional[int]): Maximum vCPUs for the environment.
+            Defaults to 10240.
+        minv_cpus (Optional[int]): Minimum vCPUs for the environment.
+            Defaults to 0.
+    """
+
     allocation_strategy: Optional[batch.AllocationStrategy]
     instance_types: Optional[List[Union[str, ec2.InstanceType]]]
     use_public_subnets: bool
@@ -295,6 +371,11 @@ class BatchEnvironmentConfig:
 
     @property
     def spot_bid_percentage(self) -> Optional[int]:
+        """Get the spot bid percentage.
+
+        Returns:
+            75 for spot instances (25% discount), None for on-demand.
+        """
         spot_bid_percentage = None
         if self.use_spot:
             # We get a 25% discount currently for on-demand compute
@@ -303,6 +384,18 @@ class BatchEnvironmentConfig:
 
 
 class BatchEnvironment(EnvBaseConstruct):
+    """A single Batch compute environment with its job queue.
+
+    Attributes:
+        config: Configuration for the environment.
+        vpc: The VPC for the environment.
+        instance_role: IAM role for instances.
+        security_group: Security group for instances.
+        launch_template_builder: Optional launch template builder.
+        compute_environments: List of ordered compute environments.
+        job_queue: The job queue for this environment.
+    """
+
     def __init__(
         self,
         scope: constructs.Construct,
@@ -315,6 +408,20 @@ class BatchEnvironment(EnvBaseConstruct):
         security_group: ec2.SecurityGroup,
         launch_template_builder: Optional[IBatchLaunchTemplateBuilder] = None,
     ):
+        """Initialize a BatchEnvironment construct.
+
+        Args:
+            scope (constructs.Construct): The construct scope.
+            id (str): The construct ID.
+            env_base (EnvBase): Environment base for resource naming.
+            descriptor (IBatchEnvironmentDescriptor): Environment descriptor.
+            config (BatchEnvironmentConfig): Environment configuration.
+            vpc (ec2.IVpc): VPC for the environment.
+            instance_role (iam.IRole): IAM role for instances.
+            security_group (ec2.SecurityGroup): Security group for instances.
+            launch_template_builder (Optional[IBatchLaunchTemplateBuilder]):
+                Optional launch template builder.
+        """
         super().__init__(scope, id, env_base)
         self._descriptor = descriptor
         self.config = config
@@ -338,14 +445,29 @@ class BatchEnvironment(EnvBaseConstruct):
 
     @property
     def descriptor(self) -> IBatchEnvironmentDescriptor:
+        """Get the environment descriptor.
+
+        Returns:
+            The batch environment descriptor.
+        """
         return self._descriptor
 
     @property
     def job_queue_name(self) -> str:
+        """Get the job queue name.
+
+        Returns:
+            The name of the job queue.
+        """
         return self.descriptor.get_job_queue_name(self.env_base)
 
     @property
     def instance_types(self) -> Optional[Sequence[ec2.InstanceType]]:
+        """Get the configured instance types.
+
+        Returns:
+            List of instance types, or None if not configured.
+        """
         if self.config.instance_types:
             return [
                 ec2.InstanceType(it) if isinstance(it, str) else it
@@ -355,6 +477,11 @@ class BatchEnvironment(EnvBaseConstruct):
 
     @property
     def vpc_subnets(self) -> Optional[ec2.SubnetSelection]:
+        """Get the VPC subnet selection.
+
+        Returns:
+            SubnetSelection for public subnets if configured, None otherwise.
+        """
         vpc_subnets = None
         if self.config.use_public_subnets:
             vpc_subnets = ec2.SubnetSelection(subnets=self.vpc.public_subnets)
@@ -362,6 +489,11 @@ class BatchEnvironment(EnvBaseConstruct):
 
     @cached_property
     def launch_template(self) -> Optional[ec2.LaunchTemplate]:
+        """Get or create the launch template.
+
+        Returns:
+            The launch template, or None for Fargate environments.
+        """
         launch_template = None
         if self.launch_template_builder and not self.config.use_fargate:
             launch_template = self.launch_template_builder.create_launch_template(
@@ -371,11 +503,23 @@ class BatchEnvironment(EnvBaseConstruct):
 
     @property
     def launch_template_user_data_hash(self) -> Optional[str]:
+        """Get a hash of the launch template user data.
+
+        Returns:
+            SHA256 hash of user data, or None if no launch template.
+        """
         lt = self.launch_template
         return sha256_hexdigest(lt.user_data.render()) if lt and lt.user_data else None
 
     @property
     def compute_resource_tags(self) -> Optional[Mapping[str, str]]:
+        """Get tags for compute resources.
+
+        Includes a hash of user data to force recreation when launch template changes.
+
+        Returns:
+            Dictionary of tags, or None for Fargate environments.
+        """
         if not self.config.use_fargate:
             return remove_null_values(
                 {
@@ -394,6 +538,11 @@ class BatchEnvironment(EnvBaseConstruct):
 
     @property
     def compute_resource_type(self) -> Literal["ON_DEMAND", "SPOT", "FARGATE", "FARGATE_SPOT"]:
+        """Get the compute resource type.
+
+        Returns:
+            The compute resource type based on configuration.
+        """
         if self.config.use_fargate and self.config.use_spot:
             return "FARGATE_SPOT"
         elif self.config.use_fargate and not self.config.use_spot:
@@ -404,6 +553,11 @@ class BatchEnvironment(EnvBaseConstruct):
             return "ON_DEMAND"
 
     def create_compute_environment(self) -> batch.IComputeEnvironment:
+        """Create the compute environment.
+
+        Returns:
+            A Fargate or EC2 compute environment based on configuration.
+        """
         if self.config.use_fargate:
             ce = batch.FargateComputeEnvironment(
                 self,
@@ -434,7 +588,13 @@ class BatchEnvironment(EnvBaseConstruct):
                 ce.tags.set_tag(key=tag_key, value=tag_value)
         return ce
 
-    def grant_file_system_access(self, *file_systems: efs.IFileSystem):
+    def grant_file_system_access(self, *file_systems: efs.IFileSystem) -> None:
+        """Grant compute environments access to EFS file systems.
+
+        Args:
+            *file_systems (efs.IFileSystem): Variable number of file systems
+                to grant access to.
+        """
         for file_system in file_systems:
             for ce in self.job_queue.compute_environments:
                 grant_connectable_file_system_access(
