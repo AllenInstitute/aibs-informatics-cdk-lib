@@ -229,7 +229,7 @@ class CodeAsset:
                 If True, use uv for dependency resolution and installation; otherwise fall back to pip.
 
         Returns:
-            CodeAsset: A new instance encapsulating the bundled Python code and dependencies.
+            A new instance encapsulating the bundled Python code and dependencies.
         """
 
         if context_path is None:

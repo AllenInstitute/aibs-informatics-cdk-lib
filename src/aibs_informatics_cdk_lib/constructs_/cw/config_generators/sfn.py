@@ -78,7 +78,7 @@ class StateMachineMetricConfigGenerator:
             alarm_datapoints_to_alarm (int, optional): Alarm datapoints to alarm. Defaults to 1.
 
         Returns:
-            GraphMetricConfig: _description_
+            Graph metric config for execution failures
         """
         name = name_override or self.state_machine_name
         idx = discriminator or "0"

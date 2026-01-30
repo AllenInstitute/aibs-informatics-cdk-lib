@@ -41,7 +41,7 @@ def is_repo_url(url: str) -> bool:
         url (str): The URL to check.
 
     Returns:
-    bool: True if the URL is a valid Git repository URL, False otherwise.
+    True if the URL is a valid Git repository URL, False otherwise.
     """
     return GitUrl.is_valid(url)
 
@@ -54,7 +54,7 @@ def is_local_repo(repo_path: Union[str, Path]) -> bool:
     repo_path (Path): The file system path to check.
 
     Returns:
-    bool: True if the path is a local Git repository, False otherwise.
+    True if the path is a local Git repository, False otherwise.
     """
     repo_path = Path(repo_path)
     try:
@@ -72,7 +72,7 @@ def get_commit_hash(repo_url_or_path: Union[str, Path]) -> Optional[str]:
         repo_url_or_path (Union[str, Path]): The URL or local path of the Git repository.
 
     Returns:
-    str: The commit hash of the HEAD reference.
+    The commit hash of the HEAD reference.
     """
     if isinstance(repo_url_or_path, str) and is_repo_url(repo_url_or_path):
         return get_commit_hash_from_url(repo_url_or_path)
@@ -136,7 +136,7 @@ def get_repo_name(repo_url_or_path: Union[str, Path]) -> str:
         repo_url_or_path (Union[str, Path]): The URL or local path of the Git repository.
 
     Returns:
-    str: The name of the repository.
+    The name of the repository.
     """
     if isinstance(repo_url_or_path, str) and is_repo_url(repo_url_or_path):
         return GitUrl(repo_url_or_path).repo_name
@@ -194,7 +194,7 @@ def clone_repo(
             the existing path. Defaults to True.
 
     Returns:
-        Path: The path to the cloned repository.
+        The path to the cloned repository.
     """
     target_path = construct_repo_path(repo_url, target_dir)
 

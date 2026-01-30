@@ -161,7 +161,7 @@ class BaseProjectConfig(BaseModel, Generic[G, S]):
             e: If the stage config model validation fails (or any other error)
 
         Returns:
-            S: A stage config object
+            A stage config object
         """
         try:
             stage_config = self.get_stage_config_cls().model_validate(
