@@ -162,6 +162,17 @@ test: pytest  ## Run Standard Tests
 coverage-server: $(INSTALL_STAMP) ## Run coverage server
 	$(PYTHON) -m http.server $(COVERAGE_SERVER_PORT) -d $(COVERAGE_DIR)
 
+########################
+##@ Documentation Commands
+########################
+
+docs-serve: $(INSTALL_STAMP) ## Serve MkDocs site locally
+	$(VENV_BIN)/mkdocs serve --watch-theme
+
+docs-build: $(INSTALL_STAMP) ## Build MkDocs site into build/documentation/site
+	$(VENV_BIN)/mkdocs build --clean
+
+.PHONY: docs-serve docs-build
 
 #####################
 ##@ Release Commands
