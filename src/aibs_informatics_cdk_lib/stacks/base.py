@@ -62,8 +62,6 @@ class EnvBaseStack(cdk.Stack, EnvBaseStackMixins):
     Provides automatic tagging with environment information and
     environment-specific removal policies.
 
-    Attributes:
-        env_base (EnvBase): The environment base configuration.
     """
 
     def __init__(

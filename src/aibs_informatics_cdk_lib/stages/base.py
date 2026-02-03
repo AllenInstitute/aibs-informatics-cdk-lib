@@ -19,9 +19,6 @@ class ConfigBasedStage(cdk.Stage, EnvBaseStackMixins):
     Provides environment-aware stage functionality with automatic
     tagging and configuration-driven setup.
 
-    Attributes:
-        config (StageConfig): The stage configuration.
-        env_base (EnvBase): The environment base from config.
     """
 
     def __init__(

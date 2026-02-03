@@ -39,9 +39,6 @@ class BaseBatchComputeConstruct(EnvBaseConstruct):
     Abstract base class that provides common functionality for creating
     and managing AWS Batch compute environments.
 
-    Attributes:
-        batch_name: Name for the batch infrastructure.
-        batch: The underlying Batch construct.
     """
 
     def __init__(
@@ -291,11 +288,6 @@ class LambdaCompute(BatchCompute):
     Provides Batch environments optimized for Lambda-like workloads with
     small, medium, and large instance type configurations.
 
-    Attributes:
-        lambda_batch_environment: Primary Lambda environment with all instance types.
-        lambda_small_batch_environment: Small instance type environment.
-        lambda_medium_batch_environment: Medium instance type environment.
-        lambda_large_batch_environment: Large instance type environment.
     """
 
     @property

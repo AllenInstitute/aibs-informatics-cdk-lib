@@ -22,9 +22,6 @@ class EnvBaseConstructMixins(EnvBaseMixins):
 
     This mixin extends EnvBaseMixins with CDK-specific functionality including
     resource naming, tagging, and IAM utilities.
-
-    Attributes:
-        env_base: The environment base configuration.
     """
 
     @property
@@ -213,9 +210,6 @@ class EnvBaseConstruct(Construct, EnvBaseConstructMixins):
 
     Provides a foundation for creating CDK constructs that are aware of
     the deployment environment and support automatic tagging.
-
-    Attributes:
-        env_base (EnvBase): The environment base configuration.
     """
 
     def __init__(self, scope: Construct, id: Optional[str], env_base: EnvBase) -> None:

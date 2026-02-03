@@ -70,11 +70,11 @@ batch = BatchInfrastructure(
 Create state machines using reusable fragments:
 
 ```python
-from aibs_informatics_cdk_lib.constructs_.sfn.fragments.batch import BatchSubmitJobFragment
+from aibs_informatics_cdk_lib.constructs_.sfn.fragments.batch import SubmitJobFragment
 from aws_cdk import aws_stepfunctions as sfn
 
 # Create a batch job submission fragment
-submit_job = BatchSubmitJobFragment(
+submit_job = SubmitJobFragment(
     stack,
     "submit-job",
     env_base=env_base,
@@ -82,12 +82,8 @@ submit_job = BatchSubmitJobFragment(
     job_definition=batch.job_definition,
 )
 
-# Use in a state machine
-state_machine = sfn.StateMachine(
-    stack,
-    "my-workflow",
-    definition=submit_job.start_state,
-)
+# create a state machine
+state_machine = submit_job.to_state_machine("BatchJobStateMachine")
 ```
 
 ## Environment Configuration

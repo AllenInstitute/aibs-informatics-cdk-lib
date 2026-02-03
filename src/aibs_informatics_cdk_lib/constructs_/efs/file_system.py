@@ -45,8 +45,6 @@ class EnvBaseFileSystem(efs.FileSystem, EnvBaseConstructMixins):
     Extends the standard EFS FileSystem with environment base naming conventions
     and helper methods for access point creation.
 
-    Attributes:
-        env_base: Environment base for resource naming.
     """
 
     def __init__(

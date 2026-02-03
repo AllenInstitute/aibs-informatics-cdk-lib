@@ -331,9 +331,6 @@ class EnvBaseStateMachineFragment(StateMachineFragment, StateMachineMixins):
 
     Combines StateMachineFragment with environment base naming conventions
     and state machine mixins.
-
-    Attributes:
-        env_base: Environment base for resource naming.
     """
 
     def __init__(
@@ -500,10 +497,6 @@ class TaskWithPrePostStatus(LazyLoadStateMachineFragment):
 
     Wraps a task with status updates for started, failed, and completed states.
 
-    Attributes:
-        task: The wrapped task.
-        task_name: Name of the task.
-        raw_task_input_path: Path for raw task input.
     """
 
     def __init__(

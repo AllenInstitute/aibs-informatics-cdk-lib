@@ -21,13 +21,6 @@ class JsonReferencePath(str):
 
     Primarily supports "$" reference.
 
-    Attributes:
-        _EXTRA_PERIODS_PATTERN: Regex pattern for multiple periods.
-        _PERIOD_PATTERN: Regex pattern for single periods.
-        _PREFIX: JSON path prefix ("$.").
-        _SUFFIX: JSON path suffix (".$").
-        _REF: Root reference ("$").
-
     Example:
         >>> path = JsonReferencePath("input.data")
         >>> path.as_reference

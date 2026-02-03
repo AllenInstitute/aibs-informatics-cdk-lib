@@ -69,9 +69,9 @@ efs = EfsConstruct(
 Reusable state machine fragments:
 
 ```python
-from aibs_informatics_cdk_lib.constructs_.sfn.fragments.batch import BatchSubmitJobFragment
+from aibs_informatics_cdk_lib.constructs_.sfn.fragments.batch import SubmitJobFragment
 
-fragment = BatchSubmitJobFragment(
+fragment = SubmitJobFragment(
     stack,
     "submit-job",
     env_base=env_base,

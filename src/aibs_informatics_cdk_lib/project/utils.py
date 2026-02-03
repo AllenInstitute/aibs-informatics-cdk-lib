@@ -81,7 +81,7 @@ def get_env_base(node: constructs.Node) -> EnvBase:
         node (constructs.Node): cdk construct node
 
     Returns:
-        environment base
+        Environment base
     """
     # We need to check from context node FIRST before reading from env variables
     env_base_str = _get_from_context(node, ENV_BASE_KEYS)

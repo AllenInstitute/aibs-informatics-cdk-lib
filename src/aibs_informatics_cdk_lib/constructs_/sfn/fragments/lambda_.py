@@ -28,7 +28,7 @@ class LambdaFunctionFragment(EnvBaseStateMachineFragment):
                         [Pass]      # End state. Reforms output of lambda as sfn output
 
         Returns:
-            the state machine fragment
+            The state machine fragment
         """
         super().__init__(scope, id, env_base)
 

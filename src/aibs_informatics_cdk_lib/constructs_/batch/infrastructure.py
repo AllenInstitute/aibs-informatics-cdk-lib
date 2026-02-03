@@ -50,12 +50,6 @@ class Batch(EnvBaseConstruct):
     configurations and launch templates, but using the same instance role
     and security group.
 
-    Attributes:
-        vpc: The VPC for the Batch infrastructure.
-        instance_role: IAM role used by EC2 instances.
-        instance_profile: Instance profile for the EC2 instances.
-        security_group: Security group for Batch instances.
-
     Note:
         Instance Roles are created with managed policies commonly used
         by Batch jobs, including access to S3, Lambda, and DynamoDB.
@@ -386,14 +380,10 @@ class BatchEnvironmentConfig:
 class BatchEnvironment(EnvBaseConstruct):
     """A single Batch compute environment with its job queue.
 
-    Attributes:
-        config: Configuration for the environment.
-        vpc: The VPC for the environment.
-        instance_role: IAM role for instances.
-        security_group: Security group for instances.
-        launch_template_builder: Optional launch template builder.
-        compute_environments: List of ordered compute environments.
-        job_queue: The job queue for this environment.
+    This construct creates a Batch compute environment and associated job queue.
+    It supports both Fargate and EC2 compute environments, with customizable
+    configurations and launch templates.
+
     """
 
     def __init__(
