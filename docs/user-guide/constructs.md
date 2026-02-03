@@ -1,30 +1,29 @@
-# Constructs Guide
+# Popular Constructs Guide
 
-This guide covers the CDK constructs available in the library.
+This guide covers some of the CDK constructs available in the library.
 
 ## Base Constructs
 
 All constructs inherit from base classes that provide environment awareness:
 
 ```python
-from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstructMixins
+from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstruct
 
-class MyConstruct(Construct, EnvBaseConstructMixins):
+class MyConstruct(EnvBaseConstruct):
     def __init__(self, scope, id, env_base: EnvBase, **kwargs):
-        super().__init__(scope, id)
-        self.env_base = env_base
+        super().__init__(scope, id, env_base, **kwargs)
 ```
 
 ## Batch Constructs
 
-### BatchInfrastructure
+### Batch
 
-Complete AWS Batch infrastructure setup:
+AWS Batch infrastructure setup with shared instance roles and security groups:
 
 ```python
-from aibs_informatics_cdk_lib.constructs_.batch.infrastructure import BatchInfrastructure
+from aibs_informatics_cdk_lib.constructs_.batch.infrastructure import Batch
 
-batch = BatchInfrastructure(
+batch = Batch(
     stack,
     "batch",
     env_base=env_base,
@@ -32,32 +31,35 @@ batch = BatchInfrastructure(
 )
 ```
 
-### Batch Instance Types
-
-Utilities for selecting EC2 instance types:
-
-```python
-from aibs_informatics_cdk_lib.constructs_.batch.instance_types import get_instance_types
-
-instances = get_instance_types(
-    memory_min=8192,
-    vcpu_min=4,
-)
-```
-
 ## EFS Constructs
 
-### EfsConstruct
+### EnvBaseFileSystem
 
 Elastic File System with access points:
 
 ```python
-from aibs_informatics_cdk_lib.constructs_.efs.file_system import EfsConstruct
+from aibs_informatics_cdk_lib.constructs_.efs.file_system import EnvBaseFileSystem
 
-efs = EfsConstruct(
+efs = EnvBaseFileSystem(
     stack,
     "efs",
     env_base=env_base,
+    vpc=vpc,
+)
+```
+
+### EFSEcosystem
+
+Complete EFS ecosystem with file system and access points:
+
+```python
+from aibs_informatics_cdk_lib.constructs_.efs.file_system import EFSEcosystem
+
+efs_ecosystem = EFSEcosystem(
+    stack,
+    "efs-ecosystem",
+    env_base=env_base,
+    file_system_name="shared",
     vpc=vpc,
 )
 ```
@@ -69,7 +71,7 @@ efs = EfsConstruct(
 Reusable state machine fragments:
 
 ```python
-from aibs_informatics_cdk_lib.constructs_.sfn.fragments.batch import SubmitJobFragment
+from aibs_informatics_cdk_lib.constructs_.sfn.fragments import SubmitJobFragment
 
 fragment = SubmitJobFragment(
     stack,
@@ -80,56 +82,66 @@ fragment = SubmitJobFragment(
 )
 ```
 
-### Custom States
-
-Pre-built Step Function states:
-
-```python
-from aibs_informatics_cdk_lib.constructs_.sfn.states.batch import BatchJobState
-from aibs_informatics_cdk_lib.constructs_.sfn.states.s3 import S3GetObjectState
-```
-
 ## Service Constructs
 
-### ServiceCompute
+### BatchCompute
 
-Combined compute resources for services:
+Combined compute resources for services with on-demand, spot, and Fargate environments:
 
 ```python
-from aibs_informatics_cdk_lib.constructs_.service.compute import ServiceCompute
+from aibs_informatics_cdk_lib.constructs_.service.compute import BatchCompute
 
-compute = ServiceCompute(
+compute = BatchCompute(
     stack,
     "compute",
     env_base=env_base,
     vpc=vpc,
+    batch_name="my-batch",
 )
 ```
 
-### ServiceStorage
+### LambdaCompute
+
+Lambda-optimized Batch compute with small, medium, and large instance configurations:
+
+```python
+from aibs_informatics_cdk_lib.constructs_.service.compute import LambdaCompute
+
+compute = LambdaCompute(
+    stack,
+    "lambda-compute",
+    env_base=env_base,
+    vpc=vpc,
+    batch_name="lambda-batch",
+)
+```
+
+### Storage
 
 Storage infrastructure for services:
 
 ```python
-from aibs_informatics_cdk_lib.constructs_.service.storage import ServiceStorage
+from aibs_informatics_cdk_lib.constructs_.service.storage import Storage
 
-storage = ServiceStorage(
+storage = Storage(
     stack,
     "storage",
     env_base=env_base,
+    name="my-storage",
+    vpc=vpc,
 )
 ```
 
 ## CloudWatch Constructs
 
-### Monitoring Dashboards
+### EnhancedDashboard
 
 Create CloudWatch dashboards:
 
 ```python
-from aibs_informatics_cdk_lib.constructs_.cw.dashboard import MonitoringDashboard
+from aibs_informatics_cdk_lib.constructs_.cw import EnhancedDashboard
 
-dashboard = MonitoringDashboard(
+dashboard = EnhancedDashboard(
     stack,
     "dashboard",
     env_base=env_base,
@@ -139,23 +151,16 @@ dashboard = MonitoringDashboard(
 
 ## Asset Constructs
 
-### Code Assets
+### CodeAsset
 
-Manage Lambda function and Docker image assets:
+Manage code assets for Lambda functions:
 
 ```python
-from aibs_informatics_cdk_lib.constructs_.assets import LambdaAsset, DockerImageAsset
+from aibs_informatics_cdk_lib.constructs_.assets.code_asset import CodeAsset
 
-lambda_asset = LambdaAsset(
-    stack,
-    "lambda-code",
+code_asset = CodeAsset(
+    name="my-lambda",
     path="./lambda",
-)
-
-docker_asset = DockerImageAsset(
-    stack,
-    "docker-image",
-    directory="./docker",
 )
 ```
 
@@ -163,5 +168,5 @@ docker_asset = DockerImageAsset(
 
 1. **Always pass `env_base`**: All constructs should receive the environment base
 2. **Use construct IDs consistently**: Follow naming conventions
-3. **Leverage mixins**: Use `EnvBaseConstructMixins` for common functionality
+3. **Leverage base constructs**: Use `EnvBaseConstruct` for common functionality
 4. **Tag resources**: Use the built-in tagging support
