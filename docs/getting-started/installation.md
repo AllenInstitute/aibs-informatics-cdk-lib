@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- Python 3.9 or higher
+- Python 3.10 or higher
 - AWS CDK CLI (optional, for synthesis and deployment)
 
 ## Installing from PyPI

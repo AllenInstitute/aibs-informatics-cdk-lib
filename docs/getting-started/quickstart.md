@@ -4,7 +4,7 @@ This guide will help you get started with the AIBS Informatics CDK Library.
 
 ## Prerequisites
 
-- Python 3.9+
+- Python 3.10+
 - AWS CDK CLI installed (`npm install -g aws-cdk`)
 - AWS credentials configured
 
@@ -23,14 +23,19 @@ from aibs_informatics_cdk_lib.stacks.base import EnvBaseStack
 
 app = App()
 
-# Define your environment
-env_base = EnvBase.DEV  # or EnvBase.from_env() to read from environment
+
+class MyStack(EnvBaseStack):
+    def __init__(self, scope: App, id: str, *, env_base: EnvBase, **kwargs) -> None:
+        super().__init__(scope, id, env_base=env_base, **kwargs)
+        # Add your constructs here
+
+
 
 # Create a stack
-stack = EnvBaseStack(
+stack = MyStack(
     app,
     "my-service-stack",
-    env_base=env_base,
+    env_base=EnvBase("dev-myservice"),
     env=Environment(
         account="123456789012",
         region="us-west-2"
@@ -45,19 +50,20 @@ app.synth()
 Add constructs to your stack:
 
 ```python
-from aibs_informatics_cdk_lib.constructs_.batch.infrastructure import BatchInfrastructure
-from aibs_informatics_cdk_lib.constructs_.efs.file_system import EfsConstruct
+from aibs_informatics_cdk_lib.constructs_.batch.infrastructure import Batch
+from aibs_informatics_cdk_lib.constructs_.efs.file_system import EFSEcosystem
 
-# Add EFS file system
-efs = EfsConstruct(
+# Add EFS ecosystem (file system with access points)
+efs_ecosystem = EFSEcosystem(
     stack,
     "shared-storage",
     env_base=env_base,
+    file_system_name="shared",
     vpc=vpc,  # Your VPC construct
 )
 
 # Add Batch infrastructure
-batch = BatchInfrastructure(
+batch = Batch(
     stack,
     "batch-compute",
     env_base=env_base,
@@ -70,8 +76,7 @@ batch = BatchInfrastructure(
 Create state machines using reusable fragments:
 
 ```python
-from aibs_informatics_cdk_lib.constructs_.sfn.fragments.batch import SubmitJobFragment
-from aws_cdk import aws_stepfunctions as sfn
+from aibs_informatics_cdk_lib.constructs_.sfn.fragments import SubmitJobFragment
 
 # Create a batch job submission fragment
 submit_job = SubmitJobFragment(
@@ -82,7 +87,7 @@ submit_job = SubmitJobFragment(
     job_definition=batch.job_definition,
 )
 
-# create a state machine
+# Create a state machine from the fragment
 state_machine = submit_job.to_state_machine("BatchJobStateMachine")
 ```
 
@@ -94,26 +99,16 @@ The library supports multiple environments through `EnvBase`:
 from aibs_informatics_core.env import EnvBase, EnvType
 
 # Development environment
-dev_env = EnvBase.DEV
+dev_env = EnvBase(EnvType.DEV)
 
 # Test environment
-test_env = EnvBase.TEST
+test_env = EnvBase(EnvType.TEST)
 
 # Production environment
-prod_env = EnvBase.PROD
+prod_env = EnvBase(EnvType.PROD)
 
 # Custom environment
 custom_env = EnvBase.from_type_and_label(EnvType.DEV, "my-feature")
-```
-
-## Synthesizing and Deploying
-
-```bash
-# Synthesize CloudFormation template
-cdk synth
-
-# Deploy the stack
-cdk deploy
 ```
 
 ## Next Steps

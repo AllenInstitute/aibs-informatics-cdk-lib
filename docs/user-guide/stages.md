@@ -103,24 +103,10 @@ class MyServiceStage(EnvBaseStage):
         main = MainStack(self, "main", env_base=self.env_base)
         
         # Only create monitoring in non-dev environments
-        if not self.env_base.is_dev:
+        if self.env_base.is_prod:
             MonitoringStack(self, "monitoring", env_base=self.env_base)
 ```
 
-## Stage Properties
-
-`EnvBaseStage` provides environment-aware properties:
-
-```python
-class MyStage(EnvBaseStage):
-    @property
-    def is_dev(self) -> bool:
-        return self.env_base.env_type == EnvType.DEV
-    
-    @property
-    def is_prod(self) -> bool:
-        return self.env_base.env_type == EnvType.PROD
-```
 
 ## Best Practices
 
