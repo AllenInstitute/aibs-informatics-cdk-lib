@@ -31,7 +31,7 @@ def resolve_repo_root(start_path: Optional[Union[str, pathlib.Path]] = None) -> 
     """Find the root of the git repository
 
     Returns:
-        str: Absolute root path
+        Absolute root path
     """
     return str(
         next(
@@ -49,7 +49,7 @@ def get_package_root() -> str:
     ASSUMPTION: the infrastructure package name is "aibs-informatics-cdk-lib"
 
     Returns:
-        str: Absolute root path
+        Absolute root path
     """
     return str(
         next(
@@ -81,7 +81,7 @@ def get_env_base(node: constructs.Node) -> EnvBase:
         node (constructs.Node): cdk construct node
 
     Returns:
-        EnvBase: environment base
+        Environment base
     """
     # We need to check from context node FIRST before reading from env variables
     env_base_str = _get_from_context(node, ENV_BASE_KEYS)
@@ -156,7 +156,7 @@ def get_config(
             Defaults to ProjectConfig.
 
     Returns:
-        S: The stage configuration object.
+        The stage configuration object.
 
     """
     project_config, env_base = get_project_config_and_env_base(  # type: ignore

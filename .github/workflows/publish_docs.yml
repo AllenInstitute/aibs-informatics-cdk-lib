@@ -1,0 +1,31 @@
+name: Publish Docs
+on:
+  push:
+    branches: [main]
+    paths: [mkdocs.yml, docs/**, src/**]
+  workflow_dispatch:
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      # - name: Install uv
+      #   uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-python@v4        
+        with:
+          python-version: "3.11"
+          cache: 'pip'
+      - name: Sync dependencies
+        run: make install
+      - name: Build site
+        run: make docs-build
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: build/documentation/site
+          publish_branch: gh-pages
+          force_orphan: true

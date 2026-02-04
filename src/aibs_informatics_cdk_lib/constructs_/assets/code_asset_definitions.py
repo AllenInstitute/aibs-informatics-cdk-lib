@@ -45,7 +45,7 @@ class AssetsMixin:
                 This is useful for local development.
 
         Returns:
-            Path: The path to the repo
+            The path to the repo
         """
         if repo_path_env_var and (repo_path := os.getenv(repo_path_env_var)) is not None:
             logger.info(f"Using {repo_path_env_var} from environment")
@@ -80,7 +80,7 @@ class AIBSInformaticsCodeAssets(constructs.Construct, AssetsMixin):
         """Returns a NEW code asset for aibs-informatics-aws-lambda
 
         Returns:
-            CodeAsset: The code asset
+            The code asset
         """
 
         repo_path = self.resolve_repo_path(

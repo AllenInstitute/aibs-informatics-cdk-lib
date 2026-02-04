@@ -43,7 +43,7 @@ class CDKStackTargetBaseEnum(Enum):
                 Defaults to None.
 
         Returns:
-            T: CDKStackTargetBase instance
+            CDKStackTargetBase instance
         """
         context_keys = context_keys or ["target", "stack_target"]
 

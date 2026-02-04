@@ -1,0 +1,127 @@
+site_name: AIBS Informatics CDK Library
+site_description: AWS Cloud Development Kit (CDK) constructs and utilities for AIBS Informatics
+site_url: https://AllenInstitute.github.io/aibs-informatics-cdk-lib/
+repo_url: https://github.com/AllenInstitute/aibs-informatics-cdk-lib
+repo_name: AllenInstitute/aibs-informatics-cdk-lib
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - content.code.annotate
+    - navigation.instant
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.share
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            members_order: source
+            group_by_category: true
+            show_category_heading: true
+            show_if_no_docstring: false
+            annotations_path: brief
+            show_signature_annotations: true
+            separate_signature: true
+            signature_crossrefs: true
+            merge_init_into_class: true
+          import:
+            - https://docs.python.org/3/objects.inv
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Quick Start: getting-started/quickstart.md
+  - User Guide:
+      - Overview: user-guide/overview.md
+      - Constructs: user-guide/constructs.md
+      - Stacks: user-guide/stacks.md
+      - Stages: user-guide/stages.md
+  - API Reference:
+      - Overview: api/index.md
+      - Common:
+          - Overview: api/common/index.md
+          - AWS Utilities: api/common/aws.md
+          - Build Utilities: api/common/build.md
+          - Git Utilities: api/common/git.md
+      - Constructs:
+          - Overview: api/constructs/index.md
+          - Base: api/constructs/base.md
+          - Assets: api/constructs/assets.md
+          - Batch: api/constructs/batch.md
+          - CloudWatch: api/constructs/cw.md
+          - DynamoDB: api/constructs/dynamodb.md
+          - EC2: api/constructs/ec2.md
+          - EFS: api/constructs/efs.md
+          - S3: api/constructs/s3.md
+          - Service: api/constructs/service.md
+          - SSM: api/constructs/ssm.md
+          - Step Functions: api/constructs/sfn.md
+      - Stacks:
+          - Overview: api/stacks/index.md
+          - Base: api/stacks/base.md
+      - Stages:
+          - Overview: api/stages/index.md
+          - Base: api/stages/base.md
+      - CI/CD:
+          - Overview: api/cicd/index.md
+          - Pipeline: api/cicd/pipeline.md
+          - Target: api/cicd/target.md
+      - Project:
+          - Overview: api/project/index.md
+          - Config: api/project/config.md
+          - Utils: api/project/utils.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/AllenInstitute/aibs-informatics-cdk-lib
+
+site_dir: build/documentation/site
