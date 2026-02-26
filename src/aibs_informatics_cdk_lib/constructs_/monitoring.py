@@ -35,9 +35,9 @@ class MonitoringConstruct(EnvBaseConstruct):
         scope: Construct,
         id: str,
         env_base: EnvBase,
-        name: Optional[str] = None,
-        notify_on_alarms: Optional[bool] = None,
-        alarm_topic: Optional[sns.Topic] = None,
+        name: str | None = None,
+        notify_on_alarms: bool | None = None,
+        alarm_topic: sns.Topic | None = None,
     ) -> None:
         super().__init__(scope, id, env_base)
         self.monitoring_name = name or self.construct_id
@@ -59,7 +59,7 @@ class MonitoringConstruct(EnvBaseConstruct):
         return self._notify_on_alarms
 
     @notify_on_alarms.setter
-    def notify_on_alarms(self, value: Optional[bool]):
+    def notify_on_alarms(self, value: bool | None):
         self._notify_on_alarms = value
 
     @property
@@ -73,11 +73,11 @@ class MonitoringConstruct(EnvBaseConstruct):
             return self._alarm_topic
 
     @alarm_topic.setter
-    def alarm_topic(self, value: Optional[sns.Topic]):
+    def alarm_topic(self, value: sns.Topic | None):
         self._alarm_topic = value
 
     def create_dashboard(
-        self, start: Optional[str] = "-P1W", end: Optional[str] = None
+        self, start: str | None = "-P1W", end: str | None = None
     ) -> EnhancedDashboard:
         return EnhancedDashboard(
             self,
@@ -92,7 +92,7 @@ class MonitoringConstruct(EnvBaseConstruct):
         self,
         dashboard: cw.Dashboard,
         function_name: str,
-        title: Optional[str] = None,
+        title: str | None = None,
         title_header_level: int = 1,
         prefix_name_with_env: bool = True,
         include_min_max_duration: bool = False,
@@ -110,7 +110,7 @@ class MonitoringConstruct(EnvBaseConstruct):
         self,
         dashboard: cw.Dashboard,
         *function_names: str,
-        title: Optional[str] = None,
+        title: str | None = None,
         title_header_level: int = 1,
         prefix_name_with_env: bool = True,
         include_min_max_duration: bool = False,
@@ -122,9 +122,9 @@ class MonitoringConstruct(EnvBaseConstruct):
         if title:
             dashboard_tools.add_text_widget(title, title_header_level)
 
-        grouped_invocation_metrics: List[GraphMetricConfig] = []
-        grouped_error_metrics: List[GraphMetricConfig] = []
-        grouped_timing_metrics: List[GraphMetricConfig] = []
+        grouped_invocation_metrics: list[GraphMetricConfig] = []
+        grouped_error_metrics: list[GraphMetricConfig] = []
+        grouped_timing_metrics: list[GraphMetricConfig] = []
         group_name = uuid_str(str(function_names))
 
         for idx, raw_function_name in enumerate(function_names):
@@ -158,7 +158,7 @@ class MonitoringConstruct(EnvBaseConstruct):
                 grouped_timing_metrics.append(fn_config_generator.get_duration_max_metric())
                 grouped_timing_metrics.append(fn_config_generator.get_duration_min_metric())
 
-        grouped_metrics: List[GroupedGraphMetricConfig] = [
+        grouped_metrics: list[GroupedGraphMetricConfig] = [
             GroupedGraphMetricConfig(
                 title="Function Invocations", metrics=grouped_invocation_metrics
             ),
@@ -185,7 +185,7 @@ class MonitoringConstruct(EnvBaseConstruct):
         self,
         dashboard: cw.Dashboard,
         state_machine_name: str,
-        title: Optional[str] = None,
+        title: str | None = None,
         title_header_level: int = 1,
         prefix_name_with_env: bool = True,
     ):
@@ -201,7 +201,7 @@ class MonitoringConstruct(EnvBaseConstruct):
         self,
         dashboard: cw.Dashboard,
         *state_machine_names: str,
-        title: Optional[str] = None,
+        title: str | None = None,
         title_header_level: int = 1,
         prefix_name_with_env: bool = True,
         time_unit: SFN_TIME_UNITS = "minutes",
@@ -213,9 +213,9 @@ class MonitoringConstruct(EnvBaseConstruct):
         if title:
             dashboard_tools.add_text_widget(title, title_header_level)
 
-        grouped_invocation_metrics: List[GraphMetricConfig] = []
-        grouped_error_metrics: List[GraphMetricConfig] = []
-        grouped_timing_metrics: List[GraphMetricConfig] = []
+        grouped_invocation_metrics: list[GraphMetricConfig] = []
+        grouped_error_metrics: list[GraphMetricConfig] = []
+        grouped_timing_metrics: list[GraphMetricConfig] = []
         group_name = uuid_str(str(state_machine_names))
         for idx, raw_state_machine_name in enumerate(state_machine_names):
             state_machine_name = self.get_state_machine_name(
@@ -268,7 +268,7 @@ class MonitoringConstruct(EnvBaseConstruct):
             dimensions={},
         )
 
-    def add_alarm_subscription(self, email: Union[str, EmailAddress]):
+    def add_alarm_subscription(self, email: str | EmailAddress):
         if not isinstance(email, EmailAddress):
             email = EmailAddress(email)
 
@@ -281,7 +281,7 @@ class MonitoringConstruct(EnvBaseConstruct):
         )
 
     def get_state_machine_name(
-        self, name: Union[str, ResourceNameBaseEnum], prefix_name_with_env: bool = True
+        self, name: str | ResourceNameBaseEnum, prefix_name_with_env: bool = True
     ) -> str:
         if isinstance(name, ResourceNameBaseEnum):
             return name.get_name(self.env_base)
@@ -291,7 +291,7 @@ class MonitoringConstruct(EnvBaseConstruct):
             return name
 
     def get_state_machine_arn(
-        self, name: Union[str, ResourceNameBaseEnum], prefix_name_with_env: bool = True
+        self, name: str | ResourceNameBaseEnum, prefix_name_with_env: bool = True
     ) -> str:
         state_machine_name = self.get_state_machine_name(name, prefix_name_with_env)
         return build_sfn_arn(resource_type="stateMachine", resource_id=state_machine_name)
@@ -303,8 +303,8 @@ class ResourceMonitoring(MonitoringConstruct):
         scope: Construct,
         id: str,
         env_base: EnvBase,
-        notify_on_alarms: Optional[bool] = None,
-        alarm_email: Optional[str] = None,
+        notify_on_alarms: bool | None = None,
+        alarm_email: str | None = None,
     ) -> None:
         super().__init__(scope, id, env_base)
         self.notify_on_alarms = notify_on_alarms

@@ -1,4 +1,5 @@
-from typing import Mapping, Optional, Sequence
+from collections.abc import Mapping, Sequence
+from typing import Optional
 
 import aws_cdk as cdk
 import constructs
@@ -12,20 +13,20 @@ class EnvBaseVpc(ec2.Vpc, EnvBaseConstructMixins):
     def __init__(
         self,
         scope: constructs.Construct,
-        id: Optional[str],
+        id: str | None,
         env_base: EnvBase,
         max_azs: int = 6,
         ip_addresses: ec2.IpAddresses = ec2.IpAddresses.cidr("10.10.0.0/16"),
-        subnet_configuration: Optional[Sequence[ec2.SubnetConfiguration]] = None,
+        subnet_configuration: Sequence[ec2.SubnetConfiguration] | None = None,
         include_public_subnet: bool = True,
         include_private_subnet: bool = True,
-        gateway_endpoints: Optional[Mapping[str, ec2.GatewayVpcEndpointOptions]] = None,
+        gateway_endpoints: Mapping[str, ec2.GatewayVpcEndpointOptions] | None = None,
         include_default_endpoints: bool = True,
         include_default_interface_endpoints: bool = True,
-        flow_logs: Optional[Mapping[str, ec2.FlowLogOptions]] = None,
+        flow_logs: Mapping[str, ec2.FlowLogOptions] | None = None,
         include_default_flow_logs: bool = True,
-        nat_gateway_provider: Optional[ec2.NatProvider] = None,
-        nat_gateways: Optional[int] = None,
+        nat_gateway_provider: ec2.NatProvider | None = None,
+        nat_gateways: int | None = None,
         **kwargs,
     ):
         self.env_base = env_base

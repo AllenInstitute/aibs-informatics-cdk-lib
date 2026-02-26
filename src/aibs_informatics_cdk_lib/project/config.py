@@ -19,8 +19,9 @@ __all__ = [
 ]
 
 import logging
+from collections.abc import MutableMapping
 from pathlib import Path
-from typing import Annotated, Dict, Generic, List, MutableMapping, Optional, Type, TypeVar, Union
+from typing import Annotated, Dict, Generic, List, Optional, Type, TypeVar, Union
 
 import yaml
 from aibs_informatics_core.collections import DeepChainMap
@@ -83,9 +84,9 @@ class Env(BaseModel):
     """
 
     env_type: EnvType
-    label: Annotated[Optional[str], PlainValidator(EnvVarStr.validate)] = None
-    account: Annotated[Optional[str], PlainValidator(EnvVarStr.validate)] = None
-    region: Annotated[Optional[str], PlainValidator(EnvVarStr.validate)] = None
+    label: Annotated[str | None, PlainValidator(EnvVarStr.validate)] = None
+    account: Annotated[str | None, PlainValidator(EnvVarStr.validate)] = None
+    region: Annotated[str | None, PlainValidator(EnvVarStr.validate)] = None
 
     @property
     def env_name(self) -> str:
@@ -160,8 +161,8 @@ class CodePipelineSourceConfig(BaseModel):
 
     repository: str
     branch: Annotated[str, PlainValidator(EnvVarStr.validate)]
-    codestar_connection: Optional[UniqueIDType] = None
-    oauth_secret_name: Optional[str] = None
+    codestar_connection: UniqueIDType | None = None
+    oauth_secret_name: str | None = None
 
     @model_validator(mode="after")
     @classmethod
@@ -182,7 +183,7 @@ class CodePipelineNotificationsConfig(BaseModel):
         notify_on_success (bool): Send notification on success.
     """
 
-    slack_channel_configuration_arn: Optional[str]
+    slack_channel_configuration_arn: str | None
     notify_on_failure: bool = False
     notify_on_success: bool = False
 
@@ -221,7 +222,7 @@ class GlobalConfig(BaseModel):
     """
 
     pipeline_name: str
-    stage_promotions: Dict[EnvType, EnvType]
+    stage_promotions: dict[EnvType, EnvType]
 
 
 class StageConfig(BaseModel):
@@ -233,7 +234,7 @@ class StageConfig(BaseModel):
     """
 
     env: Env
-    pipeline: Optional[PipelineConfig] = None
+    pipeline: PipelineConfig | None = None
 
 
 DEFAULT_CONFIG_PATH = "configuration/project.yaml"
@@ -258,10 +259,10 @@ class BaseProjectConfig(BaseModel, Generic[G, S]):
 
     global_config: G
     default_config: S
-    default_config_overrides: Dict[EnvType, dict]
+    default_config_overrides: dict[EnvType, dict]
 
     @classmethod
-    def get_global_config_cls(cls) -> Type[G]:
+    def get_global_config_cls(cls) -> type[G]:
         """Get the global config class type.
 
         Returns:
@@ -270,7 +271,7 @@ class BaseProjectConfig(BaseModel, Generic[G, S]):
         return cls.model_fields["global_config"].annotation  # type: ignore
 
     @classmethod
-    def get_stage_config_cls(cls) -> Type[S]:
+    def get_stage_config_cls(cls) -> type[S]:
         """Get the stage config class type.
 
         Returns:
@@ -278,9 +279,7 @@ class BaseProjectConfig(BaseModel, Generic[G, S]):
         """
         return cls.model_fields["default_config"].annotation  # type: ignore
 
-    def get_stage_config(
-        self, env_type: Union[str, EnvType], env_label: Optional[str] = None
-    ) -> S:
+    def get_stage_config(self, env_type: str | EnvType, env_label: str | None = None) -> S:
         """Get stage config with environment type overrides.
 
         Args:
@@ -313,7 +312,7 @@ class BaseProjectConfig(BaseModel, Generic[G, S]):
             return stage_config
 
     @classmethod
-    def parse_file(cls: Type[P], path: Union[str, Path]) -> P:
+    def parse_file(cls: type[P], path: str | Path) -> P:
         """Parse configuration from a file.
 
         Args:
@@ -326,12 +325,12 @@ class BaseProjectConfig(BaseModel, Generic[G, S]):
         path = Path(path)
 
         if path.suffix in (".yml", ".yaml"):
-            with open(path, "r") as f:
+            with open(path) as f:
                 return cls.model_validate(yaml.safe_load(f))
         return cls.model_validate_json(json_data=path.read_text())
 
     @classmethod
-    def load_config(cls: Type[P], path: Optional[Union[str, Path]] = None) -> P:
+    def load_config(cls: type[P], path: str | Path | None = None) -> P:
         """Load configuration from a file.
 
         Args:
@@ -356,9 +355,9 @@ class BaseProjectConfig(BaseModel, Generic[G, S]):
 
     @classmethod
     def load_stage_config(
-        cls: Type["BaseProjectConfig[G, S]"],
-        env_type: Union[str, EnvType],
-        path: Optional[Union[str, Path]] = None,
+        cls: type["BaseProjectConfig[G, S]"],
+        env_type: str | EnvType,
+        path: str | Path | None = None,
     ) -> S:
         """Load stage configuration for an environment type.
 
@@ -385,9 +384,9 @@ class ConfigProvider:
     @classmethod
     def get_stage_config(
         cls,
-        env_type: Union[str, EnvType],
-        path: Optional[Union[str, Path]] = None,
-        project_config_cls: Type[BaseProjectConfig[G, S]] = ProjectConfig,
+        env_type: str | EnvType,
+        path: str | Path | None = None,
+        project_config_cls: type[BaseProjectConfig[G, S]] = ProjectConfig,
     ) -> S:
         """Get stage configuration for an environment type.
 

@@ -10,11 +10,11 @@ import aws_cdk as cdk
 
 def build_arn(
     partition: str = "aws",
-    service: Optional[str] = None,
-    region: Optional[str] = None,
-    account: Optional[str] = None,
-    resource_id: Optional[str] = None,
-    resource_type: Optional[str] = None,
+    service: str | None = None,
+    region: str | None = None,
+    account: str | None = None,
+    resource_id: str | None = None,
+    resource_type: str | None = None,
     resource_delim: Literal["/", ":"] = ":",
 ) -> str:
     """Build an AWS ARN string.
@@ -44,12 +44,11 @@ def build_arn(
 
 
 def build_batch_arn(
-    region: Optional[str] = None,
-    account: Optional[str] = None,
-    resource_id: Optional[str] = None,
-    resource_type: Optional[
-        Literal["compute-environment", "job", "job-definition", "job-queue"]
-    ] = None,
+    region: str | None = None,
+    account: str | None = None,
+    resource_id: str | None = None,
+    resource_type: None
+    | (Literal["compute-environment", "job", "job-definition", "job-queue"]) = None,
 ) -> str:
     """Build an AWS Batch ARN.
 
@@ -73,10 +72,10 @@ def build_batch_arn(
 
 
 def build_dynamodb_arn(
-    region: Optional[str] = None,
-    account: Optional[str] = None,
-    resource_id: Optional[str] = None,
-    resource_type: Optional[Literal["table"]] = None,
+    region: str | None = None,
+    account: str | None = None,
+    resource_id: str | None = None,
+    resource_type: Literal["table"] | None = None,
 ) -> str:
     """Build an AWS DynamoDB ARN.
 
@@ -100,10 +99,10 @@ def build_dynamodb_arn(
 
 
 def build_ecr_arn(
-    region: Optional[str] = None,
-    account: Optional[str] = None,
-    resource_id: Optional[str] = None,
-    resource_type: Optional[Literal["repository"]] = None,
+    region: str | None = None,
+    account: str | None = None,
+    resource_id: str | None = None,
+    resource_type: Literal["repository"] | None = None,
 ) -> str:
     """Build an AWS ECR ARN.
 
@@ -127,10 +126,10 @@ def build_ecr_arn(
 
 
 def build_sfn_arn(
-    region: Optional[str] = None,
-    account: Optional[str] = None,
-    resource_id: Optional[str] = None,
-    resource_type: Optional[Literal["*", "activity", "execution", "stateMachine"]] = None,
+    region: str | None = None,
+    account: str | None = None,
+    resource_id: str | None = None,
+    resource_type: Literal["*", "activity", "execution", "stateMachine"] | None = None,
 ) -> str:
     """Build an AWS Step Functions ARN.
 
@@ -154,10 +153,10 @@ def build_sfn_arn(
 
 
 def build_lambda_arn(
-    region: Optional[str] = None,
-    account: Optional[str] = None,
-    resource_id: Optional[str] = None,
-    resource_type: Optional[Literal["function", "event-source-mapping", "layer"]] = None,
+    region: str | None = None,
+    account: str | None = None,
+    resource_id: str | None = None,
+    resource_type: Literal["function", "event-source-mapping", "layer"] | None = None,
 ) -> str:
     """Build an AWS Lambda ARN.
 
@@ -181,10 +180,10 @@ def build_lambda_arn(
 
 
 def build_s3_arn(
-    region: Optional[str] = None,
-    account: Optional[str] = None,
-    resource_id: Optional[str] = None,
-    resource_type: Optional[Literal["bucket", "object", "accesspoint", "job"]] = None,
+    region: str | None = None,
+    account: str | None = None,
+    resource_id: str | None = None,
+    resource_type: Literal["bucket", "object", "accesspoint", "job"] | None = None,
 ) -> str:
     """Build an AWS S3 ARN.
 

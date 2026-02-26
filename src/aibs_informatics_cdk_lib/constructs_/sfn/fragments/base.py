@@ -5,7 +5,8 @@ state machine fragments and workflows.
 """
 
 from abc import abstractmethod
-from typing import Any, Dict, List, Mapping, Optional, Sequence, TypeVar, Union, cast
+from collections.abc import Mapping, Sequence
+from typing import Any, Dict, List, Optional, TypeVar, Union, cast
 
 import aws_cdk as cdk
 import constructs
@@ -29,8 +30,8 @@ def create_log_options(
     scope: constructs.Construct,
     id: str,
     env_base: EnvBase,
-    removal_policy: Optional[cdk.RemovalPolicy] = None,
-    retention: Optional[logs_.RetentionDays] = None,
+    removal_policy: cdk.RemovalPolicy | None = None,
+    retention: logs_.RetentionDays | None = None,
 ) -> sfn.LogOptions:
     """Create log options for a state machine.
 
@@ -62,9 +63,9 @@ def create_role(
     id: str,
     env_base: EnvBase,
     assumed_by: iam.IPrincipal = iam.ServicePrincipal("states.amazonaws.com"),  # type: ignore[assignment]
-    managed_policies: Optional[Sequence[Union[iam.IManagedPolicy, str]]] = None,
-    inline_policies: Optional[Mapping[str, iam.PolicyDocument]] = None,
-    inline_policies_from_statements: Optional[Mapping[str, Sequence[iam.PolicyStatement]]] = None,
+    managed_policies: Sequence[iam.IManagedPolicy | str] | None = None,
+    inline_policies: Mapping[str, iam.PolicyDocument] | None = None,
+    inline_policies_from_statements: Mapping[str, Sequence[iam.PolicyStatement]] | None = None,
     include_default_managed_policies: bool = True,
 ) -> iam.Role:
     """Create an IAM role for a state machine.
@@ -150,7 +151,7 @@ class StateMachineMixins(EnvBaseConstructMixins):
         cache_attr = "_function_cache"
         if not hasattr(self, cache_attr):
             setattr(self, cache_attr, {})
-        resource_cache = cast(Dict[str, lambda_.IFunction], getattr(self, cache_attr))
+        resource_cache = cast(dict[str, lambda_.IFunction], getattr(self, cache_attr))
         if function_name not in resource_cache:
             resource_cache[function_name] = lambda_.Function.from_function_arn(
                 scope=self.as_construct(),
@@ -174,7 +175,7 @@ class StateMachineMixins(EnvBaseConstructMixins):
         cache_attr = "_state_machine_cache"
         if not hasattr(self, cache_attr):
             setattr(self, cache_attr, {})
-        resource_cache = cast(Dict[str, sfn.IStateMachine], getattr(self, cache_attr))
+        resource_cache = cast(dict[str, sfn.IStateMachine], getattr(self, cache_attr))
         if state_machine_name not in resource_cache:
             resource_cache[state_machine_name] = sfn.StateMachine.from_state_machine_name(
                 scope=self.as_construct(),
@@ -188,11 +189,11 @@ def create_state_machine(
     scope: constructs.Construct,
     env_base: EnvBase,
     id: str,
-    name: Optional[str],
+    name: str | None,
     definition: sfn.IChainable,
-    role: Optional[iam.Role] = None,
-    logs: Optional[sfn.LogOptions] = None,
-    timeout: Optional[cdk.Duration] = None,
+    role: iam.Role | None = None,
+    logs: sfn.LogOptions | None = None,
+    timeout: cdk.Duration | None = None,
 ) -> sfn.StateMachine:
     """Create a state machine from a definition.
 
@@ -266,7 +267,7 @@ class StateMachineFragment(sfn.StateMachineFragment):
         return self.definition.start_state
 
     @property
-    def end_states(self) -> List[sfn.INextable]:
+    def end_states(self) -> list[sfn.INextable]:
         """Get the end states.
 
         Returns:
@@ -276,9 +277,9 @@ class StateMachineFragment(sfn.StateMachineFragment):
 
     def enclose(
         self,
-        id: Optional[str] = None,
-        input_path: Optional[str] = None,
-        result_path: Optional[str] = None,
+        id: str | None = None,
+        input_path: str | None = None,
+        result_path: str | None = None,
     ) -> sfn.Chain:
         """Enclose the fragment within a parallel state.
 
@@ -352,13 +353,13 @@ class EnvBaseStateMachineFragment(StateMachineFragment, StateMachineMixins):
     def to_single_state(
         self,
         *,
-        prefix_states: Optional[str] = None,
-        state_id: Optional[str] = None,
-        comment: Optional[str] = None,
-        input_path: Optional[str] = None,
-        output_path: Optional[str] = "$[0]",
-        result_path: Optional[str] = None,
-        result_selector: Optional[Mapping[str, Any]] = None,
+        prefix_states: str | None = None,
+        state_id: str | None = None,
+        comment: str | None = None,
+        input_path: str | None = None,
+        output_path: str | None = "$[0]",
+        result_path: str | None = None,
+        result_selector: Mapping[str, Any] | None = None,
     ) -> sfn.Parallel:
         """Convert the fragment to a single parallel state.
 
@@ -387,9 +388,9 @@ class EnvBaseStateMachineFragment(StateMachineFragment, StateMachineMixins):
     def to_state_machine(
         self,
         state_machine_name: str,
-        role: Optional[iam.Role] = None,
-        logs: Optional[sfn.LogOptions] = None,
-        timeout: Optional[cdk.Duration] = None,
+        role: iam.Role | None = None,
+        logs: sfn.LogOptions | None = None,
+        timeout: cdk.Duration | None = None,
     ) -> sfn.StateMachine:
         """Convert the fragment to a complete state machine.
 
@@ -434,7 +435,7 @@ class EnvBaseStateMachineFragment(StateMachineFragment, StateMachineMixins):
         )
 
     @property
-    def required_managed_policies(self) -> Sequence[Union[iam.ManagedPolicy, str]]:
+    def required_managed_policies(self) -> Sequence[iam.ManagedPolicy | str]:
         """Get required managed policies for this fragment.
 
         Returns:
@@ -504,7 +505,7 @@ class TaskWithPrePostStatus(LazyLoadStateMachineFragment):
         scope: constructs.Construct,
         id: str,
         env_base: EnvBase,
-        task: Optional[sfn.IChainable],
+        task: sfn.IChainable | None,
     ) -> None:
         """Initialize a task with pre/post status tracking.
 
@@ -534,7 +535,7 @@ class TaskWithPrePostStatus(LazyLoadStateMachineFragment):
         return self._task
 
     @task.setter
-    def task(self, value: Optional[sfn.IChainable]):
+    def task(self, value: sfn.IChainable | None):
         """Set the wrapped task.
 
         Args:
@@ -687,7 +688,7 @@ class TaskWithPrePostStatus(LazyLoadStateMachineFragment):
         return JsonReferencePath("input")
 
     @property
-    def task_context(self) -> Dict[str, Any]:
+    def task_context(self) -> dict[str, Any]:
         return {}
 
     @property
@@ -703,7 +704,7 @@ class TaskWithPrePostStatus(LazyLoadStateMachineFragment):
         return JsonReferencePath("context")
 
     @property
-    def task__augment_input(self) -> Optional[sfn.IChainable]:
+    def task__augment_input(self) -> sfn.IChainable | None:
         """Run right after the sfn.Pass 'START' of the state machine fragment. Can be used
         to dynamically fill out 'contexts' JsonReferencePath for subsequent lambdas/tasks to use.
         NOTE: Outputs of this chain are MAINTAINED
@@ -711,7 +712,7 @@ class TaskWithPrePostStatus(LazyLoadStateMachineFragment):
         return None
 
     @property
-    def task__status_started(self) -> Optional[sfn.IChainable]:
+    def task__status_started(self) -> sfn.IChainable | None:
         """Runs right before "task__pre_run" if defined. Otherwise runs right before main
         task executes.
         NOTE: Outputs within this chain get DISCARDED
@@ -719,7 +720,7 @@ class TaskWithPrePostStatus(LazyLoadStateMachineFragment):
         return None
 
     @property
-    def task__status_completed(self) -> Optional[sfn.IChainable]:
+    def task__status_completed(self) -> sfn.IChainable | None:
         """Runs right after "task__post_run" if defined. Otherwise runs right after main
         task is completed.
         NOTE: Outputs within this chain get DISCARDED
@@ -727,19 +728,19 @@ class TaskWithPrePostStatus(LazyLoadStateMachineFragment):
         return None
 
     @property
-    def task__status_failed(self) -> Optional[sfn.IChainable]:
+    def task__status_failed(self) -> sfn.IChainable | None:
         """Runs if main task fails during execution"""
         return None
 
     @property
-    def task__pre_run(self) -> Optional[sfn.IChainable]:
+    def task__pre_run(self) -> sfn.IChainable | None:
         """Runs right before main task executes.
         NOTE: Outputs within this chain get DISCARDED
         """
         return None
 
     @property
-    def task__post_run(self) -> Optional[sfn.IChainable]:
+    def task__post_run(self) -> sfn.IChainable | None:
         """Runs right after main task is completed
         NOTE: Outputs within this chain get DISCARDED
         """

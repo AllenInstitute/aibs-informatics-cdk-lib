@@ -21,7 +21,7 @@ class StateMachineMetricConfigGenerator:
         self.dimension_map = {"StateMachineArn": self.state_machine.state_machine_arn}
 
     def get_execution_completion_metric(
-        self, name_override: Optional[str] = None
+        self, name_override: str | None = None
     ) -> GraphMetricConfig:
         """get the execution completion metric for the state machine
 
@@ -40,7 +40,7 @@ class StateMachineMetricConfigGenerator:
         )
 
     def get_execution_invocations_metric(
-        self, name_override: Optional[str] = None
+        self, name_override: str | None = None
     ) -> GraphMetricConfig:
         """get the execution invocations metric for the state machine
 
@@ -60,8 +60,8 @@ class StateMachineMetricConfigGenerator:
 
     def get_execution_failures_metric(
         self,
-        name_override: Optional[str] = None,
-        discriminator: Optional[str] = None,
+        name_override: str | None = None,
+        discriminator: str | None = None,
         alarm_threshold: int = 1,
         alarm_evaluation_periods: int = 3,
         alarm_datapoints_to_alarm: int = 1,
@@ -107,8 +107,8 @@ class StateMachineMetricConfigGenerator:
 
     def get_execution_timing_metric(
         self,
-        name_override: Optional[str] = None,
-        discriminator: Optional[str] = None,
+        name_override: str | None = None,
+        discriminator: str | None = None,
         time_unit: SFN_TIME_UNITS = "minutes",
     ) -> GraphMetricConfig:
         """get the execution time metric for the state machine

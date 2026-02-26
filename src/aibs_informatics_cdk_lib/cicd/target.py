@@ -21,17 +21,17 @@ class CDKStackTargetBaseEnum(Enum):
     """
 
     @classmethod
-    def from_env(cls: Type[T], default: Union[str, T]) -> T:
+    def from_env(cls: type[T], default: str | T) -> T:
         target = get_env_var(CDK_STACK_TARGET_ENV_VAR)
         target = target or default
         return cls(target)
 
     @classmethod
     def from_context(
-        cls: Type[T],
+        cls: type[T],
         node: constructs.Node,
-        default: Union[str, T],
-        context_keys: Optional[list[str]] = None,
+        default: str | T,
+        context_keys: list[str] | None = None,
     ) -> T:
         """Resolves the CDK stack target type from context
 
@@ -53,10 +53,10 @@ class CDKStackTargetBaseEnum(Enum):
 
     @classmethod
     def from_context_or_env(
-        cls: Type[T],
+        cls: type[T],
         node: constructs.Node,
-        default: Union[str, T],
-        context_keys: Optional[list[str]] = None,
+        default: str | T,
+        context_keys: list[str] | None = None,
     ) -> T:
         """Resolves the CDK stack target type from context or environment
 

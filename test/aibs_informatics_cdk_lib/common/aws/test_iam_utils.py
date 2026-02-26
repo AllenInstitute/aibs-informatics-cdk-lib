@@ -97,7 +97,7 @@ def test__secrets_manager_policy_args(generate_policy_args, expected_resource, e
     ],
 )
 def test__sqs_policy_statement(
-    env_base: Optional[EnvBase], expected_actions, expected_resource_patterns
+    env_base: EnvBase | None, expected_actions, expected_resource_patterns
 ):
     obt = sqs_policy_statement(env_base=env_base)
 

@@ -1,21 +1,10 @@
 import base64
 import logging
 from abc import abstractmethod
+from collections.abc import Callable, Mapping, Sequence
 from importlib.resources import files
 from pathlib import Path
-from typing import (
-    Callable,
-    Dict,
-    Generic,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Dict, Generic, List, Optional, Tuple, TypeVar, Union, cast
 
 import aws_cdk as cdk
 import constructs
@@ -60,15 +49,15 @@ from dataclasses import dataclass
 class PipelineStageInfo:
     order: int
     name: str
-    pre_steps: Optional[List[pipelines.Step]] = None
-    post_steps: Optional[List[pipelines.Step]] = None
+    pre_steps: list[pipelines.Step] | None = None
+    post_steps: list[pipelines.Step] | None = None
 
 
 def pipeline_stage(
     order: int,
     name: str,
-    pre_steps: Optional[List[pipelines.Step]] = None,
-    post_steps: Optional[List[pipelines.Step]] = None,
+    pre_steps: list[pipelines.Step] | None = None,
+    post_steps: list[pipelines.Step] | None = None,
 ):
     """Method decorator for defining a pipeline stage in a BasePipelineStack subclass.
 
@@ -112,17 +101,15 @@ def pipeline_stage(
     """
 
     def decorator_pipeline_stage(
-        func: Callable[[PIPELINE_STACK], Union[cdk.Stage, Tuple[cdk.Stage]]]
+        func: Callable[[PIPELINE_STACK], cdk.Stage | tuple[cdk.Stage]]
     ) -> Callable[
         [PIPELINE_STACK],
-        Tuple[Optional[Sequence[pipelines.Step]], cdk.Stage, Optional[Sequence[pipelines.Step]]],
+        tuple[Sequence[pipelines.Step] | None, cdk.Stage, Sequence[pipelines.Step] | None],
     ]:
         @functools.wraps(func)
         def wrapper_pipeline_stage(
             *args, **kwargs
-        ) -> Tuple[
-            Optional[Sequence[pipelines.Step]], cdk.Stage, Optional[Sequence[pipelines.Step]]
-        ]:
+        ) -> tuple[Sequence[pipelines.Step] | None, cdk.Stage, Sequence[pipelines.Step] | None]:
             results = func(*args, **kwargs)
             if isinstance(results, cdk.Stage):
                 return None, results, None
@@ -131,7 +118,7 @@ def pipeline_stage(
             assert isinstance(results[1], cdk.Stage)
             assert isinstance(results[2], list) or results[2] is None
             return cast(
-                Tuple[
+                tuple[
                     Optional[Sequence[pipelines.Step]],
                     cdk.Stage,
                     Optional[Sequence[pipelines.Step]],
@@ -472,7 +459,7 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
         return {}
 
     @property
-    def source_cache(self) -> Dict[str, pipelines.CodePipelineSource]:
+    def source_cache(self) -> dict[str, pipelines.CodePipelineSource]:
         try:
             return self._source_cache
         except AttributeError:
@@ -480,7 +467,7 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
         return self._source_cache
 
     @source_cache.setter
-    def source_cache(self, value: Dict[str, pipelines.CodePipelineSource]):
+    def source_cache(self, value: dict[str, pipelines.CodePipelineSource]):
         self._source_cache = value
 
     def get_pipeline_source(
@@ -530,7 +517,7 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
 
     def get_stage_methods(
         self,
-    ) -> List[Callable[[], Tuple[Sequence[pipelines.Step], cdk.Stage, Sequence[pipelines.Step]]]]:
+    ) -> list[Callable[[], tuple[Sequence[pipelines.Step], cdk.Stage, Sequence[pipelines.Step]]]]:
         # Get all methods of the instance
         methods = [
             getattr(self, method_name)
@@ -548,7 +535,7 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
         return stage_methods
 
     @staticmethod
-    def get_policy_with_secrets(*secret_names: Optional[str]) -> iam.PolicyStatement:
+    def get_policy_with_secrets(*secret_names: str | None) -> iam.PolicyStatement:
         return iam.PolicyStatement(
             effect=iam.Effect.ALLOW,
             actions=[

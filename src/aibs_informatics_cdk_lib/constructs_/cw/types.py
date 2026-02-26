@@ -3,7 +3,7 @@ from typing import Dict, List, Literal, TypedDict, Union
 from aws_cdk import aws_cloudwatch as cw
 
 
-def to_comparison_operator(value: Union[cw.ComparisonOperator, str]) -> cw.ComparisonOperator:
+def to_comparison_operator(value: cw.ComparisonOperator | str) -> cw.ComparisonOperator:
     if isinstance(value, cw.ComparisonOperator):
         return value
     elif value.lower() in [">=", "greater_than_or_equal_to"]:
@@ -29,7 +29,7 @@ class _AlarmMetricConfigRequired(TypedDict):
     threshold: int
     evaluation_periods: int
     datapoints_to_alarm: int
-    comparison_operator: Union[cw.ComparisonOperator, str]
+    comparison_operator: cw.ComparisonOperator | str
 
 
 class AlarmMetricConfig(_AlarmMetricConfigRequired, _AlarmMetricConfigOptional):
@@ -39,8 +39,8 @@ class AlarmMetricConfig(_AlarmMetricConfigRequired, _AlarmMetricConfigOptional):
 class _GraphMetricConfigOptional(TypedDict, total=False):
     namespace: str
     metric_expression: str
-    dimension_map: Dict[str, str]
-    using_metrics: Dict[str, cw.IMetric]
+    dimension_map: dict[str, str]
+    using_metrics: dict[str, cw.IMetric]
     alarm: AlarmMetricConfig
     axis_side: Literal["left", "right"]
     color: str
@@ -49,7 +49,7 @@ class _GraphMetricConfigOptional(TypedDict, total=False):
 
 
 class _GraphMetricConfigRequired(TypedDict):
-    metric: Union[str, cw.IMetric]
+    metric: str | cw.IMetric
     statistic: str
 
 
@@ -59,7 +59,7 @@ class GraphMetricConfig(_GraphMetricConfigRequired, _GraphMetricConfigOptional):
 
 class _GroupedGraphMetricConfigOptional(TypedDict, total=False):
     namespace: str
-    dimension_map: Dict[str, str]
+    dimension_map: dict[str, str]
     height: int
     width: int
     left_y_axis: cw.YAxisProps
@@ -68,7 +68,7 @@ class _GroupedGraphMetricConfigOptional(TypedDict, total=False):
 
 class _GroupedGraphMetricConfigRequired(TypedDict):
     title: str
-    metrics: List[GraphMetricConfig]
+    metrics: list[GraphMetricConfig]
 
 
 class GroupedGraphMetricConfig(

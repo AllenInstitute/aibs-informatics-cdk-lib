@@ -14,7 +14,7 @@ class Storage(EnvBaseConstruct):
     def __init__(
         self,
         scope: Construct,
-        id: Optional[str],
+        id: str | None,
         env_base: EnvBase,
         name: str,
         vpc: ec2.Vpc,

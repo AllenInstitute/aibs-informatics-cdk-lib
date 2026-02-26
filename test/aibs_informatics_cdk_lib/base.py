@@ -22,7 +22,7 @@ class BaseTest(_BaseTest):
     def env_base(self, env_base: EnvBase):
         self._env_base = env_base
 
-    def set_env_base_env_var(self, env_base: Optional[EnvBase] = None):
+    def set_env_base_env_var(self, env_base: EnvBase | None = None):
         self.set_env_vars((ENV_BASE_KEY, env_base or self.env_base))
 
 
@@ -42,9 +42,7 @@ class CdkBaseTest(BaseTest):
     def get_template(self, stack: cdk.Stack) -> Template:
         return Template.from_stack(stack)
 
-    def get_dummy_construct(
-        self, name: str, stack: Optional[cdk.Stack] = None
-    ) -> EnvBaseConstruct:
+    def get_dummy_construct(self, name: str, stack: cdk.Stack | None = None) -> EnvBaseConstruct:
         stack = stack or self.get_dummy_stack(name)
         return EnvBaseConstruct(stack, name, self.env_base)
 

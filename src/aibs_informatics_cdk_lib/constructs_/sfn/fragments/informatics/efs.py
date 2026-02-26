@@ -1,5 +1,6 @@
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable, List, Optional, Union
+from typing import List, Optional, Union
 
 import constructs
 from aibs_informatics_core.env import EnvBase
@@ -22,10 +23,10 @@ def get_data_path_stats_fragment(
     scope: constructs.Construct,
     id: str,
     env_base: EnvBase,
-    aibs_informatics_docker_asset: Union[ecr_assets.DockerImageAsset, str],
-    batch_job_queue: Union[batch.JobQueue, str],
+    aibs_informatics_docker_asset: ecr_assets.DockerImageAsset | str,
+    batch_job_queue: batch.JobQueue | str,
     scaffolding_bucket: s3.Bucket,
-    mount_point_configs: Optional[Iterable[MountPointConfiguration]] = None,
+    mount_point_configs: Iterable[MountPointConfiguration] | None = None,
     memory: int = 1024,
     vcpus: int = 1,
 ) -> BatchInvokedLambdaFunction:
@@ -74,10 +75,10 @@ def outdated_data_path_scanner_fragment(
     scope: constructs.Construct,
     id: str,
     env_base: EnvBase,
-    aibs_informatics_docker_asset: Union[ecr_assets.DockerImageAsset, str],
-    batch_job_queue: Union[batch.JobQueue, str],
+    aibs_informatics_docker_asset: ecr_assets.DockerImageAsset | str,
+    batch_job_queue: batch.JobQueue | str,
     scaffolding_bucket: s3.Bucket,
-    mount_point_configs: Optional[Iterable[MountPointConfiguration]] = None,
+    mount_point_configs: Iterable[MountPointConfiguration] | None = None,
     memory: int = 1024,
     vcpus: int = 1,
 ) -> BatchInvokedLambdaFunction:
@@ -129,10 +130,10 @@ def remove_data_paths_fragment(
     scope: constructs.Construct,
     id: str,
     env_base: EnvBase,
-    aibs_informatics_docker_asset: Union[ecr_assets.DockerImageAsset, str],
-    batch_job_queue: Union[batch.JobQueue, str],
+    aibs_informatics_docker_asset: ecr_assets.DockerImageAsset | str,
+    batch_job_queue: batch.JobQueue | str,
     scaffolding_bucket: s3.Bucket,
-    mount_point_configs: Optional[Iterable[MountPointConfiguration]] = None,
+    mount_point_configs: Iterable[MountPointConfiguration] | None = None,
     memory: int = 1024,
     vcpus: int = 1,
 ) -> BatchInvokedLambdaFunction:
@@ -182,8 +183,8 @@ class CleanFileSystemTriggerConfig:
     file_system: efs.FileSystem
     path: str
     days_since_last_accessed: float = 3.0
-    max_depth: Optional[int] = None
-    min_depth: Optional[int] = None
+    max_depth: int | None = None
+    min_depth: int | None = None
     min_size_bytes_allowed: int = 0
 
     schedule: events.Schedule = events.Schedule.cron(minute="0", hour="9")
@@ -205,7 +206,7 @@ class CleanFileSystemTriggerConfig:
 @dataclass
 class CleanFileSystemTriggerRuleConfig:
     rule_name: str
-    trigger_configs: List[CleanFileSystemTriggerConfig]
+    trigger_configs: list[CleanFileSystemTriggerConfig]
     # https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-create-rule-schedule.html#cron-expressions
     # Want to run around 00:00 in PST by default
     schedule: events.Schedule = events.Schedule.cron(minute="0", hour="9")
@@ -246,10 +247,10 @@ class CleanFileSystemFragment(BatchInvokedBaseFragment):
         scope: constructs.Construct,
         id: str,
         env_base: EnvBase,
-        aibs_informatics_docker_asset: Union[ecr_assets.DockerImageAsset, str],
-        batch_job_queue: Union[batch.JobQueue, str],
+        aibs_informatics_docker_asset: ecr_assets.DockerImageAsset | str,
+        batch_job_queue: batch.JobQueue | str,
         scaffolding_bucket: s3.Bucket,
-        mount_point_configs: Optional[Iterable[MountPointConfiguration]] = None,
+        mount_point_configs: Iterable[MountPointConfiguration] | None = None,
         memory: int = 1024,
         vcpus: int = 1,
     ) -> None:

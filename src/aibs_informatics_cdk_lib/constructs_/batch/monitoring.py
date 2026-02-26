@@ -18,7 +18,7 @@ class BatchMonitoring(EnvBaseConstruct):
         scope: Construct,
         id: str,
         env_base: EnvBase,
-        batch_environments: List[BatchEnvironment],
+        batch_environments: list[BatchEnvironment],
     ) -> None:
         super().__init__(scope, id, env_base)
         self.alarm_topic = sns.Topic(self, self.get_construct_id("batch-alarm-topic"))
@@ -41,7 +41,7 @@ class BatchMonitoring(EnvBaseConstruct):
 
         self.add_ecs_widgets(batch_environments)
 
-    def add_ecs_widgets(self, batch_environments: List[BatchEnvironment]):
+    def add_ecs_widgets(self, batch_environments: list[BatchEnvironment]):
         self.dashboard_tools.add_text_widget(f"Elastic Container Service ({self.env_base})", 1)
 
         for batch_environment in batch_environments:

@@ -15,7 +15,7 @@ class AIBSInformaticsAssetsStack(EnvBaseStack):
     def __init__(
         self,
         scope: constructs.Construct,
-        id: Optional[str],
+        id: str | None,
         env_base: EnvBase,
         **kwargs,
     ):

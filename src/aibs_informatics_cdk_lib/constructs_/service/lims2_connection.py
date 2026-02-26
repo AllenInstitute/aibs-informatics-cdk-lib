@@ -21,7 +21,7 @@ class LimsConnectionConstruct(EnvBaseConstruct):
     def __init__(
         self,
         scope: constructs.Construct,
-        id: Optional[str],
+        id: str | None,
         env_base: EnvBase,
         target_vpc: ec2.Vpc,
         vpc_endpoint_service_name: str,

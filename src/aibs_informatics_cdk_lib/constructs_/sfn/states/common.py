@@ -16,7 +16,7 @@ class CommonOperation:
         defaults: dict[str, Any],
         input_path: str = "$",
         target_path: str = "$",
-        result_path: Optional[str] = None,
+        result_path: str | None = None,
         order_of_preference: Literal["target", "default"] = "target",
         check_if_target_present: bool = False,
     ) -> sfn.Chain:
@@ -127,8 +127,8 @@ class CommonOperation:
         scope: constructs.Construct,
         id: str,
         definition: sfn.IChainable,
-        input_path: Optional[str] = None,
-        result_path: Optional[str] = None,
+        input_path: str | None = None,
+        result_path: str | None = None,
     ) -> sfn.Chain:
         """Enclose the current state machine fragment within a parallel state.
 

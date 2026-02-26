@@ -1,4 +1,5 @@
-from typing import Any, Mapping, Optional, Sequence, Union
+from collections.abc import Mapping, Sequence
+from typing import Any, Optional, Union
 
 import aws_cdk as cdk
 import constructs
@@ -70,14 +71,14 @@ class ExternalSnsTrigger(constructs.Construct):
         scope: constructs.Construct,
         id: str,
         env_base: EnvBase,
-        triggered_lambda_fn: Optional[lambda_.Function],
-        external_sns_event_name: Union[str, ResourceNameBaseEnum],
+        triggered_lambda_fn: lambda_.Function | None,
+        external_sns_event_name: str | ResourceNameBaseEnum,
         external_sns_topic_arn: str,
-        external_sns_event_queue_filters: Optional[Sequence[Mapping[str, Any]]] = None,
-        external_sns_event_queue_name: Optional[str] = None,
-        external_sns_event_dlq_name: Optional[str] = None,
-        external_sns_event_queue_retention_period: Optional[cdk.Duration] = cdk.Duration.days(7),
-        sqs_event_source_enabled: Optional[bool] = None,
+        external_sns_event_queue_filters: Sequence[Mapping[str, Any]] | None = None,
+        external_sns_event_queue_name: str | None = None,
+        external_sns_event_dlq_name: str | None = None,
+        external_sns_event_queue_retention_period: cdk.Duration | None = cdk.Duration.days(7),
+        sqs_event_source_enabled: bool | None = None,
         **kwargs,
     ) -> None:
         super().__init__(scope=scope, id=id)

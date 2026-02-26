@@ -5,7 +5,8 @@ This module provides utilities for working with Step Functions JSON path express
 
 import re
 from functools import reduce
-from typing import Any, ClassVar, List, Pattern, Union, cast
+from re import Pattern
+from typing import Any, ClassVar, List, Union, cast
 
 import aws_cdk as cdk
 from aws_cdk import aws_stepfunctions as sfn
@@ -118,7 +119,7 @@ class JsonReferencePath(str):
         return sfn.JsonPath.json_to_string(self.as_jsonpath_object)
 
     @property
-    def as_jsonpath_list(self) -> List[str]:
+    def as_jsonpath_list(self) -> list[str]:
         """Return the path as a Step Functions list reference.
 
         Returns:
@@ -127,7 +128,7 @@ class JsonReferencePath(str):
         return sfn.JsonPath.list_at(self.as_reference)
 
     @property
-    def as_jsonpath_number(self) -> Union[int, float]:
+    def as_jsonpath_number(self) -> int | float:
         """Return the path as a Step Functions number reference.
 
         Returns:
