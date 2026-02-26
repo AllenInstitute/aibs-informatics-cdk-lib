@@ -17,11 +17,11 @@ class DynamoDBModelTable(dynamodb.Table):
         self,
         scope: Construct,
         id: str,
-        db_model: Type[DBModel],
-        db_index: Type[DBIndex],
+        db_model: type[DBModel],
+        db_index: type[DBIndex],
         billing_mode: dynamodb.BillingMode = dynamodb.BillingMode.PAY_PER_REQUEST,
         removal_policy: cdk.RemovalPolicy = cdk.RemovalPolicy.DESTROY,
-        stream: Optional[dynamodb.StreamViewType] = None,
+        stream: dynamodb.StreamViewType | None = None,
         **kwargs,
     ) -> None:
         self.db_model_type = db_model
@@ -70,8 +70,8 @@ class DynamoDBModelTable(dynamodb.Table):
         )
 
     def get_partition_and_sort_key(
-        self, db_index: Optional[DBIndex] = None
-    ) -> Tuple[dynamodb.Attribute, Optional[dynamodb.Attribute]]:
+        self, db_index: DBIndex | None = None
+    ) -> tuple[dynamodb.Attribute, dynamodb.Attribute | None]:
         db_index = db_index or self.db_index_type.get_default_index()
         db_model_fields = self.db_model_type.get_model_fields()
         partition_key = db_index.key_name
@@ -113,7 +113,7 @@ class EnvBaseDBModelTable(DynamoDBModelTable, EnvBaseConstructMixins):
         db_model: type[DBModel],
         db_index: type[DBIndex],
         billing_mode: dynamodb.BillingMode = dynamodb.BillingMode.PAY_PER_REQUEST,
-        stream: Optional[dynamodb.StreamViewType] = None,
+        stream: dynamodb.StreamViewType | None = None,
         **kwargs,
     ) -> None:
         self.env_base = env_base

@@ -41,7 +41,7 @@ class EnvBaseConstructMixins(EnvBaseMixins):
         return self.is_prod or self.env_base.env_type == EnvType.TEST
 
     @property
-    def construct_tags(self) -> List[cdk.Tag]:
+    def construct_tags(self) -> list[cdk.Tag]:
         return []
 
     @property
@@ -132,7 +132,7 @@ class EnvBaseConstructMixins(EnvBaseMixins):
         """
         return self.env_base.prefixed(*names)
 
-    def get_resource_name(self, name: Union[ResourceNameBaseEnum, str]) -> str:
+    def get_resource_name(self, name: ResourceNameBaseEnum | str) -> str:
         """Get the full resource name with environment prefix.
 
         Args:
@@ -145,7 +145,7 @@ class EnvBaseConstructMixins(EnvBaseMixins):
             return name.get_name(self.env_base)
         return self.env_base.get_resource_name(name)
 
-    def get_stack_of(self, construct: Optional[Construct] = None) -> Stack:
+    def get_stack_of(self, construct: Construct | None = None) -> Stack:
         """Get the stack containing a construct.
 
         Args:
@@ -193,7 +193,7 @@ class EnvBaseConstructMixins(EnvBaseMixins):
 
     @classmethod
     def add_managed_policies(
-        cls, role: Optional[iam.IRole], *managed_policies: Union[str, iam.ManagedPolicy]
+        cls, role: iam.IRole | None, *managed_policies: str | iam.ManagedPolicy
     ):
         """Add managed policies to an IAM role.
 
@@ -212,7 +212,7 @@ class EnvBaseConstruct(Construct, EnvBaseConstructMixins):
     the deployment environment and support automatic tagging.
     """
 
-    def __init__(self, scope: Construct, id: Optional[str], env_base: EnvBase) -> None:
+    def __init__(self, scope: Construct, id: str | None, env_base: EnvBase) -> None:
         """Initialize an environment-aware construct.
 
         Args:

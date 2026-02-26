@@ -1,6 +1,8 @@
 import re
+from collections.abc import Mapping
 from functools import reduce
-from typing import Any, ClassVar, Dict, List, Mapping, Optional, Pattern, TypeVar, Union, cast
+from re import Pattern
+from typing import Any, ClassVar, Dict, List, Optional, TypeVar, Union, cast
 
 import aws_cdk as cdk
 import constructs
@@ -52,8 +54,8 @@ def enclosed_chain(
     scope: constructs.Construct,
     id: str,
     definition: sfn.IChainable,
-    input_path: Optional[str] = None,
-    result_path: Optional[str] = None,
+    input_path: str | None = None,
+    result_path: str | None = None,
 ) -> sfn.Chain:
     """Enclose the current state machine fragment within a parallel state.
 
@@ -154,11 +156,11 @@ class JsonReferencePath(str):
         return sfn.JsonPath.json_to_string(self.as_jsonpath_object)
 
     @property
-    def as_jsonpath_list(self) -> List[str]:
+    def as_jsonpath_list(self) -> list[str]:
         return sfn.JsonPath.list_at(self.as_reference)
 
     @property
-    def as_jsonpath_number(self) -> Union[int, float]:
+    def as_jsonpath_number(self) -> int | float:
         return sfn.JsonPath.number_at(self.as_reference)
 
     @classmethod

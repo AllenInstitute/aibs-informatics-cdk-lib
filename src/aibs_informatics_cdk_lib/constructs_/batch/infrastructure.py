@@ -4,18 +4,9 @@ This module provides CDK constructs for creating and managing AWS Batch
 compute environments, job queues, and related infrastructure.
 """
 
+from collections.abc import Iterable, Mapping, MutableMapping, Sequence
 from dataclasses import dataclass
-from typing import (
-    Iterable,
-    List,
-    Literal,
-    Mapping,
-    MutableMapping,
-    Optional,
-    Sequence,
-    Union,
-    cast,
-)
+from typing import List, Literal, Optional, Union, cast
 
 import constructs
 from aibs_informatics_core.env import EnvBase
@@ -67,8 +58,8 @@ class Batch(EnvBaseConstruct):
         id: str,
         env_base: EnvBase,
         vpc: ec2.IVpc,
-        instance_role_name: Optional[str] = None,
-        instance_role_policy_statements: Optional[List[iam.PolicyStatement]] = None,
+        instance_role_name: str | None = None,
+        instance_role_policy_statements: list[iam.PolicyStatement] | None = None,
     ) -> None:
         """Initialize Batch infrastructure construct.
 
@@ -105,7 +96,7 @@ class Batch(EnvBaseConstruct):
         self._batch_environment_mapping: MutableMapping[str, BatchEnvironment] = {}
 
     @property
-    def environments(self) -> List["BatchEnvironment"]:
+    def environments(self) -> list["BatchEnvironment"]:
         """Get all Batch environments sorted by name.
 
         Returns:
@@ -117,8 +108,8 @@ class Batch(EnvBaseConstruct):
 
     def create_instance_role(
         self,
-        role_name: Optional[str] = None,
-        statements: Optional[List[iam.PolicyStatement]] = None,
+        role_name: str | None = None,
+        statements: list[iam.PolicyStatement] | None = None,
     ) -> iam.Role:
         """Create an IAM role for Batch EC2 instances.
 
@@ -252,12 +243,10 @@ class Batch(EnvBaseConstruct):
 
     def grant_instance_role_permissions(
         self,
-        read_write_resources: Optional[
-            Iterable[Union[s3.Bucket, efs.FileSystem, efs.IFileSystem]]
-        ] = None,
-        read_only_resources: Optional[
-            Iterable[Union[s3.Bucket, efs.FileSystem, efs.IFileSystem]]
-        ] = None,
+        read_write_resources: None
+        | (Iterable[s3.Bucket | efs.FileSystem | efs.IFileSystem]) = None,
+        read_only_resources: None
+        | (Iterable[s3.Bucket | efs.FileSystem | efs.IFileSystem]) = None,
     ) -> None:
         """Grant the instance role permissions to access resources.
 
@@ -290,7 +279,7 @@ class Batch(EnvBaseConstruct):
         self,
         descriptor: IBatchEnvironmentDescriptor,
         config: "BatchEnvironmentConfig",
-        launch_template_builder: Optional[IBatchLaunchTemplateBuilder] = None,
+        launch_template_builder: IBatchLaunchTemplateBuilder | None = None,
     ) -> "BatchEnvironment":
         """Set up a new Batch environment.
 
@@ -347,13 +336,13 @@ class BatchEnvironmentConfig:
             Defaults to 0.
     """
 
-    allocation_strategy: Optional[batch.AllocationStrategy]
-    instance_types: Optional[List[Union[str, ec2.InstanceType]]]
+    allocation_strategy: batch.AllocationStrategy | None
+    instance_types: list[str | ec2.InstanceType] | None
     use_public_subnets: bool
     use_spot: bool
     use_fargate: bool = False
-    maxv_cpus: Optional[int] = DEFAULT_MAXV_CPUS
-    minv_cpus: Optional[int] = DEFAULT_MINV_CPUS
+    maxv_cpus: int | None = DEFAULT_MAXV_CPUS
+    minv_cpus: int | None = DEFAULT_MINV_CPUS
 
     def __post_init__(self):
         self.maxv_cpus = min(DEFAULT_MAXV_CPUS, max(1, self.maxv_cpus or DEFAULT_MAXV_CPUS))
@@ -364,7 +353,7 @@ class BatchEnvironmentConfig:
             self.instance_types = None
 
     @property
-    def spot_bid_percentage(self) -> Optional[int]:
+    def spot_bid_percentage(self) -> int | None:
         """Get the spot bid percentage.
 
         Returns:
@@ -396,7 +385,7 @@ class BatchEnvironment(EnvBaseConstruct):
         vpc: ec2.IVpc,
         instance_role: iam.IRole,
         security_group: ec2.SecurityGroup,
-        launch_template_builder: Optional[IBatchLaunchTemplateBuilder] = None,
+        launch_template_builder: IBatchLaunchTemplateBuilder | None = None,
     ):
         """Initialize a BatchEnvironment construct.
 
@@ -452,7 +441,7 @@ class BatchEnvironment(EnvBaseConstruct):
         return self.descriptor.get_job_queue_name(self.env_base)
 
     @property
-    def instance_types(self) -> Optional[Sequence[ec2.InstanceType]]:
+    def instance_types(self) -> Sequence[ec2.InstanceType] | None:
         """Get the configured instance types.
 
         Returns:
@@ -466,7 +455,7 @@ class BatchEnvironment(EnvBaseConstruct):
         return None
 
     @property
-    def vpc_subnets(self) -> Optional[ec2.SubnetSelection]:
+    def vpc_subnets(self) -> ec2.SubnetSelection | None:
         """Get the VPC subnet selection.
 
         Returns:
@@ -478,7 +467,7 @@ class BatchEnvironment(EnvBaseConstruct):
         return vpc_subnets
 
     @cached_property
-    def launch_template(self) -> Optional[ec2.LaunchTemplate]:
+    def launch_template(self) -> ec2.LaunchTemplate | None:
         """Get or create the launch template.
 
         Returns:
@@ -492,7 +481,7 @@ class BatchEnvironment(EnvBaseConstruct):
         return launch_template
 
     @property
-    def launch_template_user_data_hash(self) -> Optional[str]:
+    def launch_template_user_data_hash(self) -> str | None:
         """Get a hash of the launch template user data.
 
         Returns:
@@ -502,7 +491,7 @@ class BatchEnvironment(EnvBaseConstruct):
         return sha256_hexdigest(lt.user_data.render()) if lt and lt.user_data else None
 
     @property
-    def compute_resource_tags(self) -> Optional[Mapping[str, str]]:
+    def compute_resource_tags(self) -> Mapping[str, str] | None:
         """Get tags for compute resources.
 
         Includes a hash of user data to force recreation when launch template changes.

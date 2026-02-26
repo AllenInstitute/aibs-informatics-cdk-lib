@@ -27,7 +27,7 @@ from aibs_informatics_cdk_lib.project.config import BaseProjectConfig, G, P, Pro
 logger = logging.getLogger(__name__)
 
 
-def resolve_repo_root(start_path: Optional[Union[str, pathlib.Path]] = None) -> str:
+def resolve_repo_root(start_path: str | pathlib.Path | None = None) -> str:
     """Find the root of the git repository
 
     Returns:
@@ -136,8 +136,8 @@ def set_env_base(env_base: EnvBase) -> None:
 
 
 def get_project_config_and_env_base(
-    node: constructs.Node, project_config_cls: Type[P] = ProjectConfig
-) -> Tuple[P, EnvBase]:
+    node: constructs.Node, project_config_cls: type[P] = ProjectConfig
+) -> tuple[P, EnvBase]:
     env_base = get_env_base(node)
 
     config = project_config_cls.load_config()
@@ -145,7 +145,7 @@ def get_project_config_and_env_base(
 
 
 def get_config(
-    node: constructs.Node, project_config_cls: Type[BaseProjectConfig[G, S]] = ProjectConfig
+    node: constructs.Node, project_config_cls: type[BaseProjectConfig[G, S]] = ProjectConfig
 ) -> S:
     """
     Retrieves the stage configuration for a given node.
@@ -171,8 +171,8 @@ def get_config(
 
 
 def _get_from_context(
-    node: constructs.Node, keys: List[str], default: Optional[str] = None
-) -> Optional[str]:
+    node: constructs.Node, keys: list[str], default: str | None = None
+) -> str | None:
     for key in keys:
         value = node.try_get_context(key)
         if value is not None:

@@ -28,8 +28,8 @@ from aibs_informatics_cdk_lib.common.aws.core_utils import (
 
 
 def grant_managed_policies(
-    role: Optional[iam.IRole],
-    *managed_policies: Union[str, iam.ManagedPolicy],
+    role: iam.IRole | None,
+    *managed_policies: str | iam.ManagedPolicy,
 ) -> None:
     """Grant managed policies to an IAM role.
 
@@ -293,8 +293,8 @@ CODE_BUILD_IAM_POLICY = iam.PolicyStatement(
 
 
 def batch_policy_statement(
-    env_base: Optional[EnvBase] = None,
-    actions: List[str] = BATCH_FULL_ACCESS_ACTIONS,
+    env_base: EnvBase | None = None,
+    actions: list[str] = BATCH_FULL_ACCESS_ACTIONS,
     sid: str = "BatchReadWrite",
 ) -> iam.PolicyStatement:
     """Create an IAM policy statement for AWS Batch.
@@ -343,8 +343,8 @@ def batch_policy_statement(
 
 
 def dynamodb_policy_statement(
-    env_base: Optional[EnvBase] = None,
-    actions: List[str] = DYNAMODB_READ_WRITE_ACTIONS,
+    env_base: EnvBase | None = None,
+    actions: list[str] = DYNAMODB_READ_WRITE_ACTIONS,
     sid: str = "DynamoDBReadWrite",
 ) -> iam.PolicyStatement:
     """Create an IAM policy statement for DynamoDB.
@@ -373,7 +373,7 @@ def dynamodb_policy_statement(
 
 
 def ecs_policy_statement(
-    actions: List[str] = ECS_READ_ACTIONS, sid: str = "ECSDescribe"
+    actions: list[str] = ECS_READ_ACTIONS, sid: str = "ECSDescribe"
 ) -> iam.PolicyStatement:
     """Create an IAM policy statement for ECS.
 
@@ -401,8 +401,8 @@ def ecs_policy_statement(
 
 
 def lambda_policy_statement(
-    env_base: Optional[EnvBase] = None,
-    actions: List[str] = LAMBDA_FULL_ACCESS_ACTIONS,
+    env_base: EnvBase | None = None,
+    actions: list[str] = LAMBDA_FULL_ACCESS_ACTIONS,
     sid: str = "LambdaReadWrite",
 ) -> iam.PolicyStatement:
     """Create an IAM policy statement for Lambda.
@@ -431,8 +431,8 @@ def lambda_policy_statement(
 
 
 def s3_policy_statement(
-    env_base: Optional[EnvBase] = None,
-    actions: List[str] = S3_FULL_ACCESS_ACTIONS,
+    env_base: EnvBase | None = None,
+    actions: list[str] = S3_FULL_ACCESS_ACTIONS,
     sid: str = "S3FullAccess",
 ) -> iam.PolicyStatement:
     """Create an IAM policy statement for S3.
@@ -461,7 +461,7 @@ def s3_policy_statement(
 
 
 def secretsmanager_policy_statement(
-    actions: List[str] = SECRETSMANAGER_READ_ONLY_ACTIONS,
+    actions: list[str] = SECRETSMANAGER_READ_ONLY_ACTIONS,
     sid: str = "SecretsManagerReadOnly",
     resource_id: str = "*",
     region: str = None,
@@ -496,7 +496,7 @@ def secretsmanager_policy_statement(
 
 
 def ses_policy_statement(
-    actions: List[str] = SES_FULL_ACCESS_ACTIONS,
+    actions: list[str] = SES_FULL_ACCESS_ACTIONS,
     sid: str = "SESFullAccess",
 ) -> iam.PolicyStatement:
     """Create an IAM policy statement for SES.
@@ -522,8 +522,8 @@ def ses_policy_statement(
 
 
 def sfn_policy_statement(
-    env_base: Optional[EnvBase] = None,
-    actions: List[str] = SFN_STATES_READ_ACCESS_ACTIONS,
+    env_base: EnvBase | None = None,
+    actions: list[str] = SFN_STATES_READ_ACCESS_ACTIONS,
     sid: str = "SfnFullAccess",
 ) -> iam.PolicyStatement:
     """Create an IAM policy statement for Step Functions.
@@ -552,7 +552,7 @@ def sfn_policy_statement(
 
 
 def sns_policy_statement(
-    actions: List[str] = SNS_FULL_ACCESS_ACTIONS,
+    actions: list[str] = SNS_FULL_ACCESS_ACTIONS,
     sid: str = "SNSFullAccess",
 ) -> iam.PolicyStatement:
     """Create an IAM policy statement for SNS.
@@ -578,7 +578,7 @@ def sns_policy_statement(
 
 
 def ssm_policy_statement(
-    actions: List[str] = SSM_READ_ACTIONS, sid: str = "SSMParamReadActions"
+    actions: list[str] = SSM_READ_ACTIONS, sid: str = "SSMParamReadActions"
 ) -> iam.PolicyStatement:
     """Create an IAM policy statement for SSM Parameter Store.
 
@@ -596,8 +596,8 @@ def ssm_policy_statement(
 
 
 def sqs_policy_statement(
-    env_base: Optional[EnvBase] = None,
-    actions: List[str] = SQS_FULL_ACCESS_ACTIONS,
+    env_base: EnvBase | None = None,
+    actions: list[str] = SQS_FULL_ACCESS_ACTIONS,
     sid: str = "SQSFullAccess",
 ) -> iam.PolicyStatement:
     """Create an IAM policy statement for SQS.

@@ -1,4 +1,5 @@
-from typing import Literal, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Literal, Optional, Union
 
 import aws_cdk as cdk
 import constructs
@@ -15,15 +16,15 @@ class EnvBaseBucket(s3.Bucket, EnvBaseConstructMixins):
         scope: constructs.Construct,
         id: str,
         env_base: EnvBase,
-        bucket_name: Optional[str],
+        bucket_name: str | None,
         removal_policy: cdk.RemovalPolicy = cdk.RemovalPolicy.RETAIN,
         account_id: str = cdk.Aws.ACCOUNT_ID,
         region: str = cdk.Aws.REGION,
-        lifecycle_rules: Optional[Sequence[s3.LifecycleRule]] = None,
-        inventories: Optional[Sequence[s3.Inventory]] = None,
+        lifecycle_rules: Sequence[s3.LifecycleRule] | None = None,
+        inventories: Sequence[s3.Inventory] | None = None,
         auto_delete_objects: bool = False,
         bucket_key_enabled: bool = False,
-        block_public_access: Optional[s3.BlockPublicAccess] = s3.BlockPublicAccess.BLOCK_ALL,
+        block_public_access: s3.BlockPublicAccess | None = s3.BlockPublicAccess.BLOCK_ALL,
         public_read_access: bool = False,
         **kwargs,
     ):
@@ -54,9 +55,9 @@ class EnvBaseBucket(s3.Bucket, EnvBaseConstructMixins):
 
     def grant_permissions(
         self,
-        role: Optional[iam.IRole],
+        role: iam.IRole | None,
         *permissions: Literal["rw", "r", "w", "d"],
-        objects_key_pattern: Optional[str] = None,
+        objects_key_pattern: str | None = None,
     ):
         """Grant Bucket access (r,w,d) to a role, optionally specifying a key pattern
 
@@ -72,10 +73,10 @@ class EnvBaseBucket(s3.Bucket, EnvBaseConstructMixins):
 
 
 def grant_bucket_access(
-    bucket: Union[s3.Bucket, Sequence[s3.Bucket]],
-    role: Optional[iam.IRole],
+    bucket: s3.Bucket | Sequence[s3.Bucket],
+    role: iam.IRole | None,
     *permissions: Literal["rw", "r", "w", "d"],
-    objects_key_pattern: Optional[str] = None,
+    objects_key_pattern: str | None = None,
 ):
     """Grant Bucket access (r,w,d) to a role, optionally specifying a key pattern
 

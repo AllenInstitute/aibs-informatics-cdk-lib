@@ -15,8 +15,8 @@ class S3Operation:
         bucket_name: str,
         key: str,
         body: Any,
-        result_path: Optional[str] = "$",
-        output_path: Optional[str] = "$",
+        result_path: str | None = "$",
+        output_path: str | None = "$",
     ) -> sfn.Chain:
         """Create a chain to put a body of text to S3
 
@@ -120,8 +120,8 @@ class S3Operation:
         id: str,
         bucket_name: str,
         key: str,
-        result_path: Optional[str] = "$",
-        output_path: Optional[str] = "$",
+        result_path: str | None = "$",
+        output_path: str | None = "$",
     ) -> sfn.Chain:
         """Creates a chain to get a body of text from S3
 
@@ -218,9 +218,9 @@ class S3Operation:
         id: str,
         payload: str,
         bucket_name: str,
-        key: Optional[str] = None,
-        result_path: Optional[str] = "$",
-        output_path: Optional[str] = "$",
+        key: str | None = None,
+        result_path: str | None = "$",
+        output_path: str | None = "$",
     ) -> sfn.Chain:
         """Puts a payload to s3 and returns the location of the payload in s3
 
@@ -273,7 +273,7 @@ class S3Operation:
         id: str,
         bucket_name: str,
         key: str,
-        result_path: Optional[str] = "$",
+        result_path: str | None = "$",
     ) -> sfn.Chain:
         """Gets a payload from s3
 

@@ -24,9 +24,9 @@ class SSMTools(EnvBaseConstruct):
         asset_name: str,
         asset_source: s3deployment.ISource,
         destination_bucket: EnvBaseBucket,
-        destination_key_prefix: Optional[S3KeyPrefix] = None,
-        param_name: Optional[str] = None,
-    ) -> Tuple[ssm.StringParameter, str]:
+        destination_key_prefix: S3KeyPrefix | None = None,
+        param_name: str | None = None,
+    ) -> tuple[ssm.StringParameter, str]:
         param_name_components = [self.CODE_ASSETS_PREFIX, asset_name]
         if destination_key_prefix is None:
             destination_key_prefix = S3KeyPrefix(self.CODE_ASSETS_PREFIX)
@@ -63,10 +63,10 @@ class SSMTools(EnvBaseConstruct):
 
     def upload_file(
         self,
-        path: Union[str, Path],
+        path: str | Path,
         destination_bucket: EnvBaseBucket,
         destination_key_prefix: str,
-    ) -> Tuple[ssm.StringParameter, str]:
+    ) -> tuple[ssm.StringParameter, str]:
         if not os.path.isfile(path):
             raise ValueError(
                 f"Cannot upload file and create SSM reference for {path}. Must be a valid file"

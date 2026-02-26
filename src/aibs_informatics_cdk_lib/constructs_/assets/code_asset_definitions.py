@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 class AssetsMixin:
     @classmethod
-    def resolve_repo_path(cls, repo_url: str, repo_path_env_var: Optional[str]) -> Path:
+    def resolve_repo_path(cls, repo_url: str, repo_path_env_var: str | None) -> Path:
         """Resolves the repo path from the environment or clones the repo from the url
 
         This method is useful to quickly swapping between locally modified changes and the remote repo.
@@ -65,8 +65,8 @@ class AIBSInformaticsCodeAssets(constructs.Construct, AssetsMixin):
         scope: constructs.Construct,
         construct_id: str,
         env_base: EnvBase,
-        runtime: Optional[lambda_.Runtime] = None,
-        aibs_informatics_aws_lambda_repo: Optional[str] = None,
+        runtime: lambda_.Runtime | None = None,
+        aibs_informatics_aws_lambda_repo: str | None = None,
     ) -> None:
         super().__init__(scope, construct_id)
         self.env_base = env_base
@@ -157,7 +157,7 @@ class AIBSInformaticsDockerAssets(constructs.Construct, AssetsMixin):
         scope: constructs.Construct,
         construct_id: str,
         env_base: EnvBase,
-        aibs_informatics_aws_lambda_repo: Optional[str] = None,
+        aibs_informatics_aws_lambda_repo: str | None = None,
     ) -> None:
         super().__init__(scope, construct_id)
         self.env_base = env_base
@@ -201,7 +201,7 @@ class AIBSInformaticsAssets(constructs.Construct):
         scope: constructs.Construct,
         construct_id: str,
         env_base: EnvBase,
-        runtime: Optional[lambda_.Runtime] = None,
+        runtime: lambda_.Runtime | None = None,
     ) -> None:
         super().__init__(scope, construct_id)
         self.env_base = env_base

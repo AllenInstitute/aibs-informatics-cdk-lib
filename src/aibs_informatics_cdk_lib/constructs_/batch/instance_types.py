@@ -1,7 +1,7 @@
 from typing import List
 
 # Generated from notebooks/ec2-instance-type-selection.ipynb
-ON_DEMAND_INSTANCE_TYPES: List[str] = [
+ON_DEMAND_INSTANCE_TYPES: list[str] = [
     "c5a.large",
     "c5a.xlarge",
     "c5a.2xlarge",
@@ -205,7 +205,7 @@ ON_DEMAND_INSTANCE_TYPES: List[str] = [
 ]
 
 
-SPOT_INSTANCE_TYPES: List[str] = [
+SPOT_INSTANCE_TYPES: list[str] = [
     "c5a.large",
     "c5a.xlarge",
     "c5a.2xlarge",
@@ -282,7 +282,7 @@ SPOT_INSTANCE_TYPES: List[str] = [
 ]
 
 
-TRANSFER_INSTANCE_TYPES: List[str] = [
+TRANSFER_INSTANCE_TYPES: list[str] = [
     "c5.large",
     "c5.xlarge",
     "c5a.large",
@@ -319,7 +319,7 @@ TRANSFER_INSTANCE_TYPES: List[str] = [
 ]
 
 
-LAMBDA_SMALL_INSTANCE_TYPES: List[str] = [
+LAMBDA_SMALL_INSTANCE_TYPES: list[str] = [
     "c5.large",
     "c5a.large",
     "c5d.large",
@@ -333,7 +333,7 @@ LAMBDA_SMALL_INSTANCE_TYPES: List[str] = [
 ]
 
 
-LAMBDA_MEDIUM_INSTANCE_TYPES: List[str] = [
+LAMBDA_MEDIUM_INSTANCE_TYPES: list[str] = [
     "c5.xlarge",
     "c5a.xlarge",
     "c5d.xlarge",
@@ -360,7 +360,7 @@ LAMBDA_MEDIUM_INSTANCE_TYPES: List[str] = [
 ]
 
 
-LAMBDA_LARGE_INSTANCE_TYPES: List[str] = [
+LAMBDA_LARGE_INSTANCE_TYPES: list[str] = [
     "c5.2xlarge",
     "c5a.2xlarge",
     "c5d.2xlarge",

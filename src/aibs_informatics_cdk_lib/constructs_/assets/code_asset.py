@@ -1,8 +1,9 @@
 import logging
 import os
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping, Optional, Sequence, Tuple
+from typing import Optional, Tuple
 
 import aws_cdk as cdk
 import constructs
@@ -51,8 +52,8 @@ class CodeAsset:
     asset_name: str
     asset_props: aws_s3_assets.AssetProps
     default_runtime: lambda_.Runtime
-    supported_runtimes: Optional[Sequence[lambda_.Runtime]] = None
-    environment: Optional[Mapping[str, str]] = None
+    supported_runtimes: Sequence[lambda_.Runtime] | None = None
+    environment: Mapping[str, str] | None = None
 
     def __post_init__(self):
         if not self.supported_runtimes:
@@ -72,7 +73,7 @@ class CodeAsset:
     def as_code(self) -> lambda_.AssetCode:
         return self.get_code()
 
-    def get_environment(self, *overrides: Tuple[str, str]) -> Mapping[str, str]:
+    def get_environment(self, *overrides: tuple[str, str]) -> Mapping[str, str]:
         environment = {**(self.environment or {})}
         environment.update(overrides)
         return environment
@@ -163,13 +164,13 @@ class CodeAsset:
     def create_py_code_asset(
         cls,
         path: Path,
-        context_path: Optional[Path],
-        requirements_file: Optional[Path] = None,
-        includes: Optional[Sequence[str]] = None,
-        excludes: Optional[Sequence[str]] = None,
+        context_path: Path | None,
+        requirements_file: Path | None = None,
+        includes: Sequence[str] | None = None,
+        excludes: Sequence[str] | None = None,
         runtime: lambda_.Runtime = lambda_.Runtime.PYTHON_3_11,
-        platform: Optional[str] = "linux/amd64",
-        environment: Optional[Mapping[str, str]] = None,
+        platform: str | None = "linux/amd64",
+        environment: Mapping[str, str] | None = None,
         use_uv: bool = False,
     ) -> "CodeAsset":
         """Create and bundle a Python Lambda code asset

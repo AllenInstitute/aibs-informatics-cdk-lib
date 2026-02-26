@@ -1,4 +1,5 @@
-from typing import Iterable, Optional, Union
+from collections.abc import Iterable
+from typing import Optional, Union
 
 import constructs
 from aibs_informatics_aws_utils.constants.efs import (
@@ -45,11 +46,11 @@ class DemandExecutionInfrastructureStack(EnvBaseStack):
     def __init__(
         self,
         scope: constructs.Construct,
-        id: Optional[str],
+        id: str | None,
         env_base: EnvBase,
         vpc: ec2.Vpc,
-        buckets: Optional[Iterable[s3.Bucket]] = None,
-        mount_point_configs: Optional[Iterable[MountPointConfiguration]] = None,
+        buckets: Iterable[s3.Bucket] | None = None,
+        mount_point_configs: Iterable[MountPointConfiguration] | None = None,
         **kwargs,
     ) -> None:
         super().__init__(scope, id, env_base, **kwargs)
@@ -85,9 +86,9 @@ class DemandExecutionStack(EnvBaseStack):
         assets: AIBSInformaticsAssets,
         scaffolding_bucket: s3.Bucket,
         efs_ecosystem: EFSEcosystem,
-        scaffolding_job_queue: Union[batch.JobQueue, str],
-        data_sync_job_queue: Union[batch.JobQueue, str],
-        execution_job_queue: Union[batch.JobQueue, str],
+        scaffolding_job_queue: batch.JobQueue | str,
+        data_sync_job_queue: batch.JobQueue | str,
+        execution_job_queue: batch.JobQueue | str,
         **kwargs,
     ):
         super().__init__(scope, id, env_base, **kwargs)

@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, List, Literal, Mapping, Optional, Union
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, List, Literal, Optional, Union
 
 import constructs
 from aibs_informatics_aws_utils.batch import (
@@ -31,19 +32,19 @@ class BatchOperation:
         cls,
         scope: constructs.Construct,
         id: str,
-        command: Optional[Union[List[str], str]],
+        command: list[str] | str | None,
         image: str,
         job_definition_name: str,
-        job_role_arn: Optional[str] = None,
-        environment: Optional[Union[Mapping[str, str], str]] = None,
-        memory: Optional[Union[int, str]] = None,
-        vcpus: Optional[Union[int, str]] = None,
-        gpu: Optional[Union[int, str]] = None,
-        mount_points: Optional[Union[List[MountPointTypeDef], str]] = None,
-        volumes: Optional[Union[List[VolumeTypeDef], str]] = None,
-        platform_capabilities: Optional[Union[List[Literal["EC2", "FARGATE"]], str]] = None,
-        result_path: Optional[str] = "$",
-        output_path: Optional[str] = "$",
+        job_role_arn: str | None = None,
+        environment: Mapping[str, str] | str | None = None,
+        memory: int | str | None = None,
+        vcpus: int | str | None = None,
+        gpu: int | str | None = None,
+        mount_points: list[MountPointTypeDef] | str | None = None,
+        volumes: list[VolumeTypeDef] | str | None = None,
+        platform_capabilities: list[Literal["EC2", "FARGATE"]] | str | None = None,
+        result_path: str | None = "$",
+        output_path: str | None = "$",
     ) -> sfn.Chain:
         """Creates chain to register new job definition
 
@@ -165,14 +166,14 @@ class BatchOperation:
         job_name: str,
         job_definition: str,
         job_queue: str,
-        parameters: Optional[Mapping[str, str]] = None,
-        command: Optional[Union[List[str], str]] = None,
-        environment: Optional[Union[Mapping[str, str], str]] = None,
-        memory: Optional[Union[int, str]] = None,
-        vcpus: Optional[Union[int, str]] = None,
-        gpu: Optional[Union[int, str]] = None,
-        result_path: Optional[str] = "$",
-        output_path: Optional[str] = "$",
+        parameters: Mapping[str, str] | None = None,
+        command: list[str] | str | None = None,
+        environment: Mapping[str, str] | str | None = None,
+        memory: int | str | None = None,
+        vcpus: int | str | None = None,
+        gpu: int | str | None = None,
+        result_path: str | None = "$",
+        output_path: str | None = "$",
     ) -> sfn.Chain:
         job_name = sfn.JsonPath.format(f"{job_name}-{{}}", sfn.JsonPath.uuid())
         if not isinstance(environment, str):
@@ -250,8 +251,8 @@ class BatchOperation:
         scope: constructs.Construct,
         id: str,
         job_definition: str,
-        result_path: Optional[str] = "$",
-        output_path: Optional[str] = "$",
+        result_path: str | None = "$",
+        output_path: str | None = "$",
     ) -> sfn.Chain:
         request = {"jobDefinition": job_definition}
         start = sfn.Pass(

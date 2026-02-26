@@ -32,7 +32,7 @@ class IBatchLaunchTemplateBuilder(EnvBaseConstruct, Generic[T]):
     def create_launch_template(
         self,
         descriptor: IBatchEnvironmentDescriptor,
-        security_group: Optional[ec2.SecurityGroup] = None,
+        security_group: ec2.SecurityGroup | None = None,
         **kwargs,
     ) -> ec2.LaunchTemplate:
         raise NotImplementedError()
@@ -45,7 +45,7 @@ class BatchLaunchTemplateBuilder(IBatchLaunchTemplateBuilder["BatchLaunchTemplat
     def create_launch_template(
         self,
         descriptor: IBatchEnvironmentDescriptor,
-        security_group: Optional[ec2.SecurityGroup] = None,
+        security_group: ec2.SecurityGroup | None = None,
         python_version: str = "python3.11",
         **kwargs,
     ) -> ec2.LaunchTemplate:
@@ -91,7 +91,7 @@ class EbsBatchLaunchTemplateBuilder(IBatchLaunchTemplateBuilder["EbsBatchLaunchT
     def create_launch_template(
         self,
         descriptor: IBatchEnvironmentDescriptor,
-        security_group: Optional[ec2.SecurityGroup] = None,
+        security_group: ec2.SecurityGroup | None = None,
         python_version: str = "python3.11",
         **kwargs,
     ) -> ec2.LaunchTemplate:
@@ -170,7 +170,7 @@ class CloudWatchConfigBuilder:
     def metric_namespace(self) -> str:
         return self.env_base.get_metric_namespace("CWAgent")
 
-    def to_json(self) -> Dict[str, Any]:
+    def to_json(self) -> dict[str, Any]:
         """Builds a CW Agent config
 
         # https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Agent-Configuration-File-Details.html
@@ -191,7 +191,7 @@ class CloudWatchConfigBuilder:
         config = self.to_json()
         return base64.b64encode(json.dumps(config).encode("ascii")).decode("ascii")
 
-    def get_logs_config(self) -> Dict[str, Any]:
+    def get_logs_config(self) -> dict[str, Any]:
         """Generates CW Agent sub config for logs
 
         https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Agent-Configuration-File-Details.html#CloudWatch-Agent-Configuration-File-Logssection
@@ -249,7 +249,7 @@ class CloudWatchConfigBuilder:
             }
         }
 
-    def get_metrics_config(self) -> Dict[str, Any]:
+    def get_metrics_config(self) -> dict[str, Any]:
         """Generates metrics config section of CW Agent config
 
         https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Agent-Configuration-File-Details.html#CloudWatch-Agent-Configuration-File-Metricssection
@@ -274,8 +274,8 @@ class CloudWatchConfigBuilder:
             ],
         }
 
-    def _get_metrics_collected(self) -> Dict[str, Any]:
-        metrics_collected: Dict[str, Any] = {}
+    def _get_metrics_collected(self) -> dict[str, Any]:
+        metrics_collected: dict[str, Any] = {}
         # https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/metrics-collected-by-CloudWatch-agent.html
 
         DEFAULT_COLLECTION_INTERVAL = 60 * 1
@@ -320,7 +320,7 @@ class CloudWatchConfigBuilder:
 
         return metrics_collected
 
-    def get_grouped_graph_metric_configs(self) -> List[GroupedGraphMetricConfig]:
+    def get_grouped_graph_metric_configs(self) -> list[GroupedGraphMetricConfig]:
         PERC_ALARM_METRIC_FN = lambda name, threshold: AlarmMetricConfig(
             name=f"{self.batch_env_name}-{name}",
             threshold=threshold,

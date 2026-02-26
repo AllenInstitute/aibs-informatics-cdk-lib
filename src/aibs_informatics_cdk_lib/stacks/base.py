@@ -20,7 +20,7 @@ from aibs_informatics_core.env import EnvBase, EnvType
 from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstructMixins
 
 
-def get_all_stacks(scope: constructs.Construct) -> List[cdk.Stack]:
+def get_all_stacks(scope: constructs.Construct) -> list[cdk.Stack]:
     """Get all CDK stacks from a construct scope.
 
     Args:
@@ -33,7 +33,7 @@ def get_all_stacks(scope: constructs.Construct) -> List[cdk.Stack]:
     return [cast(cdk.Stack, child) for child in children if isinstance(child, cdk.Stack)]
 
 
-def add_stack_dependencies(source_stack: cdk.Stack, dependent_stacks: List[cdk.Stack]):
+def add_stack_dependencies(source_stack: cdk.Stack, dependent_stacks: list[cdk.Stack]):
     """Add dependencies between stacks.
 
     Makes the dependent stacks depend on the source stack,
@@ -67,9 +67,9 @@ class EnvBaseStack(cdk.Stack, EnvBaseStackMixins):
     def __init__(
         self,
         scope: constructs.Construct,
-        id: Optional[str],
+        id: str | None,
         env_base: EnvBase,
-        env: Optional[cdk.Environment] = None,
+        env: cdk.Environment | None = None,
         **kwargs,
     ) -> None:
         """Initialize an environment-aware stack.
@@ -99,7 +99,7 @@ class EnvBaseStack(cdk.Stack, EnvBaseStackMixins):
         return cdk.Stack.of(self).account
 
     @property
-    def stack_tags(self) -> List[cdk.Tag]:
+    def stack_tags(self) -> list[cdk.Tag]:
         return [
             *self.construct_tags,
             cdk.Tag(key=self.env_base.ENV_BASE_KEY, value=self.env_base),

@@ -74,16 +74,16 @@ class DebugInstanceConstruct(EnvBaseConstruct):
     def __init__(
         self,
         scope: Construct,
-        id: Optional[str],
+        id: str | None,
         env_base: EnvBase,
         vpc: ec2.Vpc,
         name: str = "DebugInstance",
-        efs_filesystems: Optional[List[Union[efs.IFileSystem, EnvBaseFileSystem]]] = None,
+        efs_filesystems: list[efs.IFileSystem | EnvBaseFileSystem] | None = None,
         instance_type: ec2.InstanceType = ec2.InstanceType("t3.medium"),
-        machine_image: Optional[ec2.IMachineImage] = None,
-        instance_name: Optional[str] = None,
-        instance_role_name: Optional[str] = None,
-        instance_role_policy_statements: Optional[List[iam.PolicyStatement]] = None,
+        machine_image: ec2.IMachineImage | None = None,
+        instance_name: str | None = None,
+        instance_role_name: str | None = None,
+        instance_role_policy_statements: list[iam.PolicyStatement] | None = None,
         **kwargs,
     ) -> None:
         super().__init__(scope, id, env_base, **kwargs)

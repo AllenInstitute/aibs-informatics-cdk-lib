@@ -5,7 +5,8 @@ environments with various configurations.
 """
 
 from abc import abstractmethod
-from typing import Iterable, List, Optional, Union
+from collections.abc import Iterable
+from typing import List, Optional, Union
 
 from aibs_informatics_core.env import EnvBase
 from aws_cdk import aws_batch as batch
@@ -44,15 +45,15 @@ class BaseBatchComputeConstruct(EnvBaseConstruct):
     def __init__(
         self,
         scope: Construct,
-        id: Optional[str],
+        id: str | None,
         env_base: EnvBase,
         vpc: ec2.Vpc,
         batch_name: str,
-        buckets: Optional[Iterable[s3.Bucket]] = None,
-        file_systems: Optional[Iterable[Union[efs.FileSystem, efs.IFileSystem]]] = None,
-        mount_point_configs: Optional[Iterable[MountPointConfiguration]] = None,
-        instance_role_name: Optional[str] = None,
-        instance_role_policy_statements: Optional[List[iam.PolicyStatement]] = None,
+        buckets: Iterable[s3.Bucket] | None = None,
+        file_systems: Iterable[efs.FileSystem | efs.IFileSystem] | None = None,
+        mount_point_configs: Iterable[MountPointConfiguration] | None = None,
+        instance_role_name: str | None = None,
+        instance_role_policy_statements: list[iam.PolicyStatement] | None = None,
         **kwargs,
     ) -> None:
         """Initialize a Batch compute construct.
@@ -132,7 +133,7 @@ class BaseBatchComputeConstruct(EnvBaseConstruct):
         return self.batch_name
 
     def grant_storage_access(
-        self, *resources: Union[s3.Bucket, efs.FileSystem, efs.IFileSystem]
+        self, *resources: s3.Bucket | efs.FileSystem | efs.IFileSystem
     ) -> None:
         """Grant access to storage resources.
 
@@ -148,7 +149,7 @@ class BaseBatchComputeConstruct(EnvBaseConstruct):
                     batch_environment.grant_file_system_access(resource)
 
     def _validate_mount_point_configs(
-        self, mount_point_configs: List[MountPointConfiguration]
+        self, mount_point_configs: list[MountPointConfiguration]
     ) -> None:
         """Validate mount point configurations for duplicates.
 
@@ -168,8 +169,8 @@ class BaseBatchComputeConstruct(EnvBaseConstruct):
             _[mpc.mount_point] = mpc
 
     def _get_mount_point_configs(
-        self, file_systems: Optional[List[Union[efs.FileSystem, efs.IFileSystem]]]
-    ) -> List[MountPointConfiguration]:
+        self, file_systems: list[efs.FileSystem | efs.IFileSystem] | None
+    ) -> list[MountPointConfiguration]:
         """Get mount point configurations from file systems.
 
         Args:
@@ -187,9 +188,9 @@ class BaseBatchComputeConstruct(EnvBaseConstruct):
 
     def _update_file_systems_from_mount_point_configs(
         self,
-        file_systems: List[Union[efs.FileSystem, efs.IFileSystem]],
-        mount_point_configs: List[MountPointConfiguration],
-    ) -> List[Union[efs.FileSystem, efs.IFileSystem]]:
+        file_systems: list[efs.FileSystem | efs.IFileSystem],
+        mount_point_configs: list[MountPointConfiguration],
+    ) -> list[efs.FileSystem | efs.IFileSystem]:
         """Update file systems list from mount point configurations.
 
         Args:
@@ -202,7 +203,7 @@ class BaseBatchComputeConstruct(EnvBaseConstruct):
         Raises:
             ValueError: If mount config has neither file system nor access point.
         """
-        file_system_map: dict[str, Union[efs.FileSystem, efs.IFileSystem]] = {
+        file_system_map: dict[str, efs.FileSystem | efs.IFileSystem] = {
             fs.file_system_id: fs for fs in file_systems
         }
         for mpc in mount_point_configs:
