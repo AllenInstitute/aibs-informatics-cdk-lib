@@ -14,16 +14,15 @@ maintainers = [{ name = "AIBS Informatics Group", email = "marmot@alleninstitute
 description = "CDK Library for AIBS Informatics services"
 readme = { file = "README.md", content-type = "text/markdown" }
 license = { file = "LICENSE" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dynamic = [
     "version",
 ]
 dependencies = [
     "aibs-informatics-aws-utils>=0.0.12,<1.0",
-    "aibs-informatics-core~=0.1",
+    "aibs-informatics-core~=0.4",
     "aws-cdk-lib~=2.96",
     "constructs~=10.0",
-    "pydantic~=2.0",
 ]
 
 [project.optional-dependencies]
