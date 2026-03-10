@@ -45,6 +45,15 @@ class TestS3Operation(CdkBaseTest):
             },
             "ResultPath": sfn.JsonPath.DISCARD,
             "Next": "PutLiteral PutObject Post",
+            "Retry": [
+                {
+                    "ErrorEquals": ["S3.S3Exception"],
+                    "IntervalSeconds": 3,
+                    "MaxAttempts": 5,
+                    "BackoffRate": 2.0,
+                    "JitterStrategy": "FULL",
+                },
+            ],
         }
 
         end_state = cast(sfn.State, chain.end_states[0])
@@ -119,6 +128,15 @@ class TestS3Operation(CdkBaseTest):
             },
             "ResultPath": "$",
             "OutputPath": "$",
+            "Retry": [
+                {
+                    "ErrorEquals": ["S3.S3Exception"],
+                    "IntervalSeconds": 3,
+                    "MaxAttempts": 5,
+                    "BackoffRate": 2.0,
+                    "JitterStrategy": "FULL",
+                },
+            ],
         }
 
     def test_put_payload_generates_key_when_missing(self):
@@ -203,6 +221,15 @@ class TestS3Operation(CdkBaseTest):
             },
             "ResultPath": "$",
             "OutputPath": "$",
+            "Retry": [
+                {
+                    "ErrorEquals": ["S3.S3Exception"],
+                    "IntervalSeconds": 3,
+                    "MaxAttempts": 5,
+                    "BackoffRate": 2.0,
+                    "JitterStrategy": "FULL",
+                },
+            ],
             "Next": "GetPayload Post",
         }
 
