@@ -84,6 +84,17 @@ class S3Operation:
             #     "Key.$": "$.Key",
             # },
             "ResultPath": sfn.JsonPath.DISCARD,
+            "Retry": [
+                {
+                    "ErrorEquals": ["S3.S3Exception"],
+                    # Interval at attempt n = IntervalSeconds x BackoffRate ^(n-1)
+                    # Total time from first try: 3 + 6 + 12 + 24 + 48 = 93 seconds
+                    "IntervalSeconds": 3,
+                    "MaxAttempts": 5,
+                    "BackoffRate": 2.0,
+                    "JitterStrategy": "FULL",
+                },
+            ],
         }
         put_object = sfn.CustomState(scope, id + " PutObject API Call", state_json=state_json)
 
@@ -183,6 +194,17 @@ class S3Operation:
             },
             "ResultPath": result_path,
             "OutputPath": output_path,
+            "Retry": [
+                {
+                    "ErrorEquals": ["S3.S3Exception"],
+                    # Interval at attempt n = IntervalSeconds x BackoffRate ^(n-1)
+                    # Total time from first try: 3 + 6 + 12 + 24 + 48 = 93 seconds
+                    "IntervalSeconds": 3,
+                    "MaxAttempts": 5,
+                    "BackoffRate": 2.0,
+                    "JitterStrategy": "FULL",
+                },
+            ],
         }
 
         get_object = sfn.CustomState(scope, id + " GetObject API Call", state_json=state_json)

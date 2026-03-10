@@ -136,10 +136,11 @@ class BatchOperation:
                     {
                         "ErrorEquals": ["Batch.BatchException"],
                         # Interval at attempt n = IntervalSeconds x BackoffRate ^(n-1)
-                        # Total time from first try: 3 + 6 + 12 + 24 = 45 seconds
+                        # Total time from first try: 3 + 6 + 12 + 24 + 48 + 96 = 189 seconds
                         "IntervalSeconds": 3,
-                        "MaxAttempts": 5,
+                        "MaxAttempts": 7,
                         "BackoffRate": 2.0,
+                        "JitterStrategy": "FULL",
                     },
                 ],
             },
@@ -222,10 +223,11 @@ class BatchOperation:
                     {
                         "ErrorEquals": ["Batch.BatchException"],
                         # Interval at attempt n = IntervalSeconds x BackoffRate ^(n-1)
-                        # Total time from first try: 3 + 6 + 12 + 24 = 45 seconds
+                        # Total time from first try: 3 + 6 + 12 + 24 + 48 + 96 = 189 seconds
                         "IntervalSeconds": 3,
-                        "MaxAttempts": 5,
+                        "MaxAttempts": 7,
                         "BackoffRate": 2.0,
+                        "JitterStrategy": "FULL",
                     },
                 ],
             },
@@ -274,10 +276,11 @@ class BatchOperation:
                     {
                         "ErrorEquals": ["Batch.BatchException"],
                         # Interval at attempt n = IntervalSeconds x BackoffRate ^(n-1)
-                        # Total time from first try: 3 + 6 + 12 + 24 = 45 seconds
+                        # Total time from first try: 3 + 6 + 12 + 24 + 48 + 96 = 189 seconds
                         "IntervalSeconds": 3,
-                        "MaxAttempts": 5,
+                        "MaxAttempts": 7,
                         "BackoffRate": 2.0,
+                        "JitterStrategy": "FULL",
                     },
                 ],
             },
