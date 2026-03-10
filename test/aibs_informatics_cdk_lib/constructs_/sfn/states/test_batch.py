@@ -25,8 +25,9 @@ DEFAULT_BATCH_RETRY = [
     {
         "ErrorEquals": ["Batch.BatchException"],
         "IntervalSeconds": 3,
-        "MaxAttempts": 5,
+        "MaxAttempts": 7,
         "BackoffRate": 2,
+        "JitterStrategy": "FULL",
     }
 ]
 
