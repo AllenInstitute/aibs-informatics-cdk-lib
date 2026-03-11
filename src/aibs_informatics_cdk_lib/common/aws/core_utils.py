@@ -3,7 +3,7 @@
 This module provides functions for constructing AWS ARNs for various services.
 """
 
-from typing import Literal, Optional, cast
+from typing import Literal, cast
 
 import aws_cdk as cdk
 
@@ -47,8 +47,8 @@ def build_batch_arn(
     region: str | None = None,
     account: str | None = None,
     resource_id: str | None = None,
-    resource_type: None
-    | (Literal["compute-environment", "job", "job-definition", "job-queue"]) = None,
+    resource_type: Literal["compute-environment", "job", "job-definition", "job-queue"]
+    | None = None,  # noqa: E501
 ) -> str:
     """Build an AWS Batch ARN.
 

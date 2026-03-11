@@ -20,6 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Consider dropping either 3.12/3.13/3.14 if costs become too much, but for now we want to be sure to test on all supported versions
         python-version: ["3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
