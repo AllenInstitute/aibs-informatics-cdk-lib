@@ -243,10 +243,8 @@ class Batch(EnvBaseConstruct):
 
     def grant_instance_role_permissions(
         self,
-        read_write_resources: None
-        | (Iterable[s3.Bucket | efs.FileSystem | efs.IFileSystem]) = None,
-        read_only_resources: None
-        | (Iterable[s3.Bucket | efs.FileSystem | efs.IFileSystem]) = None,
+        read_write_resources: Iterable[s3.Bucket | efs.FileSystem | efs.IFileSystem] | None = None,
+        read_only_resources: Iterable[s3.Bucket | efs.FileSystem | efs.IFileSystem] | None = None,
     ) -> None:
         """Grant the instance role permissions to access resources.
 
