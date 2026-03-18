@@ -568,6 +568,11 @@ class BatchEnvironment(EnvBaseConstruct):
                 instance_role=self.instance_role,
                 launch_template=self.launch_template,
                 instance_types=self.instance_types,
+                # We don't use optimal instance types because we want to control the instance types
+                # via configuration and launch templates. Optimal instance type selection would
+                # override our specified instance types and could lead to unexpected instance
+                # types being used.
+                use_optimal_instance_classes=False,
                 spot=self.config.use_spot,
                 spot_bid_percentage=self.config.spot_bid_percentage,
                 vpc_subnets=self.vpc_subnets,
