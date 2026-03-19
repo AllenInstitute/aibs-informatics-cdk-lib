@@ -1,11 +1,9 @@
 import os
 from pathlib import Path
-from typing import Optional, Tuple, Union
 
 import constructs
 from aibs_informatics_core.env import EnvBase
-from aibs_informatics_core.models.aws.s3 import S3Path, S3KeyPrefix
-from aibs_informatics_core.utils.hashing import sha256_hexdigest
+from aibs_informatics_core.models.aws.s3 import S3KeyPrefix, S3Path
 from aws_cdk import aws_s3_deployment as s3deployment
 from aws_cdk import aws_ssm as ssm
 

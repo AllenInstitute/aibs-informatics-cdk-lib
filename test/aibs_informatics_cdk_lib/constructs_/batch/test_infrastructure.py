@@ -1,5 +1,4 @@
 from enum import Enum
-from test.aibs_informatics_cdk_lib.base import CdkBaseTest
 
 from aibs_informatics_core.env import EnvBase
 from aws_cdk import aws_batch as batch
@@ -7,10 +6,9 @@ from aws_cdk.aws_ec2 import Vpc
 
 from aibs_informatics_cdk_lib.constructs_.batch.infrastructure import (
     Batch,
-    BatchEnvironment,
     BatchEnvironmentConfig,
-    IBatchEnvironmentDescriptor,
 )
+from test.aibs_informatics_cdk_lib.base import CdkBaseTest
 
 
 class MyBatchEnvironmentName(str, Enum):

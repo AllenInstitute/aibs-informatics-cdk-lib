@@ -2,7 +2,7 @@ import re
 from collections import defaultdict
 from copy import deepcopy
 from math import ceil
-from typing import Any, Dict, List, Literal, Optional, Tuple, cast
+from typing import Any, Literal
 
 import aws_cdk as cdk
 import constructs
@@ -114,9 +114,9 @@ class DashboardMixins(EnvBaseConstructMixins):
         metric_alarms: list[cw.IAlarm] = []
         for grouped_metric_config in grouped_metric_configs:
             lr_graph_metrics: dict[Literal["left", "right"], list[cw.Metric]] = defaultdict(list)
-            lr_annotations: dict[
-                Literal["left", "right"], list[cw.HorizontalAnnotation]
-            ] = defaultdict(list)
+            lr_annotations: dict[Literal["left", "right"], list[cw.HorizontalAnnotation]] = (
+                defaultdict(list)
+            )
 
             graph_metric_namespace = grouped_metric_config.get("namespace", namespace)
             graph_dimension_map = {**dimensions, **grouped_metric_config.get("dimension_map", {})}

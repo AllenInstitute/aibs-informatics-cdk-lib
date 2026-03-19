@@ -36,6 +36,7 @@ lint = [
     "boto3-stubs[s3,batch]",
     "mypy~=1.18.0",
     "ruff~=0.9",
+    "types-PyYAML",
 ]
 release = [
     "build",
@@ -244,6 +245,7 @@ select = [
     # "C90",  # TODO: enable mccabe complexity eventually
     "I",  # isort
 ]
+per-file-ignores = { "notebooks/**/*" = ["E501"] }
 
 # -----------------------------------------------------------------------------
 ##  bumpversion Configurations

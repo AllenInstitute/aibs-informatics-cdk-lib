@@ -1,7 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional
 
-from aibs_informatics_core.env import EnvBase
 from attr import field
 from aws_cdk import aws_cloudwatch as cw
 from aws_cdk import aws_lambda as lambda_

@@ -1,7 +1,5 @@
-import json
-from typing import Optional, cast
+from typing import cast
 
-import aws_cdk as cdk
 import constructs
 from aibs_informatics_core.env import EnvBase
 from aws_cdk import aws_ec2 as ec2
@@ -92,8 +90,8 @@ class LimsConnectionConstruct(EnvBaseConstruct):
             vpc=self.target_vpc,
             comment=(
                 "A route53 private hosted zone that contains an Alias that can resolve DNS "
-                "queries to `lims2.corp.alleninstitute.org` to the InterfaceVpcEndpoint hosting the LIMS2 "
-                "VPC endpoint service"
+                "queries to `lims2.corp.alleninstitute.org` to the InterfaceVpcEndpoint hosting "
+                "the LIMS2 VPC endpoint service"
             ),
         )
 

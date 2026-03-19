@@ -1,5 +1,4 @@
 from functools import reduce
-from typing import List
 
 from aibs_informatics_test_resources.base import does_not_raise
 from pytest import mark, param

@@ -1,4 +1,4 @@
-from typing import List, Optional, Union, cast
+from typing import cast
 
 from aibs_informatics_core.env import EnvBase
 from aws_cdk import aws_ec2 as ec2
@@ -69,7 +69,7 @@ class DebugInstanceConstruct(EnvBaseConstruct):
                  machine_image=custom_image
              )
         This example shows how to specify a custom machine image instead of using the default Amazon Linux 2 image.
-    """
+    """  # noqa: E501
 
     def __init__(
         self,

@@ -1,6 +1,3 @@
-from signal import alarm
-from typing import List, Literal, Optional, Union
-
 from aibs_informatics_core.env import EnvBase, ResourceNameBaseEnum
 from aibs_informatics_core.models.email_address import EmailAddress
 from aibs_informatics_core.utils.hashing import uuid_str
@@ -14,7 +11,6 @@ from constructs import Construct
 from aibs_informatics_cdk_lib.common.aws.core_utils import build_sfn_arn
 from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstruct
 from aibs_informatics_cdk_lib.constructs_.cw import (
-    AlarmMetricConfig,
     DashboardTools,
     EnhancedDashboard,
     GraphMetricConfig,

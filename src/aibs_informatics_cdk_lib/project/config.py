@@ -21,7 +21,7 @@ __all__ = [
 import logging
 from collections.abc import MutableMapping
 from pathlib import Path
-from typing import Annotated, Dict, Generic, List, Optional, Type, TypeVar, Union
+from typing import Annotated, Generic, Self, TypeVar
 
 import yaml
 from aibs_informatics_core.collections import DeepChainMap
@@ -312,7 +312,7 @@ class BaseProjectConfig(BaseModel, Generic[G, S]):
             return stage_config
 
     @classmethod
-    def parse_file(cls: type[P], path: str | Path) -> P:
+    def parse_file(cls: type[Self], path: str | Path, **kwargs) -> Self:  # type: ignore[override]
         """Parse configuration from a file.
 
         Args:
@@ -347,9 +347,9 @@ class BaseProjectConfig(BaseModel, Generic[G, S]):
             paths = find_paths(
                 Path.cwd(), include_dirs=False, include_files=True, includes=[r".*/project.yaml"]
             )
-            assert (
-                len(paths) == 1
-            ), f"Expected to find exactly one project.yaml file, but found {len(paths)}: {paths}"
+            assert len(paths) == 1, (
+                f"Expected to find exactly one project.yaml file, but found {len(paths)}: {paths}"
+            )
             path = paths[0]
         return cls.parse_file(path=path)
 
@@ -386,7 +386,7 @@ class ConfigProvider:
         cls,
         env_type: str | EnvType,
         path: str | Path | None = None,
-        project_config_cls: type[BaseProjectConfig[G, S]] = ProjectConfig,
+        project_config_cls: type[BaseProjectConfig[G, S]] = ProjectConfig,  # type: ignore[assignment]
     ) -> S:
         """Get stage configuration for an environment type.
 

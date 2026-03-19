@@ -1,5 +1,4 @@
 import re
-from typing import Optional
 
 import aws_cdk as cdk
 import pytest
@@ -104,6 +103,6 @@ def test__sqs_policy_statement(
     assert expected_actions == obt.actions
     for indx, expected_pattern in enumerate(expected_resource_patterns):
         obt_resource = obt.resources[indx]
-        assert re.fullmatch(
-            expected_pattern, obt_resource
-        ), f"expected_pattern: {expected_pattern}, obtained: {obt_resource}"
+        assert re.fullmatch(expected_pattern, obt_resource), (
+            f"expected_pattern: {expected_pattern}, obtained: {obt_resource}"
+        )

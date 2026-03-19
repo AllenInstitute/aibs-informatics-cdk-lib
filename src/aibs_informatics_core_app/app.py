@@ -44,7 +44,7 @@ class InfraStage(ConfigBasedStage):
             env=self.env,
         )
 
-        demand_execution = DemandExecutionStack(
+        demand_execution = DemandExecutionStack(  # noqa: F841
             self,
             self.get_stack_name("DemandExecution"),
             env_base=self.env_base,

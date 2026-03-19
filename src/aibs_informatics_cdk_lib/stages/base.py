@@ -4,8 +4,6 @@ This module provides stage classes for use with CDK Pipelines,
 enabling environment-aware deployment stages.
 """
 
-from typing import List, Optional, Type, Union
-
 import aws_cdk as cdk
 import constructs
 

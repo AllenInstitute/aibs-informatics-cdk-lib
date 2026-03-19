@@ -6,7 +6,7 @@ This module provides utilities for working with Step Functions JSON path express
 import re
 from functools import reduce
 from re import Pattern
-from typing import Any, ClassVar, List, Union, cast
+from typing import Any, ClassVar, cast
 
 import aws_cdk as cdk
 from aws_cdk import aws_stepfunctions as sfn
@@ -148,7 +148,7 @@ class JsonReferencePath(str):
         Returns:
             The sanitized string.
         """
-        return f'{cls._EXTRA_PERIODS_PATTERN.sub(".", s).strip(".")}'
+        return f"{cls._EXTRA_PERIODS_PATTERN.sub('.', s).strip('.')}"
 
     @classmethod
     def is_reference(cls, s: Any) -> bool:

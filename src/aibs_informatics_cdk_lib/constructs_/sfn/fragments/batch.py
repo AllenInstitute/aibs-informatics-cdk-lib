@@ -1,5 +1,5 @@
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, List, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import constructs
 from aibs_informatics_core.env import EnvBase
@@ -33,7 +33,7 @@ class AWSBatchMixins:
                 convert_key_case(mpc.to_batch_mount_point(f"efs-vol{i}"), pascalcase)
             )
             volumes.append(convert_key_case(mpc.to_batch_volume(f"efs-vol{i}"), pascalcase))
-        return mount_points, volumes
+        return cast(tuple[list[MountPointTypeDef], list[VolumeTypeDef]], (mount_points, volumes))
 
 
 class SubmitJobFragment(EnvBaseStateMachineFragment, AWSBatchMixins):

@@ -1,9 +1,9 @@
-from test.aibs_informatics_cdk_lib.base import CdkBaseTest
 from typing import cast
 
 from aws_cdk import aws_stepfunctions as sfn
 
 from aibs_informatics_cdk_lib.constructs_.sfn.states.s3 import S3Operation
+from test.aibs_informatics_cdk_lib.base import CdkBaseTest
 
 
 class TestS3Operation(CdkBaseTest):

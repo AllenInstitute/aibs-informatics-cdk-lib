@@ -6,7 +6,6 @@ environment-aware CDK constructs throughout the library.
 
 import hashlib
 import re
-from typing import List, Optional, Union
 
 import aws_cdk as cdk
 from aibs_informatics_core.env import EnvBase, EnvBaseMixins, EnvType, ResourceNameBaseEnum
@@ -81,7 +80,7 @@ class EnvBaseConstructMixins(EnvBaseMixins):
             ValueError: If max_size is less than hash_size.
         """
         if max_size < hash_size:
-            raise ValueError(f"max_size must be greater than hash_size: ")
+            raise ValueError("max_size must be greater than hash_size: ")
 
         # Replace special characters with dashes
         string = re.sub(r"\W+", "-", construct_id)

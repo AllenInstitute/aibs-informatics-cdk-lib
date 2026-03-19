@@ -1,5 +1,5 @@
 from collections.abc import Mapping, Sequence
-from typing import Any, Optional, Union
+from typing import Any
 
 import aws_cdk as cdk
 import constructs
@@ -52,7 +52,7 @@ class ExternalSnsTrigger(constructs.Construct):
     NOTE: The `triggered_lambda_fn` is optional and if you have an alternative arrangement
           for triggering off of SQS messages (e.g. Airflow SQS Sensor) you can provide None as the
           `triggered_lambda_fn` when instantiating the ExternalSnsTrigger construct.
-    """
+    """  # noqa: E501
 
     @property
     def queue_name(self) -> str:
@@ -107,7 +107,8 @@ class ExternalSnsTrigger(constructs.Construct):
                 max_receive_count=2,
                 queue=self.external_sns_event_dlq,
             ),
-            # visibility_timeout must be longer than the `timeout` of the `triggered_lambda_fn` or deploy will fail
+            # visibility_timeout must be longer than the `timeout` of the
+            # `triggered_lambda_fn` or deploy will fail
             visibility_timeout=cdk.Duration.seconds(330),
         )
 
@@ -141,7 +142,7 @@ class ExternalSnsTrigger(constructs.Construct):
             self.external_sns_event_queue.grant_consume_messages(triggered_lambda_fn)
 
         # Alarm that fires if external_sns_event_queue fails delivery or if lambda fails to process
-        # Further actions can be configured by accessing ExternalSnsTrigger.triggered_lambda_dlq_alarm resource
+        # Further actions can be configured by accessing ExternalSnsTrigger.triggered_lambda_dlq_alarm resource # noqa: E501
         # TODO: Revisit making alarms even more configurable in the future
         self.triggered_lambda_dlq_alarm = cloudwatch.Alarm(
             scope=self,

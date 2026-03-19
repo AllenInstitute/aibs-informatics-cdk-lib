@@ -1,5 +1,3 @@
-from typing import Optional
-
 import aws_cdk as cdk
 from aibs_informatics_core.env import EnvBase
 from aws_cdk import aws_ec2 as ec2

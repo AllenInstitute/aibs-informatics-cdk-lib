@@ -8,8 +8,6 @@ Note:
     A helpful resource to research actions is: https://www.awsiamactions.io/
 """
 
-from typing import List, Optional, Union
-
 from aibs_informatics_core.env import EnvBase
 from aws_cdk import aws_iam as iam
 
@@ -334,7 +332,7 @@ def batch_policy_statement(
             ),
             # ERROR: An error occurred (AccessDeniedException) when calling the
             # DescribeJobDefinitions operation:
-            # User: arn:aws:sts::051791135335:assumed-role/Infrastructure.../dev-ryan-gwo-create-job-definition-fn
+            # User: arn:aws:sts::051791135335:assumed-role/Infrastructure.../dev-ryan-gwo-create-job-definition-fn  # noqa: E501
             # is not authorized to perform: batch:DescribeJobDefinitions on resource: "*"
             # TODO: WTF why does this not work... adding "*" resource for now
             "*",
