@@ -210,7 +210,7 @@ class TestBatchOperation(CdkBaseTest):
         assert filter_state.to_state_json() == {
             "Type": "Pass",
             "ResultPath": "$.ContainerOverrides.ResourceRequirements",
-            "InputPath": "$.ContainerOverrides.ResourceRequirements[?(@.Value != 0 && @.Value != '0')]",  # noqa 501
+            "InputPath": "$.ContainerOverrides.ResourceRequirements[?(@.Value != 0 && @.Value != '0')]",  # noqa: E501
             "Next": "Submit SubmitJob API Call",
         }
 
