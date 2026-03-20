@@ -256,7 +256,7 @@ per-file-ignores = { "notebooks/**/*" = ["E501"] }
 allow_dirty = false
 commit = true
 commit_args = ""
-current_version = "0.8.3"
+current_version = "1.0.0"
 ignore_missing_version = false
 message = "Bump version: {current_version} → {new_version}"
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
