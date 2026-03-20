@@ -1,9 +1,8 @@
-from test.aibs_informatics_cdk_lib.base import CdkBaseTest
-
 from aws_cdk import aws_iam as iam
 from aws_cdk.assertions import Match
 
 from aibs_informatics_cdk_lib.constructs_.s3.bucket import EnvBaseBucket
+from test.aibs_informatics_cdk_lib.base import CdkBaseTest
 
 
 class TestBucket(CdkBaseTest):

@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Any, List, Literal, Mapping, Optional, Sequence, Union
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any, Literal
 
 import constructs
 from aibs_informatics_aws_utils.constants.lambda_ import (
@@ -36,11 +37,7 @@ else:
 
 class BatchInvokedBaseFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixins):
     @property
-    def required_managed_policies(self) -> Sequence[Union[iam.IManagedPolicy, str]]:
-        return super().required_managed_policies
-
-    @property
-    def required_inline_policy_statements(self) -> List[iam.PolicyStatement]:
+    def required_inline_policy_statements(self) -> list[iam.PolicyStatement]:
         return [
             *super().required_inline_policy_statements,
             batch_policy_statement(self.env_base),
@@ -66,18 +63,18 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
         handler: str,
         job_queue: str,
         bucket_name: str,
-        key_prefix: Optional[str] = None,
-        payload_path: Optional[str] = None,
-        command: Optional[Union[List[str], str]] = None,
-        environment: Optional[Mapping[str, str]] = None,
-        memory: Optional[Union[int, str]] = None,
-        vcpus: Optional[Union[int, str]] = None,
-        gpu: Optional[Union[int, str]] = None,
-        mount_points: Optional[Union[List[MountPointTypeDef], str]] = None,
-        volumes: Optional[Union[List[VolumeTypeDef], str]] = None,
-        mount_point_configs: Optional[List[MountPointConfiguration]] = None,
-        platform_capabilities: Optional[Union[List[Literal["EC2", "FARGATE"]], str]] = None,
-        job_role_arn: Optional[str] = None,
+        key_prefix: str | None = None,
+        payload_path: str | None = None,
+        command: list[str] | str | None = None,
+        environment: Mapping[str, str] | None = None,
+        memory: int | str | None = None,
+        vcpus: int | str | None = None,
+        gpu: int | str | None = None,
+        mount_points: list[MountPointTypeDef] | str | None = None,
+        volumes: list[VolumeTypeDef] | str | None = None,
+        mount_point_configs: list[MountPointConfiguration] | None = None,
+        platform_capabilities: list[Literal["EC2", "FARGATE"]] | str | None = None,
+        job_role_arn: str | None = None,
     ) -> None:
         """Invoke a command on image via batch with a payload from s3
 
@@ -119,7 +116,7 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
             volumes (List[VolumeTypeDef] | None): List of volumes to add to state machine. Defaults to None.
             platform_capabilities (List[Literal["EC2", "FARGATE"]] | str | None): platform capabilities to use. This can be a reference path (e.g. "$.platform_capabilities")
             job_role_arn (str | None): Job role arn to use for the job. This can be a reference path (e.g. "$.job_role_arn")
-        """
+        """  # noqa: E501
         super().__init__(scope, id, env_base)
         key_prefix = key_prefix or S3_SCRATCH_KEY_PREFIX
 
@@ -213,7 +210,7 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
         return self.definition.start_state
 
     @property
-    def end_states(self) -> List[sfn.INextable]:
+    def end_states(self) -> list[sfn.INextable]:
         return self.definition.end_states
 
     @classmethod
@@ -225,19 +222,19 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
         name: str,
         job_queue: str,
         bucket_name: str,
-        key_prefix: Optional[str] = None,
-        image_path: Optional[str] = None,
-        handler_path: Optional[str] = None,
-        payload_path: Optional[str] = None,
-        overrides_path: Optional[str] = None,
-        command: Optional[List[str]] = None,
-        memory: Union[int, str] = "1024",
-        vcpus: Union[int, str] = "1",
-        gpu: Union[int, str] = "0",
-        environment: Optional[Mapping[str, str]] = None,
-        mount_point_configs: Optional[List[MountPointConfiguration]] = None,
-        platform_capabilities: Optional[List[Literal["EC2", "FARGATE"]]] = None,
-        job_role_arn: Optional[Union[iam.Role, str]] = None,
+        key_prefix: str | None = None,
+        image_path: str | None = None,
+        handler_path: str | None = None,
+        payload_path: str | None = None,
+        overrides_path: str | None = None,
+        command: list[str] | None = None,
+        memory: int | str = "1024",
+        vcpus: int | str = "1",
+        gpu: int | str = "0",
+        environment: Mapping[str, str] | None = None,
+        mount_point_configs: list[MountPointConfiguration] | None = None,
+        platform_capabilities: list[Literal["EC2", "FARGATE"]] | None = None,
+        job_role_arn: iam.Role | str | None = None,
     ) -> "BatchInvokedLambdaFunction":
         defaults: dict[str, Any] = {}
 
@@ -317,16 +314,16 @@ class BatchInvokedExecutorFragment(BatchInvokedBaseFragment, AWSBatchMixins):
         executor: str,
         job_queue: str,
         bucket_name: str,
-        key_prefix: Optional[str] = None,
-        payload_path: Optional[str] = None,
-        environment: Optional[Union[Mapping[str, str], str]] = None,
-        memory: Optional[Union[int, str]] = None,
-        vcpus: Optional[Union[int, str]] = None,
-        mount_point_configs: Optional[List[MountPointConfiguration]] = None,
-        mount_points: Optional[List[MountPointTypeDef]] = None,
-        volumes: Optional[List[VolumeTypeDef]] = None,
-        platform_capabilities: Optional[Union[List[Literal["EC2", "FARGATE"]], str]] = None,
-        job_role_arn: Optional[str] = None,
+        key_prefix: str | None = None,
+        payload_path: str | None = None,
+        environment: Mapping[str, str] | str | None = None,
+        memory: int | str | None = None,
+        vcpus: int | str | None = None,
+        mount_point_configs: list[MountPointConfiguration] | None = None,
+        mount_points: list[MountPointTypeDef] | None = None,
+        volumes: list[VolumeTypeDef] | None = None,
+        platform_capabilities: list[Literal["EC2", "FARGATE"]] | str | None = None,
+        job_role_arn: str | None = None,
     ) -> None:
         """Invoke an executor in an image via batch with a payload from s3
 
@@ -364,7 +361,7 @@ class BatchInvokedExecutorFragment(BatchInvokedBaseFragment, AWSBatchMixins):
             volumes (List[VolumeTypeDef] | None): List of volumes to add to state machine. Defaults to None.
             platform_capabilities (List[Literal["EC2", "FARGATE"]] | str | None): platform capabilities to use. This can be a reference path (e.g. "$.platform_capabilities")
             job_role_arn (str | None): Job role arn to use for the job. This can be a reference path (e.g. "$.job_role_arn")
-        """
+        """  # noqa: E501
         super().__init__(scope, id, env_base)
         key_prefix = key_prefix or S3_SCRATCH_KEY_PREFIX
 
@@ -444,5 +441,5 @@ class BatchInvokedExecutorFragment(BatchInvokedBaseFragment, AWSBatchMixins):
         return self.definition.start_state
 
     @property
-    def end_states(self) -> List[sfn.INextable]:
+    def end_states(self) -> list[sfn.INextable]:
         return self.definition.end_states

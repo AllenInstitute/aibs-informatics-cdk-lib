@@ -6,7 +6,7 @@ access points, and mount point configurations.
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Literal, Optional, Tuple, TypeVar, Union
+from typing import Any, Literal, TypeVar
 
 import aws_cdk as cdk
 import constructs
@@ -54,14 +54,14 @@ class EnvBaseFileSystem(efs.FileSystem, EnvBaseConstructMixins):
         env_base: EnvBase,
         vpc: ec2.IVpc,
         file_system_name: str,
-        allow_anonymous_access: Optional[bool] = None,
-        enable_automatic_backups: Optional[bool] = None,
-        encrypted: Optional[bool] = None,
-        lifecycle_policy: Optional[LifecyclePolicy] = None,
-        out_of_infrequent_access_policy: Optional[OutOfInfrequentAccessPolicy] = None,
-        performance_mode: Optional[PerformanceMode] = None,
+        allow_anonymous_access: bool | None = None,
+        enable_automatic_backups: bool | None = None,
+        encrypted: bool | None = None,
+        lifecycle_policy: LifecyclePolicy | None = None,
+        out_of_infrequent_access_policy: OutOfInfrequentAccessPolicy | None = None,
+        performance_mode: PerformanceMode | None = None,
         removal_policy: cdk.RemovalPolicy = cdk.RemovalPolicy.DESTROY,
-        throughput_mode: Optional[ThroughputMode] = ThroughputMode.BURSTING,
+        throughput_mode: ThroughputMode | None = ThroughputMode.BURSTING,
         **kwargs,
     ) -> None:
         """Initialize an environment-aware EFS file system.
@@ -113,7 +113,7 @@ class EnvBaseFileSystem(efs.FileSystem, EnvBaseConstructMixins):
         return self._file_system_name
 
     def create_access_point(
-        self, name: str, path: str, *tags: Union[EFSTag, Tuple[str, str]]
+        self, name: str, path: str, *tags: EFSTag | tuple[str, str]
     ) -> efs.AccessPoint:
         """Create an EFS access point.
 
@@ -170,7 +170,7 @@ class EnvBaseFileSystem(efs.FileSystem, EnvBaseConstructMixins):
         Returns:
             Lambda FileSystem configured for the access point.
         """
-        ap = access_point or self.root_access_point
+        ap = access_point
         return lambda_.FileSystem.from_efs_access_point(
             ap=ap,
             # Must start with `/mnt` per lambda regex requirements
@@ -201,11 +201,11 @@ class EFSEcosystem(EnvBaseConstruct):
     def __init__(
         self,
         scope: constructs.Construct,
-        id: Optional[str],
+        id: str | None,
         env_base: EnvBase,
         file_system_name: str,
         vpc: ec2.Vpc,
-        efs_lifecycle_policy: Optional[efs.LifecyclePolicy] = None,
+        efs_lifecycle_policy: efs.LifecyclePolicy | None = None,
     ) -> None:
         """Initialize an EFS ecosystem.
 
@@ -286,10 +286,10 @@ class MountPointConfiguration:
             or if access point's file system doesn't match the provided file system.
     """
 
-    file_system: Optional[Union[efs.FileSystem, efs.IFileSystem]]
-    access_point: Optional[Union[efs.AccessPoint, efs.IAccessPoint]]
+    file_system: efs.FileSystem | efs.IFileSystem | None
+    access_point: efs.AccessPoint | efs.IAccessPoint | None
     mount_point: str
-    root_directory: Optional[str] = None
+    root_directory: str | None = None
     read_only: bool = False
 
     def __post_init__(self):
@@ -307,9 +307,9 @@ class MountPointConfiguration:
     @classmethod
     def from_file_system(
         cls,
-        file_system: Union[efs.FileSystem, efs.IFileSystem],
-        root_directory: Optional[str] = None,
-        mount_point: Optional[str] = None,
+        file_system: efs.FileSystem | efs.IFileSystem,
+        root_directory: str | None = None,
+        mount_point: str | None = None,
         read_only: bool = False,
     ) -> "MountPointConfiguration":
         """Create configuration from a file system.
@@ -339,8 +339,8 @@ class MountPointConfiguration:
     @classmethod
     def from_access_point(
         cls,
-        access_point: Union[efs.AccessPoint, efs.IAccessPoint],
-        mount_point: Optional[str] = None,
+        access_point: efs.AccessPoint | efs.IAccessPoint,
+        mount_point: str | None = None,
         read_only: bool = False,
     ) -> "MountPointConfiguration":
         """Create configuration from an access point.
@@ -382,7 +382,7 @@ class MountPointConfiguration:
             raise ValueError("No file system or access point provided")
 
     @property
-    def access_point_id(self) -> Optional[str]:
+    def access_point_id(self) -> str | None:
         """Get the access point ID.
 
         Returns:
@@ -404,7 +404,7 @@ class MountPointConfiguration:
         """
         mount_point: dict[str, Any] = to_mount_point(
             self.mount_point, self.read_only, source_volume=name
-        )  # type: ignore[arg-type]  # typed dict should be accepted
+        )  # type: ignore[arg-type, assignment]  # typed dict should be accepted
         if sfn_format:
             return convert_to_sfn_api_action_case(mount_point)
         return mount_point
@@ -443,10 +443,10 @@ class MountPointConfiguration:
 
 def create_access_point(
     scope: constructs.Construct,
-    file_system: Union[efs.FileSystem, efs.IFileSystem],
+    file_system: efs.FileSystem | efs.IFileSystem,
     name: str,
     path: str,
-    *tags: Union[EFSTag, Tuple[str, str]],
+    *tags: EFSTag | tuple[str, str],
 ) -> efs.AccessPoint:
     """Create an EFS access point.
 
@@ -498,7 +498,7 @@ def create_access_point(
 
 
 def grant_connectable_file_system_access(
-    file_system: Union[efs.IFileSystem, efs.FileSystem],
+    file_system: efs.IFileSystem | efs.FileSystem,
     connectable: ec2.IConnectable,
     permissions: Literal["r", "rw"] = "rw",
 ) -> None:
@@ -514,8 +514,8 @@ def grant_connectable_file_system_access(
 
 
 def grant_role_file_system_access(
-    file_system: Union[efs.IFileSystem, efs.FileSystem],
-    role: Optional[iam.IRole],
+    file_system: efs.IFileSystem | efs.FileSystem,
+    role: iam.IRole | None,
     permissions: Literal["r", "rw"] = "rw",
 ) -> None:
     """Grant an IAM role access to an EFS file system.
@@ -531,7 +531,7 @@ def grant_role_file_system_access(
 
 
 def grant_grantable_file_system_access(
-    file_system: Union[efs.IFileSystem, efs.FileSystem],
+    file_system: efs.IFileSystem | efs.FileSystem,
     grantable: iam.IGrantable,
     permissions: Literal["r", "rw"] = "rw",
 ) -> None:
@@ -549,7 +549,7 @@ def grant_grantable_file_system_access(
 
 
 def grant_file_system_access(
-    file_system: Union[efs.IFileSystem, efs.FileSystem], resource: lambda_.Function
+    file_system: efs.IFileSystem | efs.FileSystem, resource: lambda_.Function
 ) -> None:
     """Grant a Lambda function full access to an EFS file system.
 
@@ -565,7 +565,7 @@ def grant_file_system_access(
 
 
 def repair_connectable_efs_dependency(
-    file_system: Union[efs.IFileSystem, efs.FileSystem], connectable: ec2.IConnectable
+    file_system: efs.IFileSystem | efs.FileSystem, connectable: ec2.IConnectable
 ) -> None:
     """Repair cyclical dependency between EFS and dependent connectable.
 

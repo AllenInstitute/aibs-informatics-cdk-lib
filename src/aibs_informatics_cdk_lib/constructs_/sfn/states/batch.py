@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, List, Literal, Mapping, Optional, Union
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Literal
 
 import constructs
 from aibs_informatics_aws_utils.batch import (
@@ -15,14 +16,17 @@ from aibs_informatics_cdk_lib.constructs_.sfn.utils import convert_reference_pat
 if TYPE_CHECKING:
     from mypy_boto3_batch.type_defs import (
         ContainerOverridesTypeDef,
+        KeyValuePairTypeDef,
         MountPointTypeDef,
-        RegisterJobDefinitionRequestRequestTypeDef,
+        RegisterJobDefinitionRequestTypeDef,
         VolumeTypeDef,
     )
 else:
+    ContainerOverridesTypeDef = dict
+    KeyValuePairTypeDef = dict
     MountPointTypeDef = dict
     VolumeTypeDef = dict
-    RegisterJobDefinitionRequestRequestTypeDef = dict
+    RegisterJobDefinitionRequestTypeDef = dict
 
 
 class BatchOperation:
@@ -31,19 +35,19 @@ class BatchOperation:
         cls,
         scope: constructs.Construct,
         id: str,
-        command: Optional[Union[List[str], str]],
+        command: list[str] | str | None,
         image: str,
         job_definition_name: str,
-        job_role_arn: Optional[str] = None,
-        environment: Optional[Union[Mapping[str, str], str]] = None,
-        memory: Optional[Union[int, str]] = None,
-        vcpus: Optional[Union[int, str]] = None,
-        gpu: Optional[Union[int, str]] = None,
-        mount_points: Optional[Union[List[MountPointTypeDef], str]] = None,
-        volumes: Optional[Union[List[VolumeTypeDef], str]] = None,
-        platform_capabilities: Optional[Union[List[Literal["EC2", "FARGATE"]], str]] = None,
-        result_path: Optional[str] = "$",
-        output_path: Optional[str] = "$",
+        job_role_arn: str | None = None,
+        environment: Mapping[str, str] | str | None = None,
+        memory: int | str | None = None,
+        vcpus: int | str | None = None,
+        gpu: int | str | None = None,
+        mount_points: list[MountPointTypeDef] | str | None = None,
+        volumes: list[VolumeTypeDef] | str | None = None,
+        platform_capabilities: list[Literal["EC2", "FARGATE"]] | str | None = None,
+        result_path: str | None = "$",
+        output_path: str | None = "$",
     ) -> sfn.Chain:
         """Creates chain to register new job definition
 
@@ -73,23 +77,24 @@ class BatchOperation:
             memory (Optional[Union[int, str]], optional): Optionally specify memory.
                 Supports reference paths (e.g. "$.foo.bar")
             vcpus (Optional[Union[int, str]], optional): Optionally specify . Defaults to None.
-            gpu (Optional[Union[int, str]], optional): _description_. Defaults to None.
-            mount_points (Optional[List[MountPointTypeDef]], optional): _description_. Defaults to None.
-            volumes (Optional[List[VolumeTypeDef]], optional): _description_. Defaults to None.
+            gpu (Optional[Union[int, str]], optional): Optionally specify GPU. Defaults to None.
+            mount_points (Optional[List[MountPointTypeDef]], optional): Optionally specify mount points. Defaults to None.
+            volumes (Optional[List[VolumeTypeDef]], optional): Optionally specify volumes. Defaults to None.
 
         Returns:
-            sfn.Chain: _description_
-        """
+            sfn.Chain: chain to register job definition
+        """  # noqa: E501
 
         job_definition_name = sfn.JsonPath.format(
             "{}-{}", job_definition_name, sfn.JsonPath.uuid()
         )
+        environment_pairs: list[KeyValuePairTypeDef] | str | None
         if not isinstance(environment, str):
             environment_pairs = to_key_value_pairs(dict(environment or {}))
         else:
             environment_pairs = environment
 
-        request: RegisterJobDefinitionRequestRequestTypeDef = {
+        request: RegisterJobDefinitionRequestTypeDef = {
             "jobDefinitionName": job_definition_name,
             "type": "container",
             "containerProperties": {
@@ -103,7 +108,7 @@ class BatchOperation:
             "retryStrategy": build_retry_strategy(include_default_evaluate_on_exit_configs=True),
         }  # type: ignore
         if platform_capabilities:
-            request["platformCapabilities"] = platform_capabilities
+            request["platformCapabilities"] = platform_capabilities  # type: ignore[typeddict-item] # the typing does not understand that this can be a reference path
         if job_role_arn:
             assert "containerProperties" in request  # mollifies mypy
             request["containerProperties"]["jobRoleArn"] = job_role_arn
@@ -145,13 +150,13 @@ class BatchOperation:
                 ],
             },
         )
-        chain = start
+        chain: sfn.Chain | sfn.Pass = start
         if gpu is not None:
             chain = chain.next(
                 sfn.Pass(
                     scope,
                     id + " Register Definition Filter Resource Requirements",
-                    input_path=f"{result_path or '$'}.ContainerProperties.ResourceRequirements[?(@.Value != 0 && @.Value != '0')]",
+                    input_path=f"{result_path or '$'}.ContainerProperties.ResourceRequirements[?(@.Value != 0 && @.Value != '0')]",  # noqa: E501
                     result_path=f"{result_path or '$'}.ContainerProperties.ResourceRequirements",
                 )
             )
@@ -165,16 +170,17 @@ class BatchOperation:
         job_name: str,
         job_definition: str,
         job_queue: str,
-        parameters: Optional[Mapping[str, str]] = None,
-        command: Optional[Union[List[str], str]] = None,
-        environment: Optional[Union[Mapping[str, str], str]] = None,
-        memory: Optional[Union[int, str]] = None,
-        vcpus: Optional[Union[int, str]] = None,
-        gpu: Optional[Union[int, str]] = None,
-        result_path: Optional[str] = "$",
-        output_path: Optional[str] = "$",
+        parameters: Mapping[str, str] | None = None,
+        command: list[str] | str | None = None,
+        environment: Mapping[str, str] | str | None = None,
+        memory: int | str | None = None,
+        vcpus: int | str | None = None,
+        gpu: int | str | None = None,
+        result_path: str | None = "$",
+        output_path: str | None = "$",
     ) -> sfn.Chain:
         job_name = sfn.JsonPath.format(f"{job_name}-{{}}", sfn.JsonPath.uuid())
+        environment_pairs: list[KeyValuePairTypeDef] | str | None
         if not isinstance(environment, str):
             environment_pairs = to_key_value_pairs(dict(environment or {}))
         else:
@@ -182,7 +188,7 @@ class BatchOperation:
 
         container_overrides: ContainerOverridesTypeDef = {
             "command": command,
-            "environment": environment_pairs,
+            "environment": environment_pairs,  # type: ignore  # mypy can't verify this is the correct type with the current handling of reference paths
             "resourceRequirements": to_resource_requirements(gpu, memory, vcpus),  # type: ignore # must be string
         }  # type: ignore
 
@@ -197,8 +203,8 @@ class BatchOperation:
             scope,
             id + " SubmitJob Prep",
             parameters=convert_reference_paths(
-                pass_params := convert_key_case(request, pascalcase)
-            ),  # type: ignore  # misundertands type
+                pass_params := convert_key_case(request, pascalcase)  # type: ignore  # misundertands type
+            ),
             result_path=result_path or "$",
         )
 
@@ -232,13 +238,13 @@ class BatchOperation:
                 ],
             },
         )
-        chain = start
+        chain: sfn.Chain | sfn.Pass = start
         if gpu is not None:
             chain = chain.next(
                 sfn.Pass(
                     scope,
                     id + " SubmitJob Filter Resource Requirements",
-                    input_path=f"{result_path or '$'}.ContainerOverrides.ResourceRequirements[?(@.Value != 0 && @.Value != '0')]",
+                    input_path=f"{result_path or '$'}.ContainerOverrides.ResourceRequirements[?(@.Value != 0 && @.Value != '0')]",  # noqa: E501
                     result_path=f"{result_path or '$'}.ContainerOverrides.ResourceRequirements",
                 )
             )
@@ -250,8 +256,8 @@ class BatchOperation:
         scope: constructs.Construct,
         id: str,
         job_definition: str,
-        result_path: Optional[str] = "$",
-        output_path: Optional[str] = "$",
+        result_path: str | None = "$",
+        output_path: str | None = "$",
     ) -> sfn.Chain:
         request = {"jobDefinition": job_definition}
         start = sfn.Pass(

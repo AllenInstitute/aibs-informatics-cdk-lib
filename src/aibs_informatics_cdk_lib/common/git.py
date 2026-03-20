@@ -10,7 +10,7 @@ import re
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import ClassVar, Optional, Union
+from typing import ClassVar
 
 from aibs_informatics_core.collections import ValidatedStr
 from aibs_informatics_core.utils.file_operations import remove_path
@@ -41,11 +41,8 @@ class GitUrl(ValidatedStr):
         return os.path.basename(self.repo_base_url.removesuffix(".git"))
 
     @property
-    def ref(self) -> Optional[str]:
+    def ref(self) -> str | None:
         return self.get_match_groups()[-1]
-
-
-# REPO_URL_PATTERN = re.compile(r"(https:\/\/github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+(?:\/[a-zA-Z0-9_\/.-]*)?)|(git@github\.com:[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+\.git(?:\/[a-zA-Z0-9_\/.-]*)?)")
 
 
 def is_repo_url(url: str) -> bool:
@@ -60,7 +57,7 @@ def is_repo_url(url: str) -> bool:
     return GitUrl.is_valid(url)
 
 
-def is_local_repo(repo_path: Union[str, Path]) -> bool:
+def is_local_repo(repo_path: str | Path) -> bool:
     """Check if a path is a local Git repository.
 
     Args:
@@ -77,7 +74,7 @@ def is_local_repo(repo_path: Union[str, Path]) -> bool:
         return False
 
 
-def get_commit_hash(repo_url_or_path: Union[str, Path]) -> Optional[str]:
+def get_commit_hash(repo_url_or_path: str | Path) -> str | None:
     """Get the HEAD commit hash of a Git repository.
 
     Args:
@@ -98,7 +95,7 @@ def get_commit_hash(repo_url_or_path: Union[str, Path]) -> Optional[str]:
         raise ValueError("The input must be a string or a Path object.")
 
 
-def get_repo_url_components(repo_url: str) -> tuple[str, Optional[str]]:
+def get_repo_url_components(repo_url: str) -> tuple[str, str | None]:
     """Extract base URL and ref from a Git repository URL.
 
     Args:
@@ -142,7 +139,7 @@ def get_commit_hash_from_url(repo_url: str) -> str:
         raise e
 
 
-def get_commit_hash_from_local(repo_path: Union[str, Path]) -> str:
+def get_commit_hash_from_local(repo_path: str | Path) -> str:
     """Get the HEAD commit hash from a local Git repository.
 
     Args:
@@ -164,7 +161,7 @@ def get_commit_hash_from_local(repo_path: Union[str, Path]) -> str:
         return commit_hash
     except subprocess.CalledProcessError as e:
         logger.error(
-            f"An error occurred while trying to get the commit hash from local path {repo_path}: {e}"
+            f"An error occurred while trying to get the commit hash from local path {repo_path}: {e}"  # noqa: E501
         )
         raise e
     except Exception as e:
@@ -175,7 +172,7 @@ def get_commit_hash_from_local(repo_path: Union[str, Path]) -> str:
         raise e
 
 
-def get_repo_name(repo_url_or_path: Union[str, Path]) -> str:
+def get_repo_name(repo_url_or_path: str | Path) -> str:
     """Get the repository name from a URL or local path.
 
     Args:
@@ -217,7 +214,7 @@ def get_repo_name(repo_url_or_path: Union[str, Path]) -> str:
         raise ValueError("The input must be a string or a Path object.")
 
 
-def construct_repo_path(repo_url: str, target_dir: Optional[Union[str, Path]] = None) -> Path:
+def construct_repo_path(repo_url: str, target_dir: str | Path | None = None) -> Path:
     """Construct a deterministic path for a cloned repository.
 
     The path includes the repository name and commit hash to ensure
@@ -244,7 +241,7 @@ def construct_repo_path(repo_url: str, target_dir: Optional[Union[str, Path]] = 
 
 
 def clone_repo(
-    repo_url: str, target_dir: Optional[Union[str, Path]] = None, skip_if_exists: bool = True
+    repo_url: str, target_dir: str | Path | None = None, skip_if_exists: bool = True
 ) -> Path:
     """Clone a Git repository into a target directory.
 
@@ -267,8 +264,8 @@ def clone_repo(
                 target_path_commit_hash = get_commit_hash(target_path)
             except Exception as e:
                 logger.warning(
-                    f"An error occurred while checking the commit hash of the existing repository: {e}"
-                    "Removing the existing path and proceeding with cloning into the following path: "
+                    f"An error occurred while checking the commit hash of the existing repository: {e}"  # noqa: E501
+                    "Removing the existing path and proceeding with cloning into the following path: "  # noqa: E501
                     f"{target_path}"
                 )
 
@@ -276,7 +273,7 @@ def clone_repo(
                 if target_path_commit_hash == repo_url_commit_hash:
                     # If the commit hashes match, return the existing path
                     logger.info(
-                        f"Skipping cloning of repository as target path already exists: {target_path}"
+                        f"Skipping cloning of repository as target path already exists: {target_path}"  # noqa: E501
                     )
                 return target_path
         # If the target path exists but the commit hashes do not match, remove the existing path

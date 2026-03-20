@@ -1,5 +1,4 @@
 from functools import reduce
-from typing import List
 
 from aibs_informatics_test_resources.base import does_not_raise
 from pytest import mark, param
@@ -81,7 +80,7 @@ def test__JsonReferencePath__as_reference(input: str, expected: str, raises_erro
         param([JsonReferencePath("simple"), ".dots"], "simple.dots", does_not_raise()),
     ],
 )
-def test__JsonReferencePath__add__(input: List[str], expected: str, raises_error):
+def test__JsonReferencePath__add__(input: list[str], expected: str, raises_error):
     with raises_error:
         actual = reduce(lambda x, y: x + y, input)
 

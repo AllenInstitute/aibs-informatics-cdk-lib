@@ -4,8 +4,6 @@ This module provides stage classes for use with CDK Pipelines,
 enabling environment-aware deployment stages.
 """
 
-from typing import List, Optional, Type, Union
-
 import aws_cdk as cdk
 import constructs
 
@@ -22,7 +20,7 @@ class ConfigBasedStage(cdk.Stage, EnvBaseStackMixins):
     """
 
     def __init__(
-        self, scope: constructs.Construct, id: Optional[str], config: StageConfig, **kwargs
+        self, scope: constructs.Construct, id: str | None, config: StageConfig, **kwargs
     ) -> None:
         """Initialize a configuration-based stage.
 
@@ -39,7 +37,7 @@ class ConfigBasedStage(cdk.Stage, EnvBaseStackMixins):
         self.env_base = config.env.env_base
         self.add_tags(*self.stage_tags)
 
-    def get_stack_name(self, stack_class: Union[Type[cdk.Stack], str], *names: str) -> str:
+    def get_stack_name(self, stack_class: type[cdk.Stack] | str, *names: str) -> str:
         """Get a stage-qualified stack name.
 
         Args:
@@ -54,14 +52,14 @@ class ConfigBasedStage(cdk.Stage, EnvBaseStackMixins):
         )
 
     @property
-    def stage_tags(self) -> List[cdk.Tag]:
+    def stage_tags(self) -> list[cdk.Tag]:
         return [
             *self.construct_tags,
             cdk.Tag(key=self.env_base.ENV_BASE_KEY, value=self.env_base),
         ]
 
     @property
-    def env_base_stacks(self) -> List[EnvBaseStack]:
+    def env_base_stacks(self) -> list[EnvBaseStack]:
         return [
             node
             for node in self.node.find_all(constructs.ConstructOrder.PREORDER)

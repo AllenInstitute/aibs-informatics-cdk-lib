@@ -1,5 +1,3 @@
-from typing import Optional
-
 import aws_cdk as cdk
 from aibs_informatics_core.env import EnvBase
 from aws_cdk import aws_ec2 as ec2
@@ -14,7 +12,7 @@ class Storage(EnvBaseConstruct):
     def __init__(
         self,
         scope: Construct,
-        id: Optional[str],
+        id: str | None,
         env_base: EnvBase,
         name: str,
         vpc: ec2.Vpc,

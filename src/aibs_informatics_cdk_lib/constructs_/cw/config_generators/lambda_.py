@@ -1,7 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional
 
-from aibs_informatics_core.env import EnvBase
 from attr import field
 from aws_cdk import aws_cloudwatch as cw
 from aws_cdk import aws_lambda as lambda_
@@ -27,7 +25,7 @@ class LambdaFunctionMetricConfigGenerator:
 
     def get_invocations_metric(
         self,
-        name_override: Optional[str] = None,
+        name_override: str | None = None,
     ) -> GraphMetricConfig:
         return GraphMetricConfig(
             metric="Invocations",
@@ -38,8 +36,8 @@ class LambdaFunctionMetricConfigGenerator:
 
     def get_errors_metric(
         self,
-        name_override: Optional[str] = None,
-        discriminator: Optional[str] = None,
+        name_override: str | None = None,
+        discriminator: str | None = None,
         include_alarm: bool = False,
         alarm_threshold: int = 1,
         alarm_evaluation_periods: int = 3,
@@ -65,8 +63,8 @@ class LambdaFunctionMetricConfigGenerator:
 
     def get_availability_metric(
         self,
-        name_override: Optional[str] = None,
-        discriminator: Optional[str] = None,
+        name_override: str | None = None,
+        discriminator: str | None = None,
     ) -> GraphMetricConfig:
         name = name_override or self.lambda_function_name
         idx = discriminator or "0"
@@ -85,7 +83,7 @@ class LambdaFunctionMetricConfigGenerator:
 
     def get_duration_avg_metric(
         self,
-        name_override: Optional[str] = None,
+        name_override: str | None = None,
     ) -> GraphMetricConfig:
         name = name_override or self.lambda_function_name
         return GraphMetricConfig(
@@ -97,7 +95,7 @@ class LambdaFunctionMetricConfigGenerator:
 
     def get_duration_max_metric(
         self,
-        name_override: Optional[str] = None,
+        name_override: str | None = None,
     ) -> GraphMetricConfig:
         name = name_override or self.lambda_function_name
         return GraphMetricConfig(
@@ -109,7 +107,7 @@ class LambdaFunctionMetricConfigGenerator:
 
     def get_duration_min_metric(
         self,
-        name_override: Optional[str] = None,
+        name_override: str | None = None,
     ) -> GraphMetricConfig:
         name = name_override or self.lambda_function_name
         return GraphMetricConfig(
@@ -121,8 +119,8 @@ class LambdaFunctionMetricConfigGenerator:
 
     def get_duration_metric_group(
         self,
-        name_override: Optional[str] = None,
-        title: Optional[str] = None,
+        name_override: str | None = None,
+        title: str | None = None,
         include_min_max_duration: bool = False,
     ) -> GroupedGraphMetricConfig:
         name = name_override or self.lambda_function_name
@@ -140,9 +138,9 @@ class LambdaFunctionMetricConfigGenerator:
 
     def get_success_failure_metrics(
         self,
-        name_override: Optional[str] = None,
+        name_override: str | None = None,
         success_as_percent: bool = True,
-    ) -> List[GraphMetricConfig]:
+    ) -> list[GraphMetricConfig]:
         name = name_override or self.lambda_function_name
 
         failures = self.get_errors_metric(name)
@@ -156,8 +154,8 @@ class LambdaFunctionMetricConfigGenerator:
 
     def get_success_failure_metric_group(
         self,
-        name_override: Optional[str] = None,
-        title: Optional[str] = None,
+        name_override: str | None = None,
+        title: str | None = None,
         success_as_percent: bool = True,
     ) -> GroupedGraphMetricConfig:
         name = name_override or self.lambda_function_name

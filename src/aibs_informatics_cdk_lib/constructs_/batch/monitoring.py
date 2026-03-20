@@ -1,8 +1,5 @@
-from typing import List
-
 from aibs_informatics_core.env import EnvBase
 from aws_cdk import Duration
-from aws_cdk import aws_cloudwatch as cw
 from aws_cdk import aws_sns as sns
 from constructs import Construct
 
@@ -18,7 +15,7 @@ class BatchMonitoring(EnvBaseConstruct):
         scope: Construct,
         id: str,
         env_base: EnvBase,
-        batch_environments: List[BatchEnvironment],
+        batch_environments: list[BatchEnvironment],
     ) -> None:
         super().__init__(scope, id, env_base)
         self.alarm_topic = sns.Topic(self, self.get_construct_id("batch-alarm-topic"))
@@ -26,22 +23,22 @@ class BatchMonitoring(EnvBaseConstruct):
             sns.Subscription(
                 self,
                 self.get_construct_id("batch-alarm-subscription"),
-                topic=self.alarm_topic,
+                topic=self.alarm_topic,  # type: ignore
                 endpoint="marmotdev@alleninstitute.org",
                 protocol=sns.SubscriptionProtocol("EMAIL"),
             )
 
-        dashboard = cw.Dashboard(
+        self.dashboard_tools = EnhancedDashboard(
             self,
             "batch-dashboard",
+            env_base=self.env_base,
             dashboard_name=f"{self.env_base}-Batch-Dashboard",
             start="-P1D",
         )
-        self.dashboard_tools = EnhancedDashboard(self, "cwdb", env_base, dashboard)
 
         self.add_ecs_widgets(batch_environments)
 
-    def add_ecs_widgets(self, batch_environments: List[BatchEnvironment]):
+    def add_ecs_widgets(self, batch_environments: list[BatchEnvironment]):
         self.dashboard_tools.add_text_widget(f"Elastic Container Service ({self.env_base})", 1)
 
         for batch_environment in batch_environments:

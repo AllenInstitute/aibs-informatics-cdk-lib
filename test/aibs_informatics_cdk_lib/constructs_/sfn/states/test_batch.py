@@ -1,9 +1,9 @@
-from test.aibs_informatics_cdk_lib.base import CdkBaseTest
 from typing import cast
 
 from aws_cdk import aws_stepfunctions as sfn
 
 from aibs_informatics_cdk_lib.constructs_.sfn.states.batch import BatchOperation
+from test.aibs_informatics_cdk_lib.base import CdkBaseTest
 
 DEFAULT_EVALUATE_ON_EXIT = [
     {
@@ -210,7 +210,7 @@ class TestBatchOperation(CdkBaseTest):
         assert filter_state.to_state_json() == {
             "Type": "Pass",
             "ResultPath": "$.ContainerOverrides.ResourceRequirements",
-            "InputPath": "$.ContainerOverrides.ResourceRequirements[?(@.Value != 0 && @.Value != '0')]",
+            "InputPath": "$.ContainerOverrides.ResourceRequirements[?(@.Value != 0 && @.Value != '0')]",  # noqa: E501
             "Next": "Submit SubmitJob API Call",
         }
 

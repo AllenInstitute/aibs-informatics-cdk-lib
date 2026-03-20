@@ -2,7 +2,7 @@ import re
 from collections import defaultdict
 from copy import deepcopy
 from math import ceil
-from typing import Any, Dict, List, Literal, Optional, Tuple, cast
+from typing import Any, Literal
 
 import aws_cdk as cdk
 import constructs
@@ -29,12 +29,12 @@ class DashboardMixins(EnvBaseConstructMixins):
 
     def add_graphs(
         self,
-        grouped_metric_configs: List[GroupedGraphMetricConfig],
+        grouped_metric_configs: list[GroupedGraphMetricConfig],
         namespace: str,
         period: cdk.Duration,
         alarm_id_discriminator: str,
-        alarm_topic: Optional[sns.Topic],
-        dimensions: Dict[str, Any],
+        alarm_topic: sns.Topic | None,
+        dimensions: dict[str, Any],
     ) -> None:
         """Adds graphs to a dashboard based on metrics configs.
 
@@ -88,13 +88,13 @@ class DashboardMixins(EnvBaseConstructMixins):
 
     def create_widgets_and_alarms(
         self,
-        grouped_metric_configs: List[GroupedGraphMetricConfig],
+        grouped_metric_configs: list[GroupedGraphMetricConfig],
         namespace: str,
         period: cdk.Duration,
         alarm_id_discriminator: str,
-        alarm_topic: Optional[sns.Topic],
-        dimensions: Dict[str, Any],
-    ) -> Tuple[List[cw.IWidget], List[cw.IAlarm]]:
+        alarm_topic: sns.Topic | None,
+        dimensions: dict[str, Any],
+    ) -> tuple[list[cw.IWidget], list[cw.IAlarm]]:
         """Create graph widgets and alarms from configs
 
         Args:
@@ -110,13 +110,13 @@ class DashboardMixins(EnvBaseConstructMixins):
         """
         self_stack = cdk.Stack.of(self.dashboard)
 
-        graph_widgets: List[cw.IWidget] = []
-        metric_alarms: List[cw.IAlarm] = []
+        graph_widgets: list[cw.IWidget] = []
+        metric_alarms: list[cw.IAlarm] = []
         for grouped_metric_config in grouped_metric_configs:
-            lr_graph_metrics: Dict[Literal["left", "right"], List[cw.Metric]] = defaultdict(list)
-            lr_annotations: Dict[
-                Literal["left", "right"], List[cw.HorizontalAnnotation]
-            ] = defaultdict(list)
+            lr_graph_metrics: dict[Literal["left", "right"], list[cw.Metric]] = defaultdict(list)
+            lr_annotations: dict[Literal["left", "right"], list[cw.HorizontalAnnotation]] = (
+                defaultdict(list)
+            )
 
             graph_metric_namespace = grouped_metric_config.get("namespace", namespace)
             graph_dimension_map = {**dimensions, **grouped_metric_config.get("dimension_map", {})}
@@ -213,8 +213,8 @@ class DashboardMixins(EnvBaseConstructMixins):
     def add_text_widget(
         self,
         header: str,
-        header_level: Optional[int],
-        body: Optional[str] = None,
+        header_level: int | None,
+        body: str | None = None,
         height: int = 2,
         width: int = 24,
     ):
@@ -228,8 +228,8 @@ class DashboardMixins(EnvBaseConstructMixins):
     def build_text_widget(
         cls,
         header: str,
-        header_level: Optional[int] = None,
-        body: Optional[str] = None,
+        header_level: int | None = None,
+        body: str | None = None,
         height: int = 2,
         width: int = 24,
     ) -> cw.TextWidget:
@@ -243,7 +243,7 @@ class EnhancedDashboard(DashboardMixins, cw.Dashboard):
     def __init__(
         self,
         scope: constructs.Construct,
-        id: Optional[str],
+        id: str | None,
         env_base: EnvBase,
         dashboard_name: str,
         **dashboard_kwargs,

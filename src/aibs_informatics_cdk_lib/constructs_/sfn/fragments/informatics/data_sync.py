@@ -1,4 +1,4 @@
-from typing import Iterable, List, Optional, Union
+from collections.abc import Iterable
 
 import constructs
 from aibs_informatics_core.env import EnvBase
@@ -27,11 +27,11 @@ class DataSyncFragment(BatchInvokedBaseFragment, EnvBaseConstructMixins):
         scope: constructs.Construct,
         id: str,
         env_base: EnvBase,
-        aibs_informatics_docker_asset: Union[ecr_assets.DockerImageAsset, str],
-        batch_job_queue: Union[batch.JobQueue, str],
+        aibs_informatics_docker_asset: ecr_assets.DockerImageAsset | str,
+        batch_job_queue: batch.JobQueue | str,
         scaffolding_bucket: s3.Bucket,
-        batch_job_role: Optional[Union[iam.Role, str]] = None,
-        mount_point_configs: Optional[Iterable[MountPointConfiguration]] = None,
+        batch_job_role: iam.Role | str | None = None,
+        mount_point_configs: Iterable[MountPointConfiguration] | None = None,
     ) -> None:
         """Sync data from one s3 bucket to another
 
@@ -103,14 +103,14 @@ class DataSyncFragment(BatchInvokedBaseFragment, EnvBaseConstructMixins):
         self.definition = start.next(self.fragment.to_single_state())
 
     @property
-    def required_managed_policies(self) -> List[Union[iam.IManagedPolicy, str]]:
+    def required_managed_policies(self) -> list[iam.IManagedPolicy | str]:
         return [
             *super().required_managed_policies,
             *[_ for _ in self.fragment.required_managed_policies],
         ]
 
     @property
-    def required_inline_policy_statements(self) -> List[iam.PolicyStatement]:
+    def required_inline_policy_statements(self) -> list[iam.PolicyStatement]:
         return [
             *self.fragment.required_inline_policy_statements,
             *super().required_inline_policy_statements,
@@ -127,11 +127,11 @@ class DistributedDataSyncFragment(BatchInvokedBaseFragment):
         scope: constructs.Construct,
         id: str,
         env_base: EnvBase,
-        aibs_informatics_docker_asset: Union[ecr_assets.DockerImageAsset, str],
-        batch_job_queue: Union[batch.JobQueue, str],
+        aibs_informatics_docker_asset: ecr_assets.DockerImageAsset | str,
+        batch_job_queue: batch.JobQueue | str,
         scaffolding_bucket: s3.Bucket,
-        batch_job_role: Optional[Union[str, iam.Role]] = None,
-        mount_point_configs: Optional[Iterable[MountPointConfiguration]] = None,
+        batch_job_role: str | iam.Role | None = None,
+        mount_point_configs: Iterable[MountPointConfiguration] | None = None,
     ) -> None:
         """Sync data from one s3 bucket to another using distributed batch jobs
 

@@ -1,5 +1,4 @@
 import re
-from typing import Optional
 
 import aws_cdk as cdk
 import pytest
@@ -97,13 +96,13 @@ def test__secrets_manager_policy_args(generate_policy_args, expected_resource, e
     ],
 )
 def test__sqs_policy_statement(
-    env_base: Optional[EnvBase], expected_actions, expected_resource_patterns
+    env_base: EnvBase | None, expected_actions, expected_resource_patterns
 ):
     obt = sqs_policy_statement(env_base=env_base)
 
     assert expected_actions == obt.actions
     for indx, expected_pattern in enumerate(expected_resource_patterns):
         obt_resource = obt.resources[indx]
-        assert re.fullmatch(
-            expected_pattern, obt_resource
-        ), f"expected_pattern: {expected_pattern}, obtained: {obt_resource}"
+        assert re.fullmatch(expected_pattern, obt_resource), (
+            f"expected_pattern: {expected_pattern}, obtained: {obt_resource}"
+        )

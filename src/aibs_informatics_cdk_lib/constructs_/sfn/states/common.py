@@ -1,5 +1,4 @@
-from mimetypes import init
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 import constructs
 from aws_cdk import aws_stepfunctions as sfn
@@ -16,7 +15,7 @@ class CommonOperation:
         defaults: dict[str, Any],
         input_path: str = "$",
         target_path: str = "$",
-        result_path: Optional[str] = None,
+        result_path: str | None = None,
         order_of_preference: Literal["target", "default"] = "target",
         check_if_target_present: bool = False,
     ) -> sfn.Chain:
@@ -68,7 +67,7 @@ class CommonOperation:
             },
             output_path="$.merged",
         )
-
+        chain_start: sfn.Pass | sfn.Choice
         if check_if_target_present:
             # Branch based on presence of the target
             choice = sfn.Choice(scope, "Check Target")
@@ -127,8 +126,8 @@ class CommonOperation:
         scope: constructs.Construct,
         id: str,
         definition: sfn.IChainable,
-        input_path: Optional[str] = None,
-        result_path: Optional[str] = None,
+        input_path: str | None = None,
+        result_path: str | None = None,
     ) -> sfn.Chain:
         """Enclose the current state machine fragment within a parallel state.
 

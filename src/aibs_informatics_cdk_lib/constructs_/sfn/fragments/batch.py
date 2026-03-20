@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Any, List, Literal, Mapping, Optional, Union
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import constructs
 from aibs_informatics_core.env import EnvBase
@@ -23,8 +24,8 @@ class AWSBatchMixins:
     @classmethod
     def convert_to_mount_point_and_volumes(
         cls,
-        mount_point_configs: List[MountPointConfiguration],
-    ) -> tuple[List[MountPointTypeDef], List[VolumeTypeDef]]:
+        mount_point_configs: list[MountPointConfiguration],
+    ) -> tuple[list[MountPointTypeDef], list[VolumeTypeDef]]:
         mount_points = []
         volumes = []
         for i, mpc in enumerate(mount_point_configs):
@@ -32,7 +33,7 @@ class AWSBatchMixins:
                 convert_key_case(mpc.to_batch_mount_point(f"efs-vol{i}"), pascalcase)
             )
             volumes.append(convert_key_case(mpc.to_batch_volume(f"efs-vol{i}"), pascalcase))
-        return mount_points, volumes
+        return cast(tuple[list[MountPointTypeDef], list[VolumeTypeDef]], (mount_points, volumes))
 
 
 class SubmitJobFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
@@ -44,15 +45,15 @@ class SubmitJobFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
         name: str,
         job_queue: str,
         image: str,
-        command: Optional[Union[List[str], str]] = None,
-        environment: Optional[Union[Mapping[str, str], str]] = None,
-        memory: Optional[Union[int, str]] = None,
-        vcpus: Optional[Union[int, str]] = None,
-        gpu: Optional[Union[int, str]] = None,
-        mount_points: Optional[Union[List[MountPointTypeDef], str]] = None,
-        volumes: Optional[Union[List[VolumeTypeDef], str]] = None,
-        platform_capabilities: Optional[Union[List[Literal["EC2", "FARGATE"]], str]] = None,
-        job_role_arn: Optional[str] = None,
+        command: list[str] | str | None = None,
+        environment: Mapping[str, str] | str | None = None,
+        memory: int | str | None = None,
+        vcpus: int | str | None = None,
+        gpu: int | str | None = None,
+        mount_points: list[MountPointTypeDef] | str | None = None,
+        volumes: list[VolumeTypeDef] | str | None = None,
+        platform_capabilities: list[Literal["EC2", "FARGATE"]] | str | None = None,
+        job_role_arn: str | None = None,
     ) -> None:
         super().__init__(scope, id, env_base)
 
@@ -137,12 +138,12 @@ class SubmitJobFragment(EnvBaseStateMachineFragment, AWSBatchMixins):
         job_queue: str,
         image: str,
         command: str = "",
-        memory: Union[str, int] = 1024,
-        vcpus: Union[str, int] = 1,
-        gpu: Union[str, int] = 0,
-        environment: Optional[Mapping[str, str]] = None,
-        mount_point_configs: Optional[List[MountPointConfiguration]] = None,
-        job_role_arn: Optional[str] = None,
+        memory: str | int = 1024,
+        vcpus: str | int = 1,
+        gpu: str | int = 0,
+        environment: Mapping[str, str] | None = None,
+        mount_point_configs: list[MountPointConfiguration] | None = None,
+        job_role_arn: str | None = None,
     ) -> "SubmitJobFragment":
         defaults: dict[str, Any] = {}
         defaults["command"] = command

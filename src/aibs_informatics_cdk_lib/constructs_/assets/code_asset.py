@@ -1,8 +1,8 @@
 import logging
 import os
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping, Optional, Sequence, Tuple
 
 import aws_cdk as cdk
 import constructs
@@ -51,8 +51,8 @@ class CodeAsset:
     asset_name: str
     asset_props: aws_s3_assets.AssetProps
     default_runtime: lambda_.Runtime
-    supported_runtimes: Optional[Sequence[lambda_.Runtime]] = None
-    environment: Optional[Mapping[str, str]] = None
+    supported_runtimes: Sequence[lambda_.Runtime] | None = None
+    environment: Mapping[str, str] | None = None
 
     def __post_init__(self):
         if not self.supported_runtimes:
@@ -72,7 +72,7 @@ class CodeAsset:
     def as_code(self) -> lambda_.AssetCode:
         return self.get_code()
 
-    def get_environment(self, *overrides: Tuple[str, str]) -> Mapping[str, str]:
+    def get_environment(self, *overrides: tuple[str, str]) -> Mapping[str, str]:
         environment = {**(self.environment or {})}
         environment.update(overrides)
         return environment
@@ -122,7 +122,7 @@ class CodeAsset:
                 # Zips everything in the directory, excluding the archive file
                 f"zip -r {archive_filename} . -x {archive_filename} -q",
                 # deletes everything in the directory, except the archive file
-                f"find . ! \\( -name '{archive_filename}' -o -name '.' -o -name '..' \\) -prune -exec rm -rf {{}} +",
+                f"find . ! \\( -name '{archive_filename}' -o -name '.' -o -name '..' \\) -prune -exec rm -rf {{}} +",  # noqa: E501
             ]
         )
         return aws_s3_deployment.Source.asset(
@@ -163,13 +163,13 @@ class CodeAsset:
     def create_py_code_asset(
         cls,
         path: Path,
-        context_path: Optional[Path],
-        requirements_file: Optional[Path] = None,
-        includes: Optional[Sequence[str]] = None,
-        excludes: Optional[Sequence[str]] = None,
+        context_path: Path | None,
+        requirements_file: Path | None = None,
+        includes: Sequence[str] | None = None,
+        excludes: Sequence[str] | None = None,
         runtime: lambda_.Runtime = lambda_.Runtime.PYTHON_3_11,
-        platform: Optional[str] = "linux/amd64",
-        environment: Optional[Mapping[str, str]] = None,
+        platform: str | None = "linux/amd64",
+        environment: Mapping[str, str] | None = None,
         use_uv: bool = False,
     ) -> "CodeAsset":
         """Create and bundle a Python Lambda code asset
@@ -230,7 +230,7 @@ class CodeAsset:
 
         Returns:
             A new instance encapsulating the bundled Python code and dependencies.
-        """
+        """  # noqa: E501
 
         if context_path is None:
             context_path = path
@@ -271,17 +271,17 @@ class CodeAsset:
                     f"make sure that all dependencies are compatible with uv!"
                 )
                 package_install_commands.append(
-                    f"uv pip install -r {requirements_file.as_posix()} --no-cache --target /asset-output",
+                    f"uv pip install -r {requirements_file.as_posix()} --no-cache --target /asset-output",  # noqa: E501
                 )
             else:
                 package_install_commands += [
                     "uv export --frozen --no-dev --no-editable -o requirements-autogen.txt",
-                    "uv pip install --no-sources -r requirements-autogen.txt --no-cache --target /asset-output",
+                    "uv pip install --no-sources -r requirements-autogen.txt --no-cache --target /asset-output",  # noqa: E501
                 ]
         else:
             package_install_commands += [
                 "python3 -m pip install --upgrade pip --no-cache",
-                f"python3 -m pip install {'-r ' + requirements_file.as_posix() if requirements_file else '.'} --no-cache --target /asset-output",
+                f"python3 -m pip install {'-r ' + requirements_file.as_posix() if requirements_file else '.'} --no-cache --target /asset-output",  # noqa: E501
             ]
 
         asset_props = aws_s3_assets.AssetProps(
@@ -304,7 +304,8 @@ class CodeAsset:
                 entrypoint=["/bin/bash", "-c"],
                 command=[
                     # This makes the following commands run together as one
-                    # WARNING Make sure not to modify {host_ssh_dir} in any way, in this set of commands!
+                    # WARNING Make sure not to modify {host_ssh_dir} in any way,
+                    # in this set of commands!
                     " && ".join(
                         [
                             "set -x",

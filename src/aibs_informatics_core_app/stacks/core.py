@@ -1,5 +1,3 @@
-from typing import Optional
-
 from aibs_informatics_core.env import EnvBase
 from constructs import Construct
 
@@ -13,7 +11,7 @@ class CoreStack(EnvBaseStack):
     def __init__(
         self,
         scope: Construct,
-        id: Optional[str],
+        id: str | None,
         env_base: EnvBase,
         name: str,
         **kwargs,

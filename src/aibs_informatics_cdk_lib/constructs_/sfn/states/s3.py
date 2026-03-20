@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 import constructs
 from aws_cdk import aws_stepfunctions as sfn
@@ -15,8 +15,8 @@ class S3Operation:
         bucket_name: str,
         key: str,
         body: Any,
-        result_path: Optional[str] = "$",
-        output_path: Optional[str] = "$",
+        result_path: str | None = "$",
+        output_path: str | None = "$",
     ) -> sfn.Chain:
         """Create a chain to put a body of text to S3
 
@@ -120,8 +120,8 @@ class S3Operation:
         id: str,
         bucket_name: str,
         key: str,
-        result_path: Optional[str] = "$",
-        output_path: Optional[str] = "$",
+        result_path: str | None = "$",
+        output_path: str | None = "$",
     ) -> sfn.Chain:
         """Creates a chain to get a body of text from S3
 
@@ -218,9 +218,9 @@ class S3Operation:
         id: str,
         payload: str,
         bucket_name: str,
-        key: Optional[str] = None,
-        result_path: Optional[str] = "$",
-        output_path: Optional[str] = "$",
+        key: str | None = None,
+        result_path: str | None = "$",
+        output_path: str | None = "$",
     ) -> sfn.Chain:
         """Puts a payload to s3 and returns the location of the payload in s3
 
@@ -248,7 +248,8 @@ class S3Operation:
         Args:
             scope (constructs.Construct): cdk construct
             id (str): id
-            payload (str): explicit value or reference path in the context object (e.g. "$", "$.path")
+            payload (str): explicit value or reference path in the context object
+                (e.g. "$", "$.path")
             bucket_name (str): explicit value or reference path for bucket name
             key (Optional[str], optional): explicit value or reference path for key.
                 If not provided, the following Key is generated:
@@ -257,9 +258,7 @@ class S3Operation:
         Returns:
             sfn.Chain
         """
-        key = key or sfn.JsonPath.format(
-            f"{{}}/{{}}", sfn.JsonPath.execution_name, sfn.JsonPath.uuid()
-        )
+        key = key or sfn.JsonPath.format("{}/{}", sfn.JsonPath.execution_name, sfn.JsonPath.uuid())
 
         put_chain = S3Operation.put_object(
             scope, id, bucket_name, key, payload, result_path, output_path
@@ -273,7 +272,7 @@ class S3Operation:
         id: str,
         bucket_name: str,
         key: str,
-        result_path: Optional[str] = "$",
+        result_path: str | None = "$",
     ) -> sfn.Chain:
         """Gets a payload from s3
 
