@@ -2,7 +2,7 @@ import re
 from collections.abc import Mapping
 from functools import reduce
 from re import Pattern
-from typing import Any, ClassVar, Dict, List, Optional, TypeVar, Union, cast
+from typing import Any, ClassVar, TypeVar, cast
 
 import aws_cdk as cdk
 import constructs
@@ -30,7 +30,7 @@ def convert_to_sfn_api_action_case(parameters: T) -> T:
 
     Returns:
         Dict[str, Any]: parameters for SDK action in pascal case
-    """
+    """  # noqa: E501
     return convert_key_case(parameters, pascalcase)
 
 
@@ -112,7 +112,7 @@ class JsonReferencePath(str):
     Primarily supports "$" reference.
 
 
-    """
+    """  # noqa: E501
 
     _EXTRA_PERIODS_PATTERN: ClassVar[Pattern[str]] = re.compile(r"[$.]+")
     _PERIOD_PATTERN: ClassVar[Pattern[str]] = re.compile(r"(?<!\$)\.(?!\$)")
@@ -166,7 +166,7 @@ class JsonReferencePath(str):
     @classmethod
     def sanitize(cls, s: str) -> str:
         """Sanitizes a string to ensure string has non-consecutive periods and not on the edge."""
-        return f'{cls._EXTRA_PERIODS_PATTERN.sub(".", s).strip(".")}'
+        return f"{cls._EXTRA_PERIODS_PATTERN.sub('.', s).strip('.')}"
 
     @classmethod
     def is_reference(cls, s: Any) -> bool:

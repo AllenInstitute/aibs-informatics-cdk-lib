@@ -1,7 +1,6 @@
 from dataclasses import dataclass
-from typing import Literal, Optional
+from typing import Literal
 
-from aibs_informatics_core.env import EnvBase
 from attr import field
 from aws_cdk import aws_cloudwatch as cw
 from aws_cdk import aws_stepfunctions as sfn
@@ -79,7 +78,7 @@ class StateMachineMetricConfigGenerator:
 
         Returns:
             Graph metric config for execution failures
-        """
+        """  # noqa: E501
         name = name_override or self.state_machine_name
         idx = discriminator or "0"
         return GraphMetricConfig(
@@ -116,8 +115,8 @@ class StateMachineMetricConfigGenerator:
         Args:
             name_override (Optional[str], optional): override for name used.
                 Defaults to state machine name.
-            discriminator (Optional[str], optional): Required if grouping with other metric configs that specify the same metric math.
-                Defaults to "0".
+            discriminator (Optional[str], optional): Required if grouping with other metric configs
+                that specify the same metric math. Defaults to "0".
             time_unit (SFN_TIME_UNITS, optional): unit of time to use for metric.
                 Defaults to "minutes".
 

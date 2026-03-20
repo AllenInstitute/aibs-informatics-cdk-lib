@@ -1,16 +1,14 @@
 import logging
 import os
 from pathlib import Path
-from typing import Optional
 
 import aws_cdk as cdk
 import constructs
 from aibs_informatics_core.env import EnvBase
 from aibs_informatics_core.utils.decorators import cached_property
 from aibs_informatics_core.utils.hashing import generate_path_hash
-from aws_cdk import aws_ecr_assets
+from aws_cdk import aws_ecr_assets, aws_s3_assets
 from aws_cdk import aws_lambda as lambda_
-from aws_cdk import aws_s3_assets
 
 from aibs_informatics_cdk_lib.common.git import clone_repo, is_local_repo, is_repo_url
 from aibs_informatics_cdk_lib.constructs_.assets.code_asset import (
@@ -31,7 +29,8 @@ class AssetsMixin:
     def resolve_repo_path(cls, repo_url: str, repo_path_env_var: str | None) -> Path:
         """Resolves the repo path from the environment or clones the repo from the url
 
-        This method is useful to quickly swapping between locally modified changes and the remote repo.
+        This method is useful to quickly swapping between locally modified changes and the remote
+        repo.
 
         This should typically be used in the context of defining a code asset for a static name
         (e.g. AIBS_INFORMATICS_AWS_LAMBDA). You can then use the env var option to point to a local
@@ -114,7 +113,7 @@ class AIBSInformaticsCodeAssets(constructs.Construct, AssetsMixin):
                 entrypoint=["/bin/bash", "-c"],
                 command=[
                     # This makes the following commands run together as one
-                    # WARNING Make sure not to modify {host_ssh_dir} in any way, in this set of commands!
+                    # WARNING Make sure not to modify {host_ssh_dir} in any way, in this set of commands!  # noqa: E501
                     " && ".join(
                         [
                             "set -x",
@@ -122,7 +121,7 @@ class AIBSInformaticsCodeAssets(constructs.Construct, AssetsMixin):
                             f"cp -r {host_ssh_dir} /root/.ssh",
                             # Useful debug if anything goes wrong with github SSH related things
                             "ssh -vT git@github.com || true",
-                            # Must make sure that the package is not installing using --editable mode
+                            # Must make sure that the package is not installing using --editable mode  # noqa: E501
                             "python3 -m pip install --upgrade pip --no-cache",
                             "pip3 install . --no-cache -t /asset-output",
                             # TODO: remove botocore and boto3 from asset output

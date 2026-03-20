@@ -1,6 +1,6 @@
 import inspect
-from dataclasses import Field
-from typing import Optional, Tuple, Type
+import types
+from typing import Any, get_args, get_origin
 
 import aws_cdk as cdk
 from aibs_informatics_core.env import EnvBase
@@ -8,6 +8,7 @@ from aibs_informatics_core.models.db import DBIndex, DBModel
 from aibs_informatics_core.utils.modules import load_type_from_qualified_name
 from aws_cdk import aws_dynamodb as dynamodb
 from constructs import Construct
+from pydantic.fields import FieldInfo
 
 from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstructMixins
 
@@ -73,24 +74,41 @@ class DynamoDBModelTable(dynamodb.Table):
         self, db_index: DBIndex | None = None
     ) -> tuple[dynamodb.Attribute, dynamodb.Attribute | None]:
         db_index = db_index or self.db_index_type.get_default_index()
-        db_model_fields = self.db_model_type.get_model_fields()
+        db_model_fields = self.db_model_type.model_fields
         partition_key = db_index.key_name
         sort_key = db_index.sort_key_name
 
-        partition_field = next(filter(lambda _: _.name == partition_key, db_model_fields))
+        partition_field = db_model_fields.get(partition_key)
+        if partition_field is None:
+            raise ValueError(
+                f"Partition key '{partition_key}' not found in model {self.db_model_type.__name__}"
+            )
         partition_attr = dynamodb.Attribute(
             name=partition_key, type=self.get_attribute_type(partition_field)
         )
 
         sort_attr = None
         if sort_key:
-            sort_field = next(filter(lambda _: _.name == partition_key, db_model_fields))
+            sort_field = db_model_fields.get(sort_key)
+            if sort_field is None:
+                raise ValueError(
+                    f"Sort key '{sort_key}' not found in model {self.db_model_type.__name__}"
+                )
             sort_attr = dynamodb.Attribute(name=sort_key, type=self.get_attribute_type(sort_field))
         return partition_attr, sort_attr
 
     @classmethod
-    def get_attribute_type(cls, field: Field) -> dynamodb.AttributeType:
-        _type = field.type
+    def get_attribute_type(cls, field: FieldInfo) -> dynamodb.AttributeType:
+        _type: Any = field.annotation
+        if _type is None:
+            return dynamodb.AttributeType.STRING
+
+        origin = get_origin(_type)
+        if origin in (types.UnionType, tuple, list, set, dict) or origin is not None:
+            args = [arg for arg in get_args(_type) if arg is not type(None)]
+            if len(args) == 1:
+                _type = args[0]
+
         if isinstance(_type, str):
             _type = load_type_from_qualified_name(_type)
         if not inspect.isclass(_type):

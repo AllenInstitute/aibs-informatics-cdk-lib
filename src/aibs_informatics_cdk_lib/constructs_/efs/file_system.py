@@ -6,7 +6,7 @@ access points, and mount point configurations.
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Literal, Optional, Tuple, TypeVar, Union
+from typing import Any, Literal, TypeVar
 
 import aws_cdk as cdk
 import constructs
@@ -170,7 +170,7 @@ class EnvBaseFileSystem(efs.FileSystem, EnvBaseConstructMixins):
         Returns:
             Lambda FileSystem configured for the access point.
         """
-        ap = access_point or self.root_access_point
+        ap = access_point
         return lambda_.FileSystem.from_efs_access_point(
             ap=ap,
             # Must start with `/mnt` per lambda regex requirements
@@ -404,7 +404,7 @@ class MountPointConfiguration:
         """
         mount_point: dict[str, Any] = to_mount_point(
             self.mount_point, self.read_only, source_volume=name
-        )  # type: ignore[arg-type]  # typed dict should be accepted
+        )  # type: ignore[arg-type, assignment]  # typed dict should be accepted
         if sfn_format:
             return convert_to_sfn_api_action_case(mount_point)
         return mount_point

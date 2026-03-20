@@ -1,4 +1,4 @@
-from typing import Dict, List, Literal, TypedDict, Union
+from typing import Literal, TypedDict
 
 from aws_cdk import aws_cloudwatch as cw
 

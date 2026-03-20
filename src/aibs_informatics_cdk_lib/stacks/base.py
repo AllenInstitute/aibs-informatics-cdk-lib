@@ -11,7 +11,7 @@ __all__ = [
     "get_all_stacks",
 ]
 
-from typing import List, Optional, cast
+from typing import cast
 
 import aws_cdk as cdk
 import constructs

@@ -1,20 +1,20 @@
 import base64
+import functools
 import logging
 from abc import abstractmethod
 from collections.abc import Callable, Mapping, Sequence
-from importlib.resources import files
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Generic, List, Optional, Tuple, TypeVar, Union, cast
+from typing import Generic, Optional, TypeVar, cast
 
 import aws_cdk as cdk
 import constructs
 from aibs_informatics_core.env import EnvBase
 from aws_cdk import aws_codepipeline as aws_codepipeline
-from aws_cdk import aws_codepipeline_actions
+from aws_cdk import aws_codepipeline_actions, pipelines
 from aws_cdk import aws_codestarnotifications as codestarnotifications
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_sns as sns
-from aws_cdk import pipelines
 from aws_cdk.aws_codebuild import BuildEnvironment, BuildEnvironmentVariable, BuildSpec
 
 from aibs_informatics_cdk_lib.common.aws.core_utils import build_arn
@@ -39,10 +39,6 @@ STAGE_CONFIG = TypeVar("STAGE_CONFIG", bound=StageConfig)
 GLOBAL_CONFIG = TypeVar("GLOBAL_CONFIG", bound=GlobalConfig)
 
 PIPELINE_STACK = TypeVar("PIPELINE_STACK", bound="BasePipelineStack")
-
-
-import functools
-from dataclasses import dataclass
 
 
 @dataclass
@@ -98,10 +94,10 @@ def pipeline_stage(
             Defaults to None.
         post_steps (Optional[List[pipelines.Step]], optional): Optional post steps to add after the stage.
             Defaults to None.
-    """
+    """  # noqa: E501
 
     def decorator_pipeline_stage(
-        func: Callable[[PIPELINE_STACK], cdk.Stage | tuple[cdk.Stage]]
+        func: Callable[[PIPELINE_STACK], cdk.Stage | tuple[cdk.Stage]],
     ) -> Callable[
         [PIPELINE_STACK],
         tuple[Sequence[pipelines.Step] | None, cdk.Stage, Sequence[pipelines.Step] | None],
@@ -254,7 +250,7 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
         The environment promotion definitions are defined in the `global_config.stage_promotions`.
         This is a mapping of source environment types to target environment types.
 
-        The branch that is used for the promotion is defined in the `pipeline_config.source.branch`.
+        The branch that is used for the promotion is defined in `pipeline_config.source.branch`.
 
         Args:
             pipeline (pipelines.CodePipeline): Code Pipeline
@@ -288,7 +284,7 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
                                 "CICD_RELEASE_REVIEWER": "AllenInstitute/marmot",
                                 "CICD_RELEASE_SOURCE_ENV_TYPE": source_env_type,
                                 "CICD_RELEASE_TARGET_ENV_TYPE": promotion_target_env_type,
-                                "CICD_RELEASE_TARGET_BRANCH": promotion_target_pipeline_config.source.branch,
+                                "CICD_RELEASE_TARGET_BRANCH": promotion_target_pipeline_config.source.branch,  # noqa: E501
                             },
                             # https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html#build-spec.env.secrets-manager
                             "secrets-manager": {
@@ -305,11 +301,11 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
                     #   3. Unarchive and move binary into /usr/local/bin
                     #   4. Verify command is available
                     # Step 1:
-                    'GH_CLI_DOWNLOAD_LINK=$(curl -H "Authorization:token $GITHUB_TOKEN" -sSL "https://api.github.com/repos/cli/cli/releases/latest" | jq -r \'.assets[] | select(.name|test(".*_linux_amd64.tar.gz")) | .browser_download_url\')',
+                    'GH_CLI_DOWNLOAD_LINK=$(curl -H "Authorization:token $GITHUB_TOKEN" -sSL "https://api.github.com/repos/cli/cli/releases/latest" | jq -r \'.assets[] | select(.name|test(".*_linux_amd64.tar.gz")) | .browser_download_url\')',  # noqa: E501
                     "GH_CLI_TAR_GZ_PATH=$(basename $GH_CLI_DOWNLOAD_LINK)",
                     "GH_CLI_DIR=$(basename $GH_CLI_TAR_GZ_PATH .tar.gz)",
                     # Step 2:
-                    'curl -H "Authorization:token $GITHUB_TOKEN" -sSL $GH_CLI_DOWNLOAD_LINK -o $GH_CLI_TAR_GZ_PATH',
+                    'curl -H "Authorization:token $GITHUB_TOKEN" -sSL $GH_CLI_DOWNLOAD_LINK -o $GH_CLI_TAR_GZ_PATH',  # noqa: E501
                     # Step 3:
                     "tar -xf $GH_CLI_TAR_GZ_PATH",
                     "sudo cp $GH_CLI_DIR/bin/gh /usr/local/bin/",
@@ -329,7 +325,7 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
                     #   4. Run our CI/CD release script
                     "export REPO_DIR=$(mktemp -d)",
                     "cd $REPO_DIR",
-                    f"git clone https://${{GITHUB_TOKEN}}@github.com/{pipeline_config.source.repository}.git .",
+                    f"git clone https://${{GITHUB_TOKEN}}@github.com/{pipeline_config.source.repository}.git .",  # noqa: E501
                     # Enables credential caching
                     "git config credential.helper store",
                     # Supposed to force the caching of the credentials
@@ -345,7 +341,7 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
                     # a virtual environment and install our source package. This is because the
                     # release script is in a dependent package (aibs-informatics-cdk-lib) and
                     # is not included in the source package used as input for this step.
-                    # Assuming we want to avoid having to install the package, We have two options here:
+                    # Assuming we want to avoid having to install the package, We have two options:
                     # TODO: Decide which approach is better (prefer 2)
                     #   1. Download the release script from the source repository (using gh cli)
                     #       - This requires the use of the Github CLI
@@ -356,18 +352,19 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
                     #       - This couples changes being deployed with the script in repo
                     (
                         # Download the release script from the source repository (using gh cli)
-                        'gh api repos/AllenInstitute/aibs-informatics-cdk-lib/contents/src/aibs_informatics_cdk_lib/cicd/pipeline/scripts/cicd-release.sh --raw -H "Accept: application/vnd.github.v3.raw" > $RELEASE_SCRIPT_PATH'
+                        'gh api repos/AllenInstitute/aibs-informatics-cdk-lib/contents/src/aibs_informatics_cdk_lib/cicd/pipeline/scripts/cicd-release.sh --raw -H "Accept: application/vnd.github.v3.raw" > $RELEASE_SCRIPT_PATH'  # noqa: E501
                         if False
-                        else
-                        # Here we are base64 encoding the release script and decoding it on the other side
+                        # Here we are base64 encoding the release script and decoding it on the
+                        # other side.
                         # Steps:
                         #   1. Read the release script file
                         #   2. Base64 encode the file
-                        #   3. Decode the base64 encoded file and write it to the release script path
-                        # TODO: i think `importlib.resources.files` is preferred way to go here, but
-                        #       it requires specifying the package path. This is a bit more
+                        #   3. Decode the base64 encoded file and write it to the release script
+                        #      path
+                        # TODO: i think `importlib.resources.files` is preferred way to go here,
+                        #       but it requires specifying the package path. This is a bit more
                         #       difficult to do in this context. So we are using the Path approach.
-                        f"echo {base64.b64encode((Path(__file__).parent / 'scripts' / 'cicd-release.sh').read_text().encode()).decode()} | base64 --decode > $RELEASE_SCRIPT_PATH"
+                        else f"echo {base64.b64encode((Path(__file__).parent / 'scripts' / 'cicd-release.sh').read_text().encode()).decode()} | base64 --decode > $RELEASE_SCRIPT_PATH"  # noqa: E501
                     ),
                     # Run the release script
                     "bash $RELEASE_SCRIPT_PATH",

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import constructs
 from aibs_informatics_core.env import EnvBase
@@ -208,7 +208,7 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
                 "Execution Setup Steps",
                 input_path=f"$.{config_scaffolding_path}.setup_configs",
                 result_path=f"$.{'.'.join(config_batch_args_path.split('.')[:-1])}",
-                result_selector={f'{config_batch_args_path.split(".")[-1]}.$': "$[0]"},
+                result_selector={f"{config_batch_args_path.split('.')[-1]}.$": "$[0]"},
             )
             .branch(create_def_and_prepare_job_args_task)
             .branch(
@@ -235,17 +235,25 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
             state_json={
                 "Type": "Task",
                 "Resource": "arn:aws:states:::batch:submitJob.sync",
-                # fmt: off
                 "Parameters": {
                     "JobName.$": sfn.JsonPath.string_at(f"$.{config_batch_args_path}.job_name"),
-                    "JobDefinition.$": sfn.JsonPath.string_at(f"$.{config_batch_args_path}.job_definition_arn"),
-                    "JobQueue.$": sfn.JsonPath.string_at(f"$.{config_batch_args_path}.job_queue_arn"),
-                    "Parameters.$": sfn.JsonPath.object_at(f"$.{config_batch_args_path}.parameters"),
-                    "ContainerOverrides.$": sfn.JsonPath.object_at(f"$.{config_batch_args_path}.container_overrides"),
-                    "Tags.$": sfn.JsonPath.object_at("$.request.demand_execution.execution_metadata.tags"),
+                    "JobDefinition.$": sfn.JsonPath.string_at(
+                        f"$.{config_batch_args_path}.job_definition_arn"
+                    ),  # noqa: E501
+                    "JobQueue.$": sfn.JsonPath.string_at(
+                        f"$.{config_batch_args_path}.job_queue_arn"
+                    ),  # noqa: E501
+                    "Parameters.$": sfn.JsonPath.object_at(
+                        f"$.{config_batch_args_path}.parameters"
+                    ),  # noqa: E501
+                    "ContainerOverrides.$": sfn.JsonPath.object_at(
+                        f"$.{config_batch_args_path}.container_overrides"
+                    ),  # noqa: E501
+                    "Tags.$": sfn.JsonPath.object_at(
+                        "$.request.demand_execution.execution_metadata.tags"
+                    ),  # noqa: E501
                     "PropagateTags": True,
                 },
-                # fmt: on
                 "ResultPath": "$.tasks.batch_submit_task",
             },
         )
@@ -286,7 +294,7 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
                                 self,
                                 "Pass: Cleanup Data Path",
                                 parameters={
-                                    "handler": "aibs_informatics_aws_lambda.handlers.data_sync.remove_data_paths_handler",
+                                    "handler": "aibs_informatics_aws_lambda.handlers.data_sync.remove_data_paths_handler",  # noqa: E501
                                     "payload": sfn.JsonPath.object_at("$"),
                                     **batch_invoked_lambda_kwargs,
                                 },

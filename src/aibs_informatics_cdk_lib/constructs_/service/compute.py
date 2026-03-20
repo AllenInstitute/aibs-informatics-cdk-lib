@@ -6,7 +6,6 @@ environments with various configurations.
 
 from abc import abstractmethod
 from collections.abc import Iterable
-from typing import List, Optional, Union
 
 from aibs_informatics_core.env import EnvBase
 from aws_cdk import aws_batch as batch

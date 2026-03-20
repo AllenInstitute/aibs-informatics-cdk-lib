@@ -3,7 +3,6 @@ import os
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Tuple
 
 import aws_cdk as cdk
 import constructs
@@ -123,7 +122,7 @@ class CodeAsset:
                 # Zips everything in the directory, excluding the archive file
                 f"zip -r {archive_filename} . -x {archive_filename} -q",
                 # deletes everything in the directory, except the archive file
-                f"find . ! \\( -name '{archive_filename}' -o -name '.' -o -name '..' \\) -prune -exec rm -rf {{}} +",
+                f"find . ! \\( -name '{archive_filename}' -o -name '.' -o -name '..' \\) -prune -exec rm -rf {{}} +",  # noqa: E501
             ]
         )
         return aws_s3_deployment.Source.asset(
@@ -231,7 +230,7 @@ class CodeAsset:
 
         Returns:
             A new instance encapsulating the bundled Python code and dependencies.
-        """
+        """  # noqa: E501
 
         if context_path is None:
             context_path = path
@@ -272,17 +271,17 @@ class CodeAsset:
                     f"make sure that all dependencies are compatible with uv!"
                 )
                 package_install_commands.append(
-                    f"uv pip install -r {requirements_file.as_posix()} --no-cache --target /asset-output",
+                    f"uv pip install -r {requirements_file.as_posix()} --no-cache --target /asset-output",  # noqa: E501
                 )
             else:
                 package_install_commands += [
                     "uv export --frozen --no-dev --no-editable -o requirements-autogen.txt",
-                    "uv pip install --no-sources -r requirements-autogen.txt --no-cache --target /asset-output",
+                    "uv pip install --no-sources -r requirements-autogen.txt --no-cache --target /asset-output",  # noqa: E501
                 ]
         else:
             package_install_commands += [
                 "python3 -m pip install --upgrade pip --no-cache",
-                f"python3 -m pip install {'-r ' + requirements_file.as_posix() if requirements_file else '.'} --no-cache --target /asset-output",
+                f"python3 -m pip install {'-r ' + requirements_file.as_posix() if requirements_file else '.'} --no-cache --target /asset-output",  # noqa: E501
             ]
 
         asset_props = aws_s3_assets.AssetProps(
@@ -305,7 +304,8 @@ class CodeAsset:
                 entrypoint=["/bin/bash", "-c"],
                 command=[
                     # This makes the following commands run together as one
-                    # WARNING Make sure not to modify {host_ssh_dir} in any way, in this set of commands!
+                    # WARNING Make sure not to modify {host_ssh_dir} in any way,
+                    # in this set of commands!
                     " && ".join(
                         [
                             "set -x",

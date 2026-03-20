@@ -13,7 +13,6 @@ COVERAGE_DIR := $(PACKAGE_DIR)/build/documentation/coverage/
 
 DEP_FILES := $(wildcard setup.*) $(wildcard requirements*.txt) $(wildcard pyproject.toml)
 
-
 ####################
 ##@ Helper Commands
 ####################
@@ -34,20 +33,20 @@ clean-venv:  ## Clean virtualenv
 clean-install-stamp:
 	rm -rf $(INSTALL_STAMP)
 
-clean-build:  ## Clean build artifacts (egg/dist/build etc.) 
+clean-build:  ## Clean build artifacts (egg/dist/build etc.)
 	rm -rf build/
 	rm -rf dist/
 	rm -rf .eggs/
 	find . -name '*.egg-info' -exec rm -rf {} +
 	find . -name '*.egg' -exec rm -f {} +
 
-clean-pyc:  ## remove pyc/pyo files 
+clean-pyc:  ## remove pyc/pyo files
 	find . -name '*.pyc' -exec rm -f {} +
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f {} +
 	find . -name '__pycache__' -exec rm -rf {} +
 
-clean-test:  ## Remove test artifacts 
+clean-test:  ## Remove test artifacts
 	rm -rf build/.tox/
 	rm -rf build/.pytest_cache/
 
@@ -60,37 +59,32 @@ obliterate: clean-venv clean  ## alias to clean, clean-venv
 
 .PHONY: clean-venv clean-install-stamp clean-build clean-pyc clean-test clean obliterate
 
-
 #########################
 ##@ Installation Commands
 #########################
 
-create-venv: $(PYTHON)  ## Creates virtualenv
-$(PYTHON):
-	python3 -m venv $(VENV) --prompt $(shell basename $(PACKAGE_DIR))
-	$(PYTHON) -m pip install --upgrade pip
+.uv: ## Check that uv is installed
+	@uv -V || echo 'Please install uv: https://docs.astral.sh/uv/getting-started/installation/'
 
-install: $(INSTALL_STAMP) ## Installs package dependencies
-$(INSTALL_STAMP): $(PYTHON) $(DEP_FILES)
-	@. $(VENV_BIN)/activate;\
-	$(PIP) install -e .[dev]; 
-	@touch $(INSTALL_STAMP)
+install: .uv  ## Installs development (dev/lint) related dependencies
+	uv sync --frozen --group dev --group lint
 
-install-release: clean-install-stamp $(PYTHON) $(DEP_FILES) ## Installs package for release
-	@. $(VENV_BIN)/activate;\
-	$(PIP) install .[release]
+install-release: .uv  ## Installs package dependencies
+	uv sync --frozen --group release
 
-install-force: clean-install-stamp install ## Force install package dependencies
 
-link-packages: ## Link local packages to virtualenv  
+upgrade-lockfile: .uv  ## Upgrade lockfile to latest compatible versions (uv lock --upgrade)
+	uv lock --upgrade
+
+link-packages: ## Link local packages to virtualenv
 	@parent_dir=$$(dirname $$(pwd)); \
 	local_packages=$$(ls $$parent_dir); \
-	dependencies=$$($(PIP) list --format freeze --exclude-editable | awk -F '==' '{print $$1}');\
+	dependencies=$$(uv pip list --format freeze --exclude-editable | awk -F '==' '{print $$1}');\
 	for local_package in $$local_packages; do \
 		for dependency in $$dependencies; do \
 			if [ $$local_package == $$dependency ]; then \
 				echo "Reinstalling $$local_package dependency to local override"; \
-				$(PIP) install -e $$parent_dir/$$local_package --no-deps; \
+				uv add -v --editable --frozen $$parent_dir/$$local_package; \
 			fi \
 		done; \
 	done
@@ -99,78 +93,75 @@ unlink-packages: ## Unlink local packages from virtualenv
 	@parent_dir=$$(dirname $$(pwd)); \
 	this_package=$$(basename $$(pwd)); \
 	local_packages=$$(ls $$parent_dir); \
-	dependencies=$$($(PIP) list --format freeze --editable | awk -F '==' '{print $$1}');\
+	dependencies=$$(uv pip list --format freeze --editable | awk -F '==' '{print $$1}');\
 	is_found=0; \
 	for local_package in $$local_packages; do \
 		for dependency in $$dependencies; do \
 			if [ $$local_package == $$dependency ] && [ $$local_package != $$this_package ]; then \
 				is_found=1; \
+				uv remove --frozen $$local_package; \
 			fi; \
 		done \
 	done; \
 	if [ $$is_found == 1 ]; then \
 		echo "Found dependencies installed locally, reinstalling..."; \
-		make clean-install-stamp install; \
+		make install; \
 	fi
 
-.PHONY: create-venv install install-force link-packages unlink-packages
+.PHONY: .uv install install-release install upgrade-lockfile link-packages unlink-packages
 
 #######################
 ##@ Formatting Commands
 #######################
 
-lint-black: $(INSTALL_STAMP) ## Run black (check only)
-	$(VENV_BIN)/black ./ --diff --check
+lint-ruff: install ## Run ruff checker
+	uv run ruff check
 
-lint-isort: $(INSTALL_STAMP) ## Run isort (check only) 
-	$(VENV_BIN)/isort ./ --check
-
-lint-mypy: $(INSTALL_STAMP) ## Run mypy
-	$(VENV_BIN)/mypy ./
+lint-mypy: install ## Run mypy
+	uv run mypy ./
 
 
-lint: lint-isort lint-black lint-mypy  ## Run all lint targets (black, isort, mypy)
+lint: lint-ruff lint-mypy  ## Run all lint targets (ruff, mypy)
 
 
-format-black: $(INSTALL_STAMP) ## Format code using black
-	$(VENV_BIN)/black ./
+format-ruff: install ## Run ruff formatter
+	uv run ruff check --fix
+	uv run ruff format
 
-format-isort: $(INSTALL_STAMP) ## Format code using isort
-	$(VENV_BIN)/isort ./
+format: format-ruff  ## Run all formatters (ruff)
 
-
-format: format-isort format-black  ## Run all formatters (black, isort) 
-
-.PHONY: lint-isort lint-black lint-mypy lint format-lint format-black format-mypy format
+.PHONY: lint-ruff lint-mypy lint format-ruff format-mypy format
 
 #####################
 ##@ Testing Commands
 #####################
 
-pytest: $(INSTALL_STAMP)  ## Run test (pytest)
-	$(VENV_BIN)/pytest -vv --durations=10
+pytest: install  ## Run test (pytest)
+	uv run pytest -vv --durations=10
 
 test: pytest  ## Run Standard Tests
 
-.PHONY: pytest tox test
+.PHONY: pytest test
 
 
 #####################
 ##@ Inspect Commands
 #####################
 
-coverage-server: $(INSTALL_STAMP) ## Run coverage server
+coverage-server: install ## Run coverage server
 	$(PYTHON) -m http.server $(COVERAGE_SERVER_PORT) -d $(COVERAGE_DIR)
+
+.PHONY: coverage-server
 
 ########################
 ##@ Documentation Commands
 ########################
 
-docs-serve: $(INSTALL_STAMP) ## Serve MkDocs site locally
-	$(VENV_BIN)/mkdocs serve --watch-theme
+docs-serve: .uv ## Serve MkDocs site locally
+	uv run mkdocs serve --watch-theme
 
-docs-build: $(INSTALL_STAMP) ## Build MkDocs site into build/documentation/site
-	$(VENV_BIN)/mkdocs build --clean
+docs-build: .uv ## Build MkDocs site into build/documentation/site
+	uv run mkdocs build --clean
 
 .PHONY: docs-serve docs-build
 
@@ -179,15 +170,14 @@ docs-build: $(INSTALL_STAMP) ## Build MkDocs site into build/documentation/site
 #####################
 
 dist: install-release ## Build source and wheel package
-	@. $(VENV_BIN)/activate;\
-	$(PYTHON) -m build;
+	uv build
 
 reinstall: obliterate install ## Recreate environment and install
 
 pre-build: obliterate ## Removes existing build environment
 build: install ## Runs installation
-post-build: lint test  ## Run linters and tests   
+post-build: lint test  ## Run linters and tests
 release: pre-build build post-build  ## Runs pre-build, build, post-build
 run: release
 
-.PHONY: reinstall pre-build build post-build release run
+.PHONY: dist reinstall pre-build build post-build release run

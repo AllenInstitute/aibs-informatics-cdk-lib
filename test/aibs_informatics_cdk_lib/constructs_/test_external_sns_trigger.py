@@ -1,15 +1,14 @@
-from test.aibs_informatics_cdk_lib.base import CdkBaseTest
-
 from aws_cdk import aws_lambda as lambda_
 
 from aibs_informatics_cdk_lib.constructs_.external_sns_trigger import ExternalSnsTrigger
+from test.aibs_informatics_cdk_lib.base import CdkBaseTest
 
 
 class TestExternaSnsTriggerStack(CdkBaseTest):
     def test__init__simple(self):
         stack = self.get_dummy_stack("dummy-test-stack")
 
-        trigger_construct = ExternalSnsTrigger(
+        ExternalSnsTrigger(
             scope=stack,
             id="test-external-sns-trigger",
             env_base=self.env_base,

@@ -6,7 +6,7 @@ compute environments, job queues, and related infrastructure.
 
 from collections.abc import Iterable, Mapping, MutableMapping, Sequence
 from dataclasses import dataclass
-from typing import List, Literal, Optional, Union, cast
+from typing import Literal, cast
 
 import constructs
 from aibs_informatics_core.env import EnvBase
@@ -256,7 +256,7 @@ class Batch(EnvBaseConstruct):
 
         Raises:
             ValueError: If an unsupported resource type is provided.
-        """
+        """  # noqa: E501
         for resource in read_write_resources or []:
             if isinstance(resource, s3.Bucket):
                 resource.grant_read_write(self.instance_role)
@@ -503,10 +503,11 @@ class BatchEnvironment(EnvBaseConstruct):
                     "env_base": self.env_base,
                     "batch_queue": self.job_queue_name,
                     "compute_resource_type": self.compute_resource_type,
-                    # Get a hash of the launch template data. This is to ensure that when the launch template
-                    # changes the ComputeEnvironment will be recreated. This is required by Batch since any
-                    # updates to a launch template user data will not take effect until the Compute Environment
-                    # itself is destroyed and recreated.
+                    # Get a hash of the launch template data. This is to ensure that when the
+                    # launch template changes the ComputeEnvironment will be recreated.
+                    # This is required by Batch since any updates to a launch template user data
+                    # will not take effect until the Compute Environment itself is destroyed and
+                    # recreated.
                     # Related: https://github.com/hashicorp/terraform-provider-aws/issues/15535
                     "launch_template_user_data_hash": self.launch_template_user_data_hash,
                 }
@@ -535,6 +536,7 @@ class BatchEnvironment(EnvBaseConstruct):
         Returns:
             A Fargate or EC2 compute environment based on configuration.
         """
+        ce: batch.FargateComputeEnvironment | batch.ManagedEc2EcsComputeEnvironment
         if self.config.use_fargate:
             ce = batch.FargateComputeEnvironment(
                 self,
@@ -555,7 +557,7 @@ class BatchEnvironment(EnvBaseConstruct):
                 instance_role=self.instance_role,
                 launch_template=self.launch_template,
                 instance_types=self.instance_types,
-                # When instance types are explicitly configured, do not use optimal instance classes
+                # When instance types are explicitly configured, dont use optimal instance classes
                 # because we want to control the instance types via configuration and launch
                 # templates. If no instance types are specified, fall back to optimal selection.
                 use_optimal_instance_classes=self.instance_types is None,

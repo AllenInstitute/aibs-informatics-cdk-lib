@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional, Type, TypeVar, Union
+from typing import TypeVar
 
 import constructs
 from aibs_informatics_core.utils.os_operations import get_env_var

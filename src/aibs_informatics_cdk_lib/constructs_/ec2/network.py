@@ -1,5 +1,5 @@
 from collections.abc import Mapping, Sequence
-from typing import Optional
+from typing import cast
 
 import aws_cdk as cdk
 import constructs
@@ -16,7 +16,7 @@ class EnvBaseVpc(ec2.Vpc, EnvBaseConstructMixins):
         id: str | None,
         env_base: EnvBase,
         max_azs: int = 6,
-        ip_addresses: ec2.IpAddresses = ec2.IpAddresses.cidr("10.10.0.0/16"),
+        ip_addresses: ec2.IIpAddresses | ec2.IpAddresses = ec2.IpAddresses.cidr("10.10.0.0/16"),
         subnet_configuration: Sequence[ec2.SubnetConfiguration] | None = None,
         include_public_subnet: bool = True,
         include_private_subnet: bool = True,
@@ -74,7 +74,7 @@ class EnvBaseVpc(ec2.Vpc, EnvBaseConstructMixins):
             scope,
             id,
             max_azs=max_azs,
-            ip_addresses=ip_addresses,
+            ip_addresses=cast(ec2.IIpAddresses, ip_addresses),
             subnet_configuration=subnet_configuration,
             gateway_endpoints=gateway_endpoints,
             flow_logs=flow_logs,

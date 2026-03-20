@@ -8,7 +8,7 @@ __all__ = [
 import logging
 import os
 import pathlib
-from typing import List, Optional, Tuple, Type, Union
+from typing import cast
 
 import constructs
 from aibs_informatics_core.env import (
@@ -105,7 +105,7 @@ def get_env_base(node: constructs.Node) -> EnvBase:
         env_base = EnvBase.from_env()
         logger.info(f"Loading EnvBase from ENV_VARs: env_base={env_base}")
         return env_base
-    except:
+    except Exception:
         env_type = EnvType.DEV
 
         env_label = env_label__from_context
@@ -136,8 +136,11 @@ def set_env_base(env_base: EnvBase) -> None:
 
 
 def get_project_config_and_env_base(
-    node: constructs.Node, project_config_cls: type[P] = ProjectConfig
+    node: constructs.Node, project_config_cls: type[P] | None = None
 ) -> tuple[P, EnvBase]:
+    """Get the project configuration and environment base for a given node."""
+    if project_config_cls is None:
+        project_config_cls = cast(type[P], ProjectConfig)
     env_base = get_env_base(node)
 
     config = project_config_cls.load_config()
@@ -145,15 +148,16 @@ def get_project_config_and_env_base(
 
 
 def get_config(
-    node: constructs.Node, project_config_cls: type[BaseProjectConfig[G, S]] = ProjectConfig
+    node: constructs.Node,
+    project_config_cls: type[BaseProjectConfig[G, S]] = ProjectConfig,  # type: ignore # the type signature is a bit complex and mypy is having trouble with it, but the intention is that the caller can specify a project config class with any generic params and the return type will be the stage config type of that project config class
 ) -> S:
     """
     Retrieves the stage configuration for a given node.
 
     Args:
         node (constructs.Node): The node for which to retrieve the configuration.
-        project_config_cls (Type[BaseProjectConfig[G, S]], optional): The project configuration class to use.
-            Defaults to ProjectConfig.
+        project_config_cls (Type[BaseProjectConfig[G, S]], optional):
+            The project configuration class to use. Defaults to ProjectConfig.
 
     Returns:
         The stage configuration object.

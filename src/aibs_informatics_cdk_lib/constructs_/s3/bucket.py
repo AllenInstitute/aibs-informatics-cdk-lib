@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Literal, Optional, Union
+from typing import Literal
 
 import aws_cdk as cdk
 import constructs
@@ -67,7 +67,7 @@ class EnvBaseBucket(s3.Bucket, EnvBaseConstructMixins):
                 The pattern is applied to object keys within the bucket. You can use '*' and '?'
                 wildcards. For more information, see the following link:
                 https://docs.aws.amazon.com/AmazonS3/latest/userguide/security_iam_service-with-iam.html#security_iam_service-with-iam-id-based-policies-resources # noqa: E501
-        """
+        """  # noqa: E501
 
         grant_bucket_access(self, role, *permissions, objects_key_pattern=objects_key_pattern)
 
@@ -86,9 +86,9 @@ def grant_bucket_access(
         objects_key_pattern (Optional[str], optional): Optional pattern to constrain access to.
             The pattern is applied to object keys within the bucket. You can use '*' and '?'
             wildcards. For more information, see the following link:
-            https://docs.aws.amazon.com/AmazonS3/latest/userguide/security_iam_service-with-iam.html#security_iam_service-with-iam-id-based-policies-resources # noqa: E501
+            https://docs.aws.amazon.com/AmazonS3/latest/userguide/security_iam_service-with-iam.html#security_iam_service-with-iam-id-based-policies-resources
             Defaults to None (which in turn represents '*').
-    """
+    """  # noqa: E501
     if not role:
         return
     for bucket in [bucket] if isinstance(bucket, s3.Bucket) else bucket:

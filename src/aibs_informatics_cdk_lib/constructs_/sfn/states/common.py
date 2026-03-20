@@ -1,5 +1,4 @@
-from mimetypes import init
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 import constructs
 from aws_cdk import aws_stepfunctions as sfn
@@ -68,7 +67,7 @@ class CommonOperation:
             },
             output_path="$.merged",
         )
-
+        chain_start: sfn.Pass | sfn.Choice
         if check_if_target_present:
             # Branch based on presence of the target
             choice = sfn.Choice(scope, "Check Target")

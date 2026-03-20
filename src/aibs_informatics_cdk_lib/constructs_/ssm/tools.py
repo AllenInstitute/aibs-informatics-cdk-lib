@@ -1,11 +1,9 @@
 import os
 from pathlib import Path
-from typing import Optional, Tuple, Union
 
 import constructs
 from aibs_informatics_core.env import EnvBase
-from aibs_informatics_core.models.aws.s3 import S3URI, S3KeyPrefix
-from aibs_informatics_core.utils.hashing import sha256_hexdigest
+from aibs_informatics_core.models.aws.s3 import S3KeyPrefix, S3Path
 from aws_cdk import aws_s3_deployment as s3deployment
 from aws_cdk import aws_ssm as ssm
 
@@ -51,7 +49,7 @@ class SSMTools(EnvBaseConstruct):
             self,
             "-".join([*param_name_components, "ssm-parameter"]),
             # Store the S3 URI location in an SSM parameter
-            string_value=S3URI.build(
+            string_value=S3Path.build(
                 bucket_name=destination_bucket.bucket_name,
                 key=f"{destination_key_prefix}/{filename}",
                 full_validate=False,
@@ -89,7 +87,7 @@ class SSMTools(EnvBaseConstruct):
         )
 
         # Store the S3 URI location in an SSM parameter
-        s3_uri = S3URI.build(destination_bucket.bucket_name, destination_key, full_validate=False)
+        s3_uri = S3Path.build(destination_bucket.bucket_name, destination_key, full_validate=False)
 
         parameter_name = self.env_base.get_ssm_param_name(*param_name_components)
         cmd_wrapper_param = ssm.StringParameter(

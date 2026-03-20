@@ -1,6 +1,5 @@
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import List, Optional, Union
 
 import constructs
 from aibs_informatics_core.env import EnvBase
@@ -48,7 +47,7 @@ def get_data_path_stats_fragment(
 
     Returns:
         BatchInvokedLambdaFunction fragment for getting data path stats
-    """
+    """  # noqa: E501
     fragment = BatchInvokedLambdaFunction(
         scope=scope,
         id=id,
@@ -100,7 +99,7 @@ def outdated_data_path_scanner_fragment(
 
     Returns:
         BatchInvokedLambdaFunction fragment for scanning outdated data paths
-    """
+    """  # noqa: E501
 
     fragment = BatchInvokedLambdaFunction(
         scope=scope,
@@ -155,7 +154,7 @@ def remove_data_paths_fragment(
 
     Returns:
         BatchInvokedLambdaFunction fragment for removing data paths
-    """
+    """  # noqa: E501
     fragment = BatchInvokedLambdaFunction(
         scope=scope,
         id=id,
@@ -272,7 +271,7 @@ class CleanFileSystemFragment(BatchInvokedBaseFragment):
                 This memory value is used for both the outdated path scanner and removal of data paths.
             vcpus (int, optional): vcpus needed. Defaults to 1.
                 This memory value is used for both the outdated path scanner and removal of data paths.
-        """
+        """  # noqa: E501
         super().__init__(scope, id, env_base)
 
         aibs_informatics_image_uri = (

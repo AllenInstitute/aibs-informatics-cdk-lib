@@ -1,5 +1,5 @@
-from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any, List, Literal, Optional, Union
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any, Literal
 
 import constructs
 from aibs_informatics_aws_utils.constants.lambda_ import (
@@ -36,10 +36,6 @@ else:
 
 
 class BatchInvokedBaseFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixins):
-    @property
-    def required_managed_policies(self) -> Sequence[iam.IManagedPolicy | str]:
-        return super().required_managed_policies
-
     @property
     def required_inline_policy_statements(self) -> list[iam.PolicyStatement]:
         return [
@@ -120,7 +116,7 @@ class BatchInvokedLambdaFunction(BatchInvokedBaseFragment, AWSBatchMixins):
             volumes (List[VolumeTypeDef] | None): List of volumes to add to state machine. Defaults to None.
             platform_capabilities (List[Literal["EC2", "FARGATE"]] | str | None): platform capabilities to use. This can be a reference path (e.g. "$.platform_capabilities")
             job_role_arn (str | None): Job role arn to use for the job. This can be a reference path (e.g. "$.job_role_arn")
-        """
+        """  # noqa: E501
         super().__init__(scope, id, env_base)
         key_prefix = key_prefix or S3_SCRATCH_KEY_PREFIX
 
@@ -365,7 +361,7 @@ class BatchInvokedExecutorFragment(BatchInvokedBaseFragment, AWSBatchMixins):
             volumes (List[VolumeTypeDef] | None): List of volumes to add to state machine. Defaults to None.
             platform_capabilities (List[Literal["EC2", "FARGATE"]] | str | None): platform capabilities to use. This can be a reference path (e.g. "$.platform_capabilities")
             job_role_arn (str | None): Job role arn to use for the job. This can be a reference path (e.g. "$.job_role_arn")
-        """
+        """  # noqa: E501
         super().__init__(scope, id, env_base)
         key_prefix = key_prefix or S3_SCRATCH_KEY_PREFIX
 

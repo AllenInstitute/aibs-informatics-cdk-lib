@@ -1,5 +1,3 @@
-from typing import Optional
-
 from aibs_informatics_core.env import EnvBase
 from constructs import Construct
 

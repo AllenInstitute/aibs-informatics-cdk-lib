@@ -1,5 +1,3 @@
-from typing import List
-
 # Generated from notebooks/ec2-instance-type-selection.ipynb
 ON_DEMAND_INSTANCE_TYPES: list[str] = [
     "c5a.large",

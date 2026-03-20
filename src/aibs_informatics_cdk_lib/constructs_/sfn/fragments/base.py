@@ -6,7 +6,7 @@ state machine fragments and workflows.
 
 from abc import abstractmethod
 from collections.abc import Mapping, Sequence
-from typing import Any, Dict, List, Optional, TypeVar, Union, cast
+from typing import Any, TypeVar, cast
 
 import aws_cdk as cdk
 import constructs
@@ -114,7 +114,7 @@ def create_role(
         construct_id,
         assumed_by=assumed_by,  # type: ignore
         managed_policies=[
-            *(managed_policies or []),
+            *(managed_policies or []),  # type: ignore[list-item] # mypy does not understand that ManagedPolicy is an IManagedPolicy
             *[
                 iam.ManagedPolicy.from_aws_managed_policy_name(policy)
                 for policy in (
@@ -360,6 +360,12 @@ class EnvBaseStateMachineFragment(StateMachineFragment, StateMachineMixins):
         output_path: str | None = "$[0]",
         result_path: str | None = None,
         result_selector: Mapping[str, Any] | None = None,
+        arguments: Mapping[str, Any] | None = None,
+        parameters: Mapping[str, Any] | None = None,
+        query_language: sfn.QueryLanguage | None = None,
+        state_name: str | None = None,
+        assign: Mapping[str, Any] | None = None,
+        outputs: Any = None,
     ) -> sfn.Parallel:
         """Convert the fragment to a single parallel state.
 
@@ -383,6 +389,12 @@ class EnvBaseStateMachineFragment(StateMachineFragment, StateMachineMixins):
             output_path=output_path,
             result_path=result_path,
             result_selector=result_selector,
+            arguments=arguments,
+            parameters=parameters,
+            query_language=query_language,
+            state_name=state_name,
+            assign=assign,
+            outputs=outputs,
         )
 
     def to_state_machine(
@@ -435,7 +447,7 @@ class EnvBaseStateMachineFragment(StateMachineFragment, StateMachineMixins):
         )
 
     @property
-    def required_managed_policies(self) -> Sequence[iam.ManagedPolicy | str]:
+    def required_managed_policies(self) -> Sequence[iam.IManagedPolicy | str]:
         """Get required managed policies for this fragment.
 
         Returns:
@@ -578,7 +590,7 @@ class TaskWithPrePostStatus(LazyLoadStateMachineFragment):
         # ---------------------------
         # START DEFINITION
         # ---------------------------
-        definition = sfn.Pass(
+        definition: sfn.Chain | sfn.Pass = sfn.Pass(
             self,
             f"{self.task_name} Start",
             parameters={

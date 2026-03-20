@@ -4,48 +4,60 @@
 # -----------------------------------------------------------------------------
 
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
 
+
+# -----------------------------------------------------------------------------
 [project]
 name = "aibs-informatics-cdk-lib"
 authors = [{ name = "AIBS Informatics Group", email = "marmot@alleninstitute.onmicrosoft.com"}]
 maintainers = [{ name = "AIBS Informatics Group", email = "marmot@alleninstitute.onmicrosoft.com"}]
 description = "CDK Library for AIBS Informatics services"
 readme = { file = "README.md", content-type = "text/markdown" }
-license = { file = "LICENSE" }
+dynamic = [ "version"]
 requires-python = ">=3.11"
-dynamic = [
-    "version",
-]
+
 dependencies = [
-    "aibs-informatics-aws-utils>=0.0.12,<1.0",
-    "aibs-informatics-core>=0.4.1,<1.0",
-     # AWS CDK dependencies
+    "aibs-informatics-aws-utils~=1.0",
+    "aibs-informatics-core>=1.0.1,<2",
+    # AWS CDK dependencies
     "aws-cdk-lib~=2.96",
     "constructs~=10.0",
 ]
 
-[project.optional-dependencies]
+# For dev dependencies: https://peps.python.org/pep-0735/
+# See also: https://docs.astral.sh/uv/concepts/projects/dependencies/#dependency-groups
+[dependency-groups]
 dev = [
     "aibs-informatics-test-resources[all]~=0.0.4",
-    "boto3-stubs[s3,batch]",
-    "mypy~=1.13.0",
-    # docs dependencies
-    "griffe-pydantic~=1.1",
-    "mkdocs~=1.6",
-    "mkdocs-material~=9.5",
-    "mkdocstrings[python]~=0.25",
 ]
-
+lint = [
+    "boto3-stubs[s3,batch]",
+    "mypy~=1.18.0",
+    "ruff~=0.9",
+    "types-PyYAML",
+]
 release = [
     "build",
     "bump-my-version",
     "wheel",
 ]
+docs = [
+    "griffe-pydantic~=1.1",
+    "mkdocs~=1.6",
+    "mkdocs-material~=9.5",
+    "mkdocstrings[python]~=0.25",
+]
+all = [
+    {include-group = "dev"},
+    {include-group = "lint"},
+    {include-group = "release"},
+    {include-group = "docs"},
+]
 
-[tool.setuptools.dynamic]
-version = {attr = "aibs_informatics_cdk_lib._version.__version__"}
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.setuptools.package-data]
 "*" = [
@@ -53,9 +65,8 @@ version = {attr = "aibs_informatics_cdk_lib._version.__version__"}
     '*.sh',
 ]
 
-[tool.setuptools.packages.find]
-where = ["src"]
-
+[tool.setuptools.dynamic]
+version = {attr = "aibs_informatics_cdk_lib._version.__version__"}
 
 [project.urls]
 Documentation = "https://.github.io/aibs-informatics-cdk-lib/"
@@ -63,6 +74,14 @@ Homepage = "https://github.com/AllenInstitute/aibs-informatics-cdk-lib/"
 Issues = "https://github.com/AllenInstitute/aibs-informatics-cdk-lib/issues"
 Repository = "https://github.com/AllenInstitute/aibs-informatics-cdk-lib/"
 
+
+# -----------------------------------------------------------------------------
+##  astral-uv Configurations
+#   https://docs.astral.sh/uv/getting-started/
+# -----------------------------------------------------------------------------
+
+[tool.uv]
+default-groups = ["dev", "lint", "docs"]
 
 # -----------------------------------------------------------------------------
 ##  Pyright Configurations
@@ -147,6 +166,7 @@ cache_dir = "build/.pytest_cache"
 exclude = '''(?x)(
     assets/
     | build/
+    | build_tools
     | cdk.out/
     | setup.py$
     | test/
@@ -162,7 +182,7 @@ incremental = false
 # https://mypy.readthedocs.io/en/stable/config_file.html#import-discovery
 ignore_missing_imports = true
 follow_imports = "silent"
-no_site_packages = true
+no_site_packages = false
 
 # Untyped definitions and calls
 # https://mypy.readthedocs.io/en/stable/config_file.html#untyped-definitions-and-calls
@@ -207,32 +227,25 @@ ignore_errors = false
 
 
 # -----------------------------------------------------------------------------
-##  Black Configurations
-#   https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html#what-on-earth-is-a-pyproject-toml-file
+##  ruff Configurations
+#   https://beta.ruff.rs/docs/configuration/
 # -----------------------------------------------------------------------------
 
-
-[tool.black]
+[tool.ruff]
 line-length = 99
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # The following are specific to Black, you probably don't want those.
-  | cdk.out
-)/
-'''
+src = ["src", "test"]
+cache-dir = "build/.ruff_cache"
 
-# -----------------------------------------------------------------------------
-##  isort Configurations
-#   https://pycqa.github.io/isort/docs/configuration/config_files.html
-# -----------------------------------------------------------------------------
-
-[tool.isort]
-# required for compatibility with black:
-line_length = 99
-profile = "black"
-src_paths = ["src", "test"]
-skip = [".venv", "build", "cdk.out"]
+[tool.ruff.lint]
+# For rule classes and what each encompasses, see: https://docs.astral.sh/ruff/rules/
+select = [
+    "E",  # pycodestyle errors
+    "F",  # pyflakes
+    "W",  # pycodestyle warnings
+    # "C90",  # TODO: enable mccabe complexity eventually
+    "I",  # isort
+]
+per-file-ignores = { "notebooks/**/*" = ["E501"] }
 
 # -----------------------------------------------------------------------------
 ##  bumpversion Configurations

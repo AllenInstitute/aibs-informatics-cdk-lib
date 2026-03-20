@@ -1,5 +1,4 @@
 from collections.abc import Iterable
-from typing import Optional, Union
 
 import constructs
 from aibs_informatics_aws_utils.constants.efs import (
