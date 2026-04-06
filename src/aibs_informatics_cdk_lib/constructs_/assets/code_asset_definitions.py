@@ -17,6 +17,11 @@ from aibs_informatics_cdk_lib.constructs_.assets.code_asset import (
     PYTHON_REGEX_EXCLUDES,
     CodeAsset,
 )
+from aibs_informatics_cdk_lib.constructs_.assets.source import (
+    ContainerImageSource,
+    GitSource,
+    PackageSource,
+)
 
 AIBS_INFORMATICS_AWS_LAMBDA_REPO_ENV_VAR = "AIBS_INFORMATICS_AWS_LAMBDA_REPO"
 AIBS_INFORMATICS_AWS_LAMBDA_REPO = "git@github.com:AllenInstitute/aibs-informatics-aws-lambda.git"
@@ -25,6 +30,25 @@ logger = logging.getLogger(__name__)
 
 
 class AssetsMixin:
+    @classmethod
+    def _normalize_source(
+        cls, source: PackageSource | str | None, default_repo_url: str
+    ) -> PackageSource:
+        """Normalize a source parameter into a PackageSource instance.
+
+        Args:
+            source: A PackageSource, a string (git URL, local path, or image ref), or None.
+            default_repo_url: Default git repo URL to use when source is None.
+
+        Returns:
+            A resolved PackageSource instance.
+        """
+        if source is None:
+            return GitSource(url=default_repo_url)
+        if isinstance(source, str):
+            return PackageSource.from_str(source)
+        return source
+
     @classmethod
     def resolve_repo_path(cls, repo_url: str, repo_path_env_var: str | None) -> Path:
         """Resolves the repo path from the environment or clones the repo from the url
@@ -65,13 +89,19 @@ class AIBSInformaticsCodeAssets(constructs.Construct, AssetsMixin):
         construct_id: str,
         env_base: EnvBase,
         runtime: lambda_.Runtime | None = None,
-        aibs_informatics_aws_lambda_repo: str | None = None,
+        aibs_informatics_aws_lambda_repo: PackageSource | str | None = None,
     ) -> None:
         super().__init__(scope, construct_id)
         self.env_base = env_base
         self.runtime = runtime or lambda_.Runtime.PYTHON_3_11
+        self._source = self._normalize_source(
+            aibs_informatics_aws_lambda_repo, AIBS_INFORMATICS_AWS_LAMBDA_REPO
+        )
+        # Backward compatibility
         self.AIBS_INFORMATICS_AWS_LAMBDA_REPO = (
-            aibs_informatics_aws_lambda_repo or AIBS_INFORMATICS_AWS_LAMBDA_REPO
+            self._source.url
+            if isinstance(self._source, GitSource)
+            else AIBS_INFORMATICS_AWS_LAMBDA_REPO
         )
 
     @cached_property
@@ -80,10 +110,18 @@ class AIBSInformaticsCodeAssets(constructs.Construct, AssetsMixin):
 
         Returns:
             The code asset
+
+        Raises:
+            TypeError: If the source is a ContainerImageSource (code assets require a git repo).
         """
+        if isinstance(self._source, ContainerImageSource):
+            raise TypeError(
+                "AIBSInformaticsCodeAssets requires a GitSource. "
+                "ContainerImageSource cannot be used for Lambda code assets."
+            )
 
         repo_path = self.resolve_repo_path(
-            self.AIBS_INFORMATICS_AWS_LAMBDA_REPO, AIBS_INFORMATICS_AWS_LAMBDA_REPO_ENV_VAR
+            self._source.repo_url_with_ref, AIBS_INFORMATICS_AWS_LAMBDA_REPO_ENV_VAR
         )
 
         asset_hash = generate_path_hash(
@@ -156,23 +194,35 @@ class AIBSInformaticsDockerAssets(constructs.Construct, AssetsMixin):
         scope: constructs.Construct,
         construct_id: str,
         env_base: EnvBase,
-        aibs_informatics_aws_lambda_repo: str | None = None,
+        aibs_informatics_aws_lambda_repo: PackageSource | str | None = None,
     ) -> None:
         super().__init__(scope, construct_id)
         self.env_base = env_base
+        self._source = self._normalize_source(
+            aibs_informatics_aws_lambda_repo, AIBS_INFORMATICS_AWS_LAMBDA_REPO
+        )
+        # Backward compatibility
         self.AIBS_INFORMATICS_AWS_LAMBDA_REPO = (
-            aibs_informatics_aws_lambda_repo or AIBS_INFORMATICS_AWS_LAMBDA_REPO
+            self._source.url
+            if isinstance(self._source, GitSource)
+            else AIBS_INFORMATICS_AWS_LAMBDA_REPO
         )
 
     @cached_property
-    def AIBS_INFORMATICS_AWS_LAMBDA(self) -> aws_ecr_assets.DockerImageAsset:
-        """Returns a NEW docker asset for aibs-informatics-aws-lambda
+    def AIBS_INFORMATICS_AWS_LAMBDA(self) -> aws_ecr_assets.DockerImageAsset | str:
+        """Returns a docker asset for aibs-informatics-aws-lambda.
+
+        When the source is a GitSource, returns a DockerImageAsset built from the repo.
+        When the source is a ContainerImageSource, returns the image URI string.
 
         Returns:
-            aws_ecr_assets.DockerImageAsset: The docker asset
+            The docker image asset or image URI string.
         """
+        if isinstance(self._source, ContainerImageSource):
+            return self._source.image_uri
+
         repo_path = self.resolve_repo_path(
-            self.AIBS_INFORMATICS_AWS_LAMBDA_REPO, AIBS_INFORMATICS_AWS_LAMBDA_REPO_ENV_VAR
+            self._source.repo_url_with_ref, AIBS_INFORMATICS_AWS_LAMBDA_REPO_ENV_VAR
         )
 
         return aws_ecr_assets.DockerImageAsset(
@@ -201,9 +251,21 @@ class AIBSInformaticsAssets(constructs.Construct):
         construct_id: str,
         env_base: EnvBase,
         runtime: lambda_.Runtime | None = None,
+        aibs_informatics_aws_lambda_repo: PackageSource | str | None = None,
     ) -> None:
         super().__init__(scope, construct_id)
         self.env_base = env_base
 
-        self.code_assets = AIBSInformaticsCodeAssets(self, "CodeAssets", env_base, runtime=runtime)
-        self.docker_assets = AIBSInformaticsDockerAssets(self, "DockerAssets", env_base)
+        self.code_assets = AIBSInformaticsCodeAssets(
+            self,
+            "CodeAssets",
+            env_base,
+            runtime=runtime,
+            aibs_informatics_aws_lambda_repo=aibs_informatics_aws_lambda_repo,
+        )
+        self.docker_assets = AIBSInformaticsDockerAssets(
+            self,
+            "DockerAssets",
+            env_base,
+            aibs_informatics_aws_lambda_repo=aibs_informatics_aws_lambda_repo,
+        )
