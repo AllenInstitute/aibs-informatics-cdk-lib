@@ -12,10 +12,8 @@ from aibs_informatics_cdk_lib.constructs_.assets.code_asset_definitions import (
 from aibs_informatics_cdk_lib.constructs_.assets.source import (
     ContainerImageSource,
     GitSource,
-    PackageSource,
 )
 from test.aibs_informatics_cdk_lib.base import CdkBaseTest
-
 
 # ---------------------------------------------------------------------------
 # AssetsMixin._normalize_source
@@ -122,7 +120,9 @@ class TestAIBSInformaticsDockerAssets(CdkBaseTest):
         )
         result = assets.AIBS_INFORMATICS_AWS_LAMBDA
         assert isinstance(result, str)
-        assert result == "ghcr.io/alleninstitute/aibs-informatics-aws-lambda@sha256:abcdef1234567890"
+        assert result == (
+            "ghcr.io/alleninstitute/aibs-informatics-aws-lambda@sha256:abcdef1234567890"
+        )
 
     @patch.object(AssetsMixin, "resolve_repo_path")
     def test__AIBS_INFORMATICS_AWS_LAMBDA__git_source_calls_resolve(self, mock_resolve):
@@ -141,8 +141,13 @@ class TestAIBSInformaticsDockerAssets(CdkBaseTest):
         # Access the property - we expect it to call resolve_repo_path
         # but the DockerImageAsset constructor will fail without a real directory,
         # so we patch that too
-        with patch("aibs_informatics_cdk_lib.constructs_.assets.code_asset_definitions.aws_ecr_assets.DockerImageAsset"):
-            with patch("aibs_informatics_cdk_lib.constructs_.assets.code_asset_definitions.generate_path_hash", return_value="fakehash"):
+        with patch(
+            "aibs_informatics_cdk_lib.constructs_.assets.code_asset_definitions.aws_ecr_assets.DockerImageAsset"
+        ):
+            with patch(
+                "aibs_informatics_cdk_lib.constructs_.assets.code_asset_definitions.generate_path_hash",
+                return_value="fakehash",
+            ):
                 assets.AIBS_INFORMATICS_AWS_LAMBDA
 
         mock_resolve.assert_called_once_with(
@@ -205,7 +210,10 @@ class TestAIBSInformaticsCodeAssets(CdkBaseTest):
         mock_path.as_posix.return_value = "/tmp/fake-repo"
         mock_resolve.return_value = mock_path
 
-        with patch("aibs_informatics_cdk_lib.constructs_.assets.code_asset_definitions.generate_path_hash", return_value="fakehash"):
+        with patch(
+            "aibs_informatics_cdk_lib.constructs_.assets.code_asset_definitions.generate_path_hash",
+            return_value="fakehash",
+        ):
             assets.AIBS_INFORMATICS_AWS_LAMBDA
 
         mock_resolve.assert_called_once_with(

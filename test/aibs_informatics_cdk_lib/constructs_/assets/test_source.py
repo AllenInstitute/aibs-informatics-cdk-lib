@@ -8,7 +8,6 @@ from aibs_informatics_cdk_lib.constructs_.assets.source import (
     PackageSourceType,
 )
 
-
 # ---------------------------------------------------------------------------
 # GitSource
 # ---------------------------------------------------------------------------
@@ -16,7 +15,9 @@ from aibs_informatics_cdk_lib.constructs_.assets.source import (
 
 class TestGitSource:
     def test__version_id__prefers_commit(self):
-        source = GitSource(url="git@github.com:org/repo.git", commit="abc123", tag="v1", branch="main")
+        source = GitSource(
+            url="git@github.com:org/repo.git", commit="abc123", tag="v1", branch="main"
+        )
         assert source.version_id() == "abc123"
 
     def test__version_id__falls_back_to_tag(self):
@@ -209,7 +210,9 @@ class TestPackageSourceFromStr:
             ),
         ],
     )
-    def test__from_str__container_images(self, value, expected_image, expected_tag, expected_digest):
+    def test__from_str__container_images(
+        self, value, expected_image, expected_tag, expected_digest
+    ):
         source = PackageSource.from_str(value)
         assert isinstance(source, ContainerImageSource)
         assert source.image == expected_image
@@ -246,7 +249,9 @@ class TestPackageSourceType:
         from pydantic import TypeAdapter
 
         adapter = TypeAdapter(PackageSourceType)
-        result = adapter.validate_python({"source_type": "git", "url": "git@github.com:org/repo.git"})
+        result = adapter.validate_python(
+            {"source_type": "git", "url": "git@github.com:org/repo.git"}
+        )
         assert isinstance(result, GitSource)
 
     def test__discriminated_union__container_source(self):
