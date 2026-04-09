@@ -230,6 +230,14 @@ class TestPackageSourceFromStr:
 
         subprocess.check_call(["git", "init", str(tmp_path)])
         subprocess.check_call(
+            ["git", "config", "user.email", "test@test.com"],
+            cwd=str(tmp_path),
+        )
+        subprocess.check_call(
+            ["git", "config", "user.name", "Test"],
+            cwd=str(tmp_path),
+        )
+        subprocess.check_call(
             ["git", "commit", "--allow-empty", "-m", "init"],
             cwd=str(tmp_path),
         )
