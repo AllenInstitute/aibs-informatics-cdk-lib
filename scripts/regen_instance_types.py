@@ -21,11 +21,10 @@ import json
 import os
 import re
 import sys
+import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
-
-import requests
 
 # --------------------------------------------------------------------------------------
 # Compute / pricing model
@@ -52,8 +51,8 @@ def get_instance_type_spot_interruptions(
 
     Returns a dict of {instance_type: (lower_bound, upper_bound)}.
     """
-    response = requests.get(url=SPOT_ADVISOR_URL, timeout=30)
-    spot_advisor = json.loads(response.text)["spot_advisor"]
+    with urllib.request.urlopen(SPOT_ADVISOR_URL, timeout=30) as response:
+        spot_advisor = json.loads(response.read())["spot_advisor"]
     region = region or os.environ.get("AWS_REGION") or "us-west-2"
 
     rates: Dict[str, Tuple[float, float]] = {}
