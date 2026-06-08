@@ -52,11 +52,20 @@ def get_instance_type_spot_interruptions(
     Returns a dict of {instance_type: (lower_bound, upper_bound)}.
     """
     with urllib.request.urlopen(SPOT_ADVISOR_URL, timeout=30) as response:
-        spot_advisor = json.loads(response.read())["spot_advisor"]
+        spot_advisor = json.loads(response.read()).get("spot_advisor", {})
     region = region or os.environ.get("AWS_REGION") or "us-west-2"
 
+    try:
+        region_data = spot_advisor[region][os_]
+    except KeyError as exc:
+        available_regions = ", ".join(sorted(spot_advisor.keys()))
+        raise KeyError(
+            f"Spot Advisor data missing region/OS: region={region!r}, os={os_!r}. "
+            f"Available regions: {available_regions}"
+        ) from exc
+
     rates: Dict[str, Tuple[float, float]] = {}
-    for it, info in spot_advisor[region][os_].items():
+    for it, info in region_data.items():
         rate = info.get("r")
         if rate == 0:
             rates[it] = (0.0, 0.05)
@@ -386,6 +395,8 @@ LAMBDA_LARGE_INSTANCE_TYPES: list[str] = MEDIUM_INSTANCE_TYPES
 
 def render_list(name: str, items: List[str]) -> str:
     sorted_items = sorted(items, key=instance_type_sort_key)
+    if not sorted_items:
+        return f"{name}: list[str] = []\n"
     body = ",\n".join(f'    "{it}"' for it in sorted_items)
     return f"{name}: list[str] = [\n{body},\n]\n"
 
