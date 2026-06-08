@@ -1,5 +1,6 @@
 import base64
 import functools
+import json
 import logging
 from abc import abstractmethod
 from collections.abc import Callable, Mapping, Sequence
@@ -9,7 +10,7 @@ from typing import Generic, Optional, TypeVar, cast
 
 import aws_cdk as cdk
 import constructs
-from aibs_informatics_core.env import EnvBase
+from aibs_informatics_core.env import EnvBase, EnvType
 from aws_cdk import aws_codepipeline as aws_codepipeline
 from aws_cdk import aws_codepipeline_actions, pipelines
 from aws_cdk import aws_codestarnotifications as codestarnotifications
@@ -269,6 +270,58 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
                 promotion_target_env_type
             ).pipeline
             assert promotion_target_pipeline_config is not None
+
+            checklist_items = self.release_checklists.get(promotion_target_env_type, [])
+            extra_sections = self.release_extra_sections.get(promotion_target_env_type, {})
+            llm_summary_enabled = self.release_notes_llm_summary
+            reviewers = self.release_reviewers.get(
+                promotion_target_env_type, self.default_release_reviewers
+            )
+
+            release_env_variables = {
+                "CICD_RELEASE_REVIEWER": ",".join(reviewers),
+                "CICD_RELEASE_SOURCE_ENV_TYPE": source_env_type,
+                "CICD_RELEASE_TARGET_ENV_TYPE": promotion_target_env_type,
+                "CICD_RELEASE_TARGET_BRANCH": promotion_target_pipeline_config.source.branch,
+                "CICD_RELEASE_REPOSITORY": pipeline_config.source.repository,
+                "CICD_RELEASE_CHECKLIST": "\n".join(checklist_items),
+                "CICD_RELEASE_EXTRA_SECTIONS_JSON": json.dumps(dict(extra_sections)),
+                "CICD_RELEASE_LLM_SUMMARY": "true" if llm_summary_enabled else "false",
+            }
+            if llm_summary_enabled:
+                release_env_variables["CICD_RELEASE_LLM_MODEL_ID"] = self.release_llm_model_id
+
+            release_role_policy_statements = [
+                CODE_BUILD_IAM_POLICY,
+                self.get_policy_with_secrets(self.pipeline_config.source.oauth_secret_name),
+            ]
+            if llm_summary_enabled:
+                # Cross-region inference profiles invoke under-the-hood foundation
+                # models in adjacent regions, so the policy needs both resource
+                # patterns. Scoped to a wildcard model id to keep this simple --
+                # the model id itself is set in the build environment, not granted.
+                release_role_policy_statements.append(
+                    iam.PolicyStatement(
+                        effect=iam.Effect.ALLOW,
+                        actions=["bedrock:InvokeModel"],
+                        resources=[
+                            build_arn(
+                                service="bedrock",
+                                resource_type="inference-profile",
+                                resource_delim="/",
+                                resource_id="*",
+                            ),
+                            build_arn(
+                                service="bedrock",
+                                resource_type="foundation-model",
+                                resource_delim="/",
+                                resource_id="*",
+                                account="",
+                            ),
+                        ],
+                    )
+                )
+
             create_pull_request_step = pipelines.CodeBuildStep(
                 "CreateReleasePullRequest",
                 input=self.get_pipeline_source(pipeline_config.source),
@@ -280,12 +333,7 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
                     {
                         "env": {
                             "shell": "bash",
-                            "variables": {
-                                "CICD_RELEASE_REVIEWER": "AllenInstitute/marmot",
-                                "CICD_RELEASE_SOURCE_ENV_TYPE": source_env_type,
-                                "CICD_RELEASE_TARGET_ENV_TYPE": promotion_target_env_type,
-                                "CICD_RELEASE_TARGET_BRANCH": promotion_target_pipeline_config.source.branch,  # noqa: E501
-                            },
+                            "variables": release_env_variables,
                             # https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html#build-spec.env.secrets-manager
                             "secrets-manager": {
                                 "GITHUB_TOKEN": pipeline_config.source.oauth_secret_name,
@@ -369,10 +417,7 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
                     # Run the release script
                     "bash $RELEASE_SCRIPT_PATH",
                 ],
-                role_policy_statements=[
-                    CODE_BUILD_IAM_POLICY,
-                    self.get_policy_with_secrets(self.pipeline_config.source.oauth_secret_name),
-                ],
+                role_policy_statements=release_role_policy_statements,
             )
             # Add dependencies to all other "post" steps
             if promote_wave.post:
@@ -454,6 +499,80 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
     @property
     def custom_codebuild_environment_variables(self) -> Mapping[str, BuildEnvironmentVariable]:
         return {}
+
+    @property
+    def default_release_reviewers(self) -> Sequence[str]:
+        """Reviewers requested on the release PR when no per-target override
+        is provided via ``release_reviewers``.
+
+        Override in a subclass to change the team-wide default.
+        """
+        return ["AllenInstitute/aibs-data-solution"]
+
+    @property
+    def release_reviewers(self) -> Mapping[EnvType, Sequence[str]]:
+        """Reviewers requested on the release PR, keyed by promotion target.
+
+        Each value is a list of GitHub user logins or ``org/team`` slugs that
+        will be passed to ``gh pr create --reviewer`` (comma-joined).
+
+        Override in a subclass for service-specific reviewers, e.g.:
+
+            return {
+                EnvType.PROD: ["AllenInstitute/oncall", "AllenInstitute/leads"],
+            }
+
+        When the mapping has no entry for the active promotion target,
+        ``default_release_reviewers`` is used.
+        """
+        return {}
+
+    @property
+    def release_checklists(self) -> Mapping[EnvType, Sequence[str]]:
+        """Checklist items rendered into the release PR body, keyed by promotion target.
+
+        Override in a subclass to add per-target checklist items, e.g.:
+
+            return {
+                EnvType.PROD: [
+                    "Notified on-call",
+                    "Confirmed rollback plan",
+                ],
+            }
+
+        When the mapping has no entry for the active promotion target, the
+        Checklist section is omitted from the PR body entirely.
+        """
+        return {}
+
+    @property
+    def release_extra_sections(self) -> Mapping[EnvType, Mapping[str, str]]:
+        """Extra markdown sections appended to the release PR body, keyed by
+        promotion target. Inner mapping is heading -> markdown body.
+
+        Override in a subclass for service-specific sections (schema migrations,
+        feature-flag references, dashboards, etc.).
+        """
+        return {}
+
+    @property
+    def release_notes_llm_summary(self) -> bool:
+        """If True, prepend a Bedrock-generated narrative summary to the release
+        PR body. Requires the CodeBuild role to have bedrock:InvokeModel access
+        (added automatically when this is True).
+        """
+        return False
+
+    @property
+    def release_llm_model_id(self) -> str:
+        """Bedrock model id used when ``release_notes_llm_summary`` is enabled.
+
+        Defaults to Claude Haiku 4.5 -- plenty capable for a 2-3 sentence
+        release-note summary at a fraction of the cost of Sonnet/Opus.
+        Override to use Sonnet 4.6 / Opus 4.8 or to pin to a specific
+        cross-region inference profile (e.g. ``us.anthropic.claude-haiku-4-5``).
+        """
+        return "anthropic.claude-haiku-4-5"
 
     @property
     def source_cache(self) -> dict[str, pipelines.CodePipelineSource]:
