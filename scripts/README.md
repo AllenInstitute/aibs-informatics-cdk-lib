@@ -50,9 +50,9 @@ Flags:
 - `--output` — destination `.py` file. Defaults to
   `src/aibs_informatics_cdk_lib/constructs_/batch/instance_types.py`.
 
-### Tuning the buckets
+### Tuning the presets
 
-Filters and bucket definitions live in `regen_instance_types.py` itself —
-edit `BASE_FILTERS` or the `Bucket(...)` entries in `build_buckets()` to change
+Filters and preset definitions live in `regen_instance_types.py` itself —
+edit `BASE_FILTERS` or the `Preset(...)` entries in `build_presets()` to change
 what each list contains, then re-run. Diff the output against the previous
 committed version before committing.
