@@ -507,7 +507,7 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
 
         Override in a subclass to change the team-wide default.
         """
-        return ["AllenInstitute/aibs-data-solution"]
+        return ["AllenInstitute/aibs-data-solutions"]
 
     @property
     def release_reviewers(self) -> Mapping[EnvType, Sequence[str]]:
@@ -572,7 +572,7 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
         Override to use Sonnet 4.6 / Opus 4.8 or to pin to a specific
         cross-region inference profile (e.g. ``us.anthropic.claude-haiku-4-5``).
         """
-        return "anthropic.claude-haiku-4-5"
+        return "anthropic.claude-haiku-4-5-20251001-v1:0"
 
     @property
     def source_cache(self) -> dict[str, pipelines.CodePipelineSource]:

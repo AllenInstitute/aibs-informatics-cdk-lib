@@ -233,7 +233,7 @@ render_llm_summary() {
         max_tokens: 500,
         messages: [{
             role: "user",
-            content: ("Summarize this software release in 2-3 sentences for a deployment PR description. Focus on themes and user-facing impact. Do not restate the bullet list verbatim. Release contents:\n\n" + $notes)
+            content: ("Summarize this software release in 1-2 paragraphs for a deployment PR description. Focus on themes and user-facing impact. Do not restate the bullet list verbatim. Release contents:\n\n" + $notes)
         }]
     }' > "$request_file"
 
