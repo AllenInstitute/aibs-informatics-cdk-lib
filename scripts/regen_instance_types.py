@@ -10,7 +10,7 @@ Usage:
         --profile sandbox \\
         --output src/aibs_informatics_cdk_lib/constructs_/batch/instance_types.py
 
-Filters are composable. Each *_FILTERS list below describes one bucket. To disable a
+Filters are composable. Each *_FILTERS list below describes one preset. To disable a
 filter, comment it out or remove it from the list.
 """
 
@@ -209,12 +209,12 @@ def f_supports(usage_class: Literal["spot", "on-demand"]) -> InstanceFilter:
     )
 
 
-# --- Bucket definitions ---
+# --- Preset definitions ---
 
 
 @dataclass
-class Bucket:
-    """A named instance-type bucket built by chaining filters."""
+class Preset:
+    """A named instance-type preset built by chaining filters."""
 
     name: str
     filters: List[InstanceFilter] = field(default_factory=list)
@@ -227,7 +227,7 @@ class Bucket:
         return out
 
 
-# Common base — applied to every bucket. Edit here to widen/narrow universe globally.
+# Common base — applied to every preset. Edit here to widen/narrow universe globally.
 BASE_FILTERS = [
     f_max_memory_gib(1024),
     f_max_vcpus(256),
@@ -235,27 +235,48 @@ BASE_FILTERS = [
     f_min_network_gbps(1.0),
 ]
 
+# Accelerator/GPU exclusion — opt-in per preset. AWS's gpu_limits=(0, 0) only checks
+# GpuInfo, so Inferentia/Trainium and fractional-GPU families (g6f, gr6f) slip
+# through. Add CPU_ONLY_FILTERS to a preset's filter list to keep it CPU-only;
+# omit them from a preset that should accept GPU/accelerator instances.
+CPU_ONLY_FILTERS = [
+    f_exclude_families(
+        [
+            "g",
+            "gr",
+            "p",  # NVIDIA GPU
+            "inf",
+            "trn",  # AWS Inferentia / Trainium
+            "dl",  # Habana Gaudi
+            "vt",
+            "f",  # video transcoding / FPGA
+        ]
+    ),
+]
 
-def build_buckets(arch: Literal["x86_64", "arm64"]) -> List[Bucket]:
-    """Return the bucket definitions for a given architecture.
 
-    Each Bucket reuses BASE_FILTERS plus per-bucket constraints. Comment out
-    filters or whole buckets to disable them.
+def build_presets(arch: Literal["x86_64", "arm64"]) -> List[Preset]:
+    """Return the preset definitions for a given architecture.
+
+    Each Preset reuses BASE_FILTERS plus per-preset constraints. Comment out
+    filters or whole presets to disable them.
     """
     return [
-        Bucket(
+        Preset(
             f"ON_DEMAND_INSTANCE_TYPES{'_ARM' if arch == 'arm64' else ''}",
             filters=[
                 *BASE_FILTERS,
+                *CPU_ONLY_FILTERS,
                 f_supports("on-demand"),
                 f_supports("spot"),
                 f_max_price_per_compute(1.0),
             ],
         ),
-        Bucket(
+        Preset(
             f"SPOT_INSTANCE_TYPES{'_ARM' if arch == 'arm64' else ''}",
             filters=[
                 *BASE_FILTERS,
+                *CPU_ONLY_FILTERS,
                 f_supports("on-demand"),
                 f_supports("spot"),
                 f_max_price_per_compute(1.0),
@@ -265,37 +286,41 @@ def build_buckets(arch: Literal["x86_64", "arm64"]) -> List[Bucket]:
                 f_max_spot_interruption(0.15),
             ],
         ),
-        Bucket(
+        Preset(
             f"TRANSFER_INSTANCE_TYPES{'_ARM' if arch == 'arm64' else ''}",
             filters=[
                 *BASE_FILTERS,
+                *CPU_ONLY_FILTERS,
                 f_max_memory_gib(8),
                 f_max_vcpus(4),
                 f_max_price_per_compute(1.50),
                 f_min_network_gbps(10.0),
             ],
         ),
-        Bucket(
+        Preset(
             f"MICRO_INSTANCE_TYPES{'_ARM' if arch == 'arm64' else ''}",
             filters=[
                 *BASE_FILTERS,
+                *CPU_ONLY_FILTERS,
                 f_max_memory_gib(4),
                 f_max_price_per_compute(1.50),
             ],
         ),
-        Bucket(
+        Preset(
             f"SMALL_INSTANCE_TYPES{'_ARM' if arch == 'arm64' else ''}",
             filters=[
                 *BASE_FILTERS,
+                *CPU_ONLY_FILTERS,
                 f_min_memory_gib(4),
                 f_max_memory_gib(8),
                 f_max_price_per_compute(1.50),
             ],
         ),
-        Bucket(
+        Preset(
             f"MEDIUM_INSTANCE_TYPES{'_ARM' if arch == 'arm64' else ''}",
             filters=[
                 *BASE_FILTERS,
+                *CPU_ONLY_FILTERS,
                 f_min_memory_gib(8),
                 f_max_memory_gib(16),
                 f_max_price_per_compute(1.50),
@@ -323,11 +348,12 @@ def fetch_enriched_instance_types(
     )
 
     print(f"[{arch}] Describing instance types in {region}...", file=sys.stderr)
+    # No gpu_limits filter here: GPU/accelerator exclusion is handled per-preset
+    # via CPU_ONLY_FILTERS so a future GPU preset can opt back in.
     raw = describe_instance_types_by_props(
         architectures=[arch],
         vcpu_limits=(1, 256),
         memory_limits=(1, 1024 * 1024),
-        gpu_limits=(0, 0),
         on_demand_support=True,
         spot_support=True,
         regions=[region],
@@ -381,16 +407,16 @@ def fetch_enriched_instance_types(
 # --------------------------------------------------------------------------------------
 
 
-HEADER = '''# DO NOT EDIT — generated by scripts/regen_instance_types.py.
+HEADER = """# DO NOT EDIT — generated by scripts/regen_instance_types.py.
 # Re-run: `python scripts/regen_instance_types.py --region <region> --profile <profile>`
-'''
+"""
 
-LEGACY_ALIASES = '''
+LEGACY_ALIASES = """
 # --- Legacy aliases (kept for backwards compatibility; prefer the names above) ---
 LAMBDA_SMALL_INSTANCE_TYPES: list[str] = MICRO_INSTANCE_TYPES
 LAMBDA_MEDIUM_INSTANCE_TYPES: list[str] = SMALL_INSTANCE_TYPES
 LAMBDA_LARGE_INSTANCE_TYPES: list[str] = MEDIUM_INSTANCE_TYPES
-'''
+"""
 
 
 def render_list(name: str, items: List[str]) -> str:
@@ -401,9 +427,9 @@ def render_list(name: str, items: List[str]) -> str:
     return f"{name}: list[str] = [\n{body},\n]\n"
 
 
-def render_file(buckets_by_arch: Dict[str, List[Tuple[str, List[str]]]]) -> str:
+def render_file(presets_by_arch: Dict[str, List[Tuple[str, List[str]]]]) -> str:
     chunks = [HEADER]
-    for arch, pairs in buckets_by_arch.items():
+    for arch, pairs in presets_by_arch.items():
         chunks.append(f"\n# --- {arch} ---\n")
         for name, items in pairs:
             chunks.append("\n" + render_list(name, items))
@@ -444,17 +470,17 @@ def main() -> int:
         ["x86_64", "arm64"] if args.arch == "both" else [args.arch]
     )
 
-    buckets_by_arch: Dict[str, List[Tuple[str, List[str]]]] = {}
+    presets_by_arch: Dict[str, List[Tuple[str, List[str]]]] = {}
     for arch in archs:
         candidates = fetch_enriched_instance_types(args.region, arch)
         pairs = []
-        for bucket in build_buckets(arch):
-            selected = bucket.select(candidates)
-            print(f"[{arch}] {bucket.name}: {len(selected)}", file=sys.stderr)
-            pairs.append((bucket.name, selected))
-        buckets_by_arch[arch] = pairs
+        for preset in build_presets(arch):
+            selected = preset.select(candidates)
+            print(f"[{arch}] {preset.name}: {len(selected)}", file=sys.stderr)
+            pairs.append((preset.name, selected))
+        presets_by_arch[arch] = pairs
 
-    rendered = render_file(buckets_by_arch)
+    rendered = render_file(presets_by_arch)
     args.output.write_text(rendered)
     print(f"Wrote {args.output}", file=sys.stderr)
     return 0
