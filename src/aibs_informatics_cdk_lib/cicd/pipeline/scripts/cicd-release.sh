@@ -80,6 +80,11 @@ git push --set-upstream --force origin $CICD_RELEASE_CANDIDATE_BRANCH
 CICD_RELEASE_DATE=$(date '+%Y-%m-%d')
 CICD_RELEASE_PR_TITLE="Release $CICD_RELEASE_SOURCE_ENV_TYPE -> $CICD_RELEASE_TARGET_ENV_TYPE ($CICD_RELEASE_DATE)"
 
+# Release tags chain each promotion to the next: this run's tag becomes the
+# `previous_tag_name` for the next promotion's generated release notes.
+CICD_RELEASE_TAG_NAMESPACE="cicd-release/$CICD_RELEASE_TARGET_BRANCH"
+CICD_RELEASE_NEW_TAG="$CICD_RELEASE_TAG_NAMESPACE/$CICD_RELEASE_DATE-$CICD_RELEASE_GIT_SHORT_COMMIT"
+
 CICD_RELEASE_PR_MESSAGE_FILE=$(mktemp)
 
 
@@ -100,115 +105,90 @@ render_header() {
 EOF
 }
 
-render_release_notes_body() {
-    local base="$CICD_RELEASE_TARGET_BRANCH"
-    local head="$CICD_RELEASE_SOURCE_COMMIT"
+# Resolve the previous release tag: the most recent tag in our release-tag
+# namespace that sits on the CURRENT SOURCE LINE (i.e. is an ancestor of the
+# commit being promoted).
+#
+# We anchor on the source commit -- NOT the target branch -- so the chain
+# survives every merge strategy. The promotion PR merges source -> target;
+# squash/rebase merges rewrite commits on the TARGET side, but the source
+# branch is never rewritten and only moves forward, so a tag created at a
+# prior source tip stays an ancestor of the current source tip. `--merged`
+# scopes selection to this source line, so tags from a different promotion lane
+# (a different source branch sharing this target's tag namespace) are excluded.
+#
+# `grep -vxF` drops the tag this run is about to create, in case a same-day
+# re-run of the same commit already pushed it. Prints the tag name, or empty
+# when none exists (e.g. the first promotion into this target).
+resolve_previous_release_tag() {
+    git tag --list "$CICD_RELEASE_TAG_NAMESPACE/*" \
+        --merged "$CICD_RELEASE_SOURCE_COMMIT" \
+        --sort=-creatordate 2>/dev/null \
+        | grep -vxF "$CICD_RELEASE_NEW_TAG" \
+        | head -n1
+}
 
+# Fallback used whenever GitHub's generate-notes endpoint can't be reached
+# (repo unconfigured, API error, etc.). Range is the previous release tag (or
+# the target branch tip on the first release) up to the promoted commit.
+render_release_notes_git_log() {
+    local since="$1"
+    local range
+    if [[ -n "$since" ]]; then
+        range="$since..$CICD_RELEASE_SOURCE_COMMIT"
+    else
+        range="origin/$CICD_RELEASE_TARGET_BRANCH..$CICD_RELEASE_SOURCE_COMMIT"
+    fi
+    git log "$range" --pretty=format:"- %s (%h) -- @%an" --no-merges 2>/dev/null \
+        || echo "_(no commits found)_"
+}
+
+render_release_notes_body() {
     if [[ -z "$CICD_RELEASE_REPOSITORY" ]]; then
         echo "_Repository not configured; falling back to git log:_"
         echo
-        git log "origin/$base..$head" --pretty=format:"- %s (%h) -- @%an" --no-merges 2>/dev/null \
-            || echo "_(no commits found)_"
+        render_release_notes_git_log ""
         return
     fi
 
-    local compare_json
-    compare_json=$(gh api "repos/$CICD_RELEASE_REPOSITORY/compare/$base...$head" 2>/dev/null)
+    local previous_tag
+    previous_tag=$(resolve_previous_release_tag)
 
-    if [[ -z "$compare_json" ]]; then
-        echo "_GitHub compare API unavailable; falling back to git log:_"
+    # GitHub's generate-notes builds categorized, PR-aware notes server-side in
+    # a single call -- buckets and labels are controlled per-repo via
+    # .github/release.yml. The change range is previous_tag -> source commit.
+    # When there is no previous tag (first release into this branch), omitting
+    # previous_tag_name lets GitHub auto-select; we instead fall back to git log
+    # below for a deterministic full-history listing.
+    if [[ -z "$previous_tag" ]]; then
+        echo "_No previous release tag found; listing all commits up to the promoted revision:_"
         echo
-        git log "origin/$base..$head" --pretty=format:"- %s (%h) -- @%an" --no-merges 2>/dev/null \
-            || echo "_(no commits found)_"
+        render_release_notes_git_log ""
         return
     fi
 
-    local commit_count
-    commit_count=$(jq '.commits | length' <<< "$compare_json")
+    local notes_json notes_body
+    notes_json=$(gh api --method POST "repos/$CICD_RELEASE_REPOSITORY/releases/generate-notes" \
+        -f "tag_name=$CICD_RELEASE_NEW_TAG" \
+        -f "target_commitish=$CICD_RELEASE_SOURCE_COMMIT" \
+        -f "previous_tag_name=$previous_tag" 2>/dev/null)
 
-    if [[ "$commit_count" == "0" ]]; then
-        echo "_No new commits in this release._"
+    if [[ -z "$notes_json" ]]; then
+        echo "_GitHub release-notes API unavailable; falling back to git log:_"
+        echo
+        render_release_notes_git_log "$previous_tag"
         return
     fi
 
-    if [[ "$commit_count" -ge 250 ]]; then
-        echo "_Release exceeds GitHub compare API limit (250 commits); falling back to git log:_"
-        echo
-        git log "origin/$base..$head" --pretty=format:"- %s (%h) -- @%an" --no-merges
+    notes_body=$(jq -r '.body // empty' <<< "$notes_json")
+    if [[ -z "$notes_body" ]]; then
+        echo "_No changes since previous release ($previous_tag)._"
         return
     fi
 
-    local breaking="" features="" fixes="" other="" direct=""
-    local seen_prs=" "
-    local sha
-
-    while IFS= read -r sha; do
-        local pulls_json
-        pulls_json=$(gh api "repos/$CICD_RELEASE_REPOSITORY/commits/$sha/pulls" 2>/dev/null)
-
-        if [[ -z "$pulls_json" || "$(jq 'length' <<< "$pulls_json" 2>/dev/null)" == "0" ]]; then
-            local subj short_sha
-            subj=$(jq -r --arg s "$sha" '.commits[] | select(.sha == $s) | .commit.message' <<< "$compare_json" | head -n1)
-            short_sha=${sha:0:7}
-            direct+="- ${subj:-$sha} ($short_sha)"$'\n'
-            continue
-        fi
-
-        local pr_number pr_title pr_user pr_labels entry
-        pr_number=$(jq -r '.[0].number' <<< "$pulls_json")
-
-        if [[ "$seen_prs" == *" $pr_number "* ]]; then
-            continue
-        fi
-        seen_prs+="$pr_number "
-
-        pr_title=$(jq -r '.[0].title' <<< "$pulls_json")
-        pr_user=$(jq -r '.[0].user.login' <<< "$pulls_json")
-        pr_labels=$(jq -r '.[0].labels[]?.name // empty' <<< "$pulls_json" | tr '\n' ' ')
-
-        entry="- #$pr_number $pr_title (@$pr_user)"$'\n'
-
-        if echo "$pr_labels" | grep -qiE '(^| )(breaking|breaking-change)( |$)'; then
-            breaking+="$entry"
-        elif echo "$pr_labels" | grep -qiE '(^| )(feat|feature|enhancement)( |$)'; then
-            features+="$entry"
-        elif echo "$pr_labels" | grep -qiE '(^| )(fix|bug|bugfix)( |$)'; then
-            fixes+="$entry"
-        else
-            other+="$entry"
-        fi
-    done < <(jq -r '.commits[].sha' <<< "$compare_json")
-
-    if [[ -n "$breaking" ]]; then
-        echo "### Breaking Changes"
-        echo
-        printf '%s' "$breaking"
-        echo
-    fi
-    if [[ -n "$features" ]]; then
-        echo "### Features"
-        echo
-        printf '%s' "$features"
-        echo
-    fi
-    if [[ -n "$fixes" ]]; then
-        echo "### Fixes"
-        echo
-        printf '%s' "$fixes"
-        echo
-    fi
-    if [[ -n "$other" ]]; then
-        echo "### Other Changes"
-        echo
-        printf '%s' "$other"
-        echo
-    fi
-    if [[ -n "$direct" ]]; then
-        echo "### Direct Commits"
-        echo
-        printf '%s' "$direct"
-        echo
-    fi
+    echo "_Changes since $previous_tag._"
+    echo
+    echo "$notes_body"
 }
 
 render_llm_summary() {
@@ -222,7 +202,7 @@ render_llm_summary() {
     local notes_body="$1"
     [[ -n "$notes_body" ]] || return 0
 
-    local model_id="${CICD_RELEASE_LLM_MODEL_ID:-anthropic.claude-haiku-4-5}"
+    local model_id="${CICD_RELEASE_LLM_MODEL_ID}"
 
     local request_file response_file
     request_file=$(mktemp)
@@ -236,7 +216,6 @@ render_llm_summary() {
             content: ("Summarize this software release in 1-2 paragraphs for a deployment PR description. Focus on themes and user-facing impact. Do not restate the bullet list verbatim. Release contents:\n\n" + $notes)
         }]
     }' > "$request_file"
-
     if aws bedrock-runtime invoke-model \
         --model-id "$model_id" \
         --body "fileb://$request_file" \
@@ -312,13 +291,24 @@ EXISTING_PR_NUMBER=$(gh pr list -B $CICD_RELEASE_TARGET_BRANCH -L 1 | cut -f1)
 if [[ ! -z $EXISTING_PR_NUMBER ]]; then
     echo "==> Pull Request already exists ($EXISTING_PR_NUMBER). Updating..."
 
-    # Update the PR message
-    echo "" >> $CICD_RELEASE_PR_MESSAGE_FILE
-    echo "---" >> $CICD_RELEASE_PR_MESSAGE_FILE
-    echo "# Previous Revisions" >> $CICD_RELEASE_PR_MESSAGE_FILE
-    echo "---" >> $CICD_RELEASE_PR_MESSAGE_FILE
-    echo "" >> $CICD_RELEASE_PR_MESSAGE_FILE
-    gh pr view --json body | jq -r '.body' >> $CICD_RELEASE_PR_MESSAGE_FILE
+    # Append the previous PR body as "Previous Revision", capped at ONE level of
+    # history. Earlier this appended the entire prior body -- which itself
+    # already contained a Previous Revision section -- so every update re-nested
+    # all prior history and the body grew ~quadratically toward GitHub's 65,536
+    # char PR-body limit. The HTML-comment sentinel marks where this run's own
+    # content ends and inherited history begins; we keep only the previous
+    # revision's content up to ITS sentinel, dropping everything it inherited.
+    PREVIOUS_BODY=$(gh pr view "$EXISTING_PR_NUMBER" --json body | jq -r '.body')
+    PREVIOUS_BODY=$(awk '/<!-- cicd-release:history-below -->/{exit} {print}' <<< "$PREVIOUS_BODY")
+    {
+        echo ""
+        echo "<!-- cicd-release:history-below -->"
+        echo "---"
+        echo "# Previous Revision"
+        echo "---"
+        echo ""
+        printf '%s\n' "$PREVIOUS_BODY"
+    } >> "$CICD_RELEASE_PR_MESSAGE_FILE"
 
     gh pr edit $EXISTING_PR_NUMBER \
         --title "$CICD_RELEASE_PR_TITLE" \
@@ -328,9 +318,35 @@ else
 
     echo "==> Creating new Pull Request"
 
+    # Only pass --reviewer when reviewers are configured; gh errors on an empty value.
+    reviewer_args=()
+    if [[ -n "$CICD_RELEASE_REVIEWER" ]]; then
+        reviewer_args=(--reviewer "$CICD_RELEASE_REVIEWER")
+    fi
+
     gh pr create \
         --base $CICD_RELEASE_TARGET_BRANCH \
         --title "$CICD_RELEASE_PR_TITLE" \
         --body-file "$CICD_RELEASE_PR_MESSAGE_FILE" \
-        --reviewer "$CICD_RELEASE_REVIEWER"
+        "${reviewer_args[@]}"
+fi
+
+
+###################################
+# Tag the promoted revision
+###################################
+# This tag becomes the `previous_tag_name` for the NEXT promotion's generated
+# release notes, chaining each release to the last. It is created at the source
+# (promoted) commit, on the source line. resolve_previous_release_tag() selects
+# the next range start from this same source line (`git tag --merged
+# $SOURCE_COMMIT`), so the chain is independent of how the promotion PR merges
+# into the target -- merge commit, squash, and rebase all work, because the
+# source branch is never rewritten.
+echo
+echo "==> Tagging promoted revision: $CICD_RELEASE_NEW_TAG -> $CICD_RELEASE_GIT_SHORT_COMMIT"
+git tag -f "$CICD_RELEASE_NEW_TAG" "$CICD_RELEASE_SOURCE_COMMIT"
+if git push -f origin "refs/tags/$CICD_RELEASE_NEW_TAG"; then
+    echo "==> Pushed release tag $CICD_RELEASE_NEW_TAG"
+else
+    echo "==! Failed to push release tag $CICD_RELEASE_NEW_TAG; next release's notes range may be wider than intended." >&2
 fi

@@ -569,10 +569,17 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
 
         Defaults to Claude Haiku 4.5 -- plenty capable for a 2-3 sentence
         release-note summary at a fraction of the cost of Sonnet/Opus.
-        Override to use Sonnet 4.6 / Opus 4.8 or to pin to a specific
-        cross-region inference profile (e.g. ``us.anthropic.claude-haiku-4-5``).
+
+        This is a cross-region inference profile id (note the ``us.`` prefix).
+        Bedrock requires an inference profile -- not the bare foundation-model
+        id ``anthropic.claude-haiku-4-5-20251001-v1:0`` -- for on-demand
+        ``invoke-model`` of the newer Claude models; the foundation-model id
+        returns a ValidationException. Verify the exact id for your region with
+        ``aws bedrock list-inference-profiles --region <region>``.
+
+        Override to use Sonnet 4.6 / Opus 4.8 or to pin a different region group.
         """
-        return "anthropic.claude-haiku-4-5-20251001-v1:0"
+        return "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 
     @property
     def source_cache(self) -> dict[str, pipelines.CodePipelineSource]:
