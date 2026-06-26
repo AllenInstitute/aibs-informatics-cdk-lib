@@ -56,6 +56,31 @@ class TestExternaSnsTriggerStack(CdkBaseTest):
         template.resource_count_is("AWS::SQS::QueuePolicy", 1)
         template.resource_count_is("AWS::CloudWatch::Alarm", 1)
 
+
+    def test__init__with_sns_subscription_disabled(self):
+        stack = self.get_dummy_stack("dummy-test-stack")
+
+        trigger_construct = ExternalSnsTrigger(
+            scope=stack,
+            id="test-external-sns-trigger",
+            env_base=self.env_base,
+            triggered_lambda_fn=None,
+            external_sns_event_name="test-event",
+            external_sns_topic_arn="arn:aws:sns:us-west-2:123456789012:TestTopic",
+            enable_sns_subscription=False,
+        )
+
+        # The topic reference should still be set even when subscription is disabled
+        assert trigger_construct.external_sns_topic is not None
+
+        template = self.get_template(stack)
+        # No subscription (or its associated queue policy) should be created
+        template.resource_count_is("AWS::SNS::Subscription", 0)
+        template.resource_count_is("AWS::SQS::QueuePolicy", 0)
+        # The rest of the resources should still be created
+        template.resource_count_is("AWS::SQS::Queue", 2)
+        template.resource_count_is("AWS::CloudWatch::Alarm", 1)
+
     def test__init__with_queue_and_dlq_name_properties(self):
         stack = self.get_dummy_stack("dummy-test-stack")
 
