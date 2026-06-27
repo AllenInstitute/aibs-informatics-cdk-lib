@@ -1,3 +1,4 @@
+from aibs_informatics_core.env import EnvBase, EnvType
 from aws_cdk import aws_lambda as lambda_
 
 from aibs_informatics_cdk_lib.constructs_.external_sns_trigger import ExternalSnsTrigger
@@ -15,6 +16,7 @@ class TestExternaSnsTriggerStack(CdkBaseTest):
             triggered_lambda_fn=None,
             external_sns_event_name="test-event",
             external_sns_topic_arn="arn:aws:sns:us-west-2:123456789012:TestTopic",
+            sns_subscription_enabled=True,
         )
 
         template = self.get_template(stack)
@@ -42,6 +44,7 @@ class TestExternaSnsTriggerStack(CdkBaseTest):
             triggered_lambda_fn=triggered_lambda_fn,
             external_sns_event_name="test-event",
             external_sns_topic_arn="arn:aws:sns:us-west-2:123456789012:TestTopic",
+            sns_subscription_enabled=True,
         )
 
         assert trigger_construct.queue_name == self.env_base.prefixed(
@@ -56,7 +59,6 @@ class TestExternaSnsTriggerStack(CdkBaseTest):
         template.resource_count_is("AWS::SQS::QueuePolicy", 1)
         template.resource_count_is("AWS::CloudWatch::Alarm", 1)
 
-
     def test__init__with_sns_subscription_disabled(self):
         stack = self.get_dummy_stack("dummy-test-stack")
 
@@ -67,7 +69,6 @@ class TestExternaSnsTriggerStack(CdkBaseTest):
             triggered_lambda_fn=None,
             external_sns_event_name="test-event",
             external_sns_topic_arn="arn:aws:sns:us-west-2:123456789012:TestTopic",
-            enable_sns_subscription=False,
         )
 
         # The topic reference should still be set even when subscription is disabled
@@ -80,6 +81,44 @@ class TestExternaSnsTriggerStack(CdkBaseTest):
         # The rest of the resources should still be created
         template.resource_count_is("AWS::SQS::Queue", 2)
         template.resource_count_is("AWS::CloudWatch::Alarm", 1)
+
+    def test__init__sns_subscription_defaults_disabled_in_non_prod(self):
+        # In non-PROD envs, the subscription defaults to disabled
+        stack = self.get_dummy_stack("dummy-test-stack")
+
+        trigger_construct = ExternalSnsTrigger(
+            scope=stack,
+            id="test-external-sns-trigger",
+            env_base=self.env_base,
+            triggered_lambda_fn=None,
+            external_sns_event_name="test-event",
+            external_sns_topic_arn="arn:aws:sns:us-west-2:123456789012:TestTopic",
+        )
+
+        # The topic reference should still be set even when subscription is disabled
+        assert trigger_construct.external_sns_topic is not None
+
+        template = self.get_template(stack)
+        template.resource_count_is("AWS::SNS::Subscription", 0)
+        template.resource_count_is("AWS::SQS::QueuePolicy", 0)
+
+    def test__init__sns_subscription_defaults_enabled_in_prod(self):
+        # In PROD, the subscription defaults to enabled
+        self.env_base = EnvBase.from_type_and_label(EnvType.PROD, "marmotprod")
+        stack = self.get_dummy_stack("dummy-test-stack")
+
+        ExternalSnsTrigger(
+            scope=stack,
+            id="test-external-sns-trigger",
+            env_base=self.env_base,
+            triggered_lambda_fn=None,
+            external_sns_event_name="test-event",
+            external_sns_topic_arn="arn:aws:sns:us-west-2:123456789012:TestTopic",
+        )
+
+        template = self.get_template(stack)
+        template.resource_count_is("AWS::SNS::Subscription", 1)
+        template.resource_count_is("AWS::SQS::QueuePolicy", 1)
 
     def test__init__with_queue_and_dlq_name_properties(self):
         stack = self.get_dummy_stack("dummy-test-stack")
