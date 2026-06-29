@@ -47,6 +47,7 @@ class ExternalSnsTrigger(constructs.Construct):
         triggered_lambda_fn=self.pts_listener_fn,
         external_sns_event_name="merscope-imaging-process",
         external_sns_topic_arn=f"arn:aws:sns:us-west-2:{account_id}:{sns_topic_name}",
+        sns_subscription_enabled=True,
     )
 
     NOTE: The `triggered_lambda_fn` is optional and if you have an alternative arrangement
@@ -79,6 +80,7 @@ class ExternalSnsTrigger(constructs.Construct):
         external_sns_event_dlq_name: str | None = None,
         external_sns_event_queue_retention_period: cdk.Duration | None = cdk.Duration.days(7),
         sqs_event_source_enabled: bool | None = None,
+        sns_subscription_enabled: bool | None = None,
         **kwargs,
     ) -> None:
         super().__init__(scope=scope, id=id)
@@ -90,6 +92,9 @@ class ExternalSnsTrigger(constructs.Construct):
 
         if sqs_event_source_enabled is None:
             sqs_event_source_enabled = env_base.env_type is EnvType.PROD
+
+        if sns_subscription_enabled is None:
+            sns_subscription_enabled = env_base.env_type is EnvType.PROD
 
         self.external_sns_event_dlq = sqs.Queue(
             scope=self,
@@ -123,12 +128,13 @@ class ExternalSnsTrigger(constructs.Construct):
 
         # Useful reference:
         # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_sns/Subscription.html#aws_cdk.aws_sns.Subscription
-        self.external_sns_topic.add_subscription(
-            SqsSubscription(
-                queue=self.external_sns_event_queue,
-                raw_message_delivery=True,
+        if sns_subscription_enabled:
+            self.external_sns_topic.add_subscription(
+                SqsSubscription(
+                    queue=self.external_sns_event_queue,
+                    raw_message_delivery=True,
+                )
             )
-        )
 
         if triggered_lambda_fn is not None:
             triggered_lambda_fn.add_event_source(
