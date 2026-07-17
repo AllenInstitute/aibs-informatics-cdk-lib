@@ -1,4 +1,5 @@
-from typing import Any
+from collections.abc import Sequence
+from typing import Any, Literal
 
 import constructs
 from aibs_informatics_core.env import EnvBase
@@ -34,21 +35,74 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
         scaffolding_job_queue: batch.JobQueue | str,
         batch_invoked_lambda_state_machine: sfn.StateMachine,
         data_sync_state_machine: sfn.StateMachine,
-        shared_mount_point_config: MountPointConfiguration | None,
-        scratch_mount_point_config: MountPointConfiguration | None,
-        tmp_mount_point_config: MountPointConfiguration | None = None,
+        shared_mount_point_config: MountPointConfiguration | Sequence[MountPointConfiguration],
+        scratch_mount_point_config: MountPointConfiguration | Sequence[MountPointConfiguration],
+        tmp_mount_point_config: MountPointConfiguration
+        | Sequence[MountPointConfiguration]
+        | None = None,
+        file_system_selection_strategy: Literal["RANDOM"] | None = None,
         context_manager_configuration: dict[str, Any] | None = None,
         tags: dict[str, str] | None = None,
     ) -> None:
+        """Demand execution state machine fragment.
+
+        The shared/scratch/tmp mount point configurations each accept a single
+        configuration or a sequence of candidate configurations. When more than one
+        candidate is provided for any role, the scaffolding handler selects one
+        candidate per role at execution time (per ``file_system_selection_strategy``);
+        the execution batch job only mounts the selected file systems, while this
+        fragment's internal batch-invoked lambda tasks mount ALL candidates (so e.g.
+        cleanup can reach whichever file system was selected). Because all candidates
+        are mounted together into those internal tasks, every candidate must use a
+        distinct ``mount_point``.
+
+        Args:
+            shared_mount_point_config: Candidate config(s) for the read-only shared volume.
+            scratch_mount_point_config: Candidate config(s) for the scratch volume that
+                hosts execution working directories.
+            tmp_mount_point_config: Optional candidate config(s) for a dedicated tmp volume.
+            file_system_selection_strategy: Strategy the scaffolding handler uses to pick
+                one candidate per role. Defaults to the handler's default (RANDOM) and is
+                omitted from the request entirely when every role has a single candidate
+                (preserving the legacy wire shape for older docker images).
+        """
         super().__init__(scope, id, env_base)
 
         # ----------------- Validation -----------------
-        if not (shared_mount_point_config and scratch_mount_point_config) or not (
-            shared_mount_point_config or scratch_mount_point_config
-        ):
+
+        shared_mount_point_configs = (
+            [shared_mount_point_config]
+            if isinstance(shared_mount_point_config, MountPointConfiguration)
+            else list(shared_mount_point_config)
+        )
+        scratch_mount_point_configs = (
+            [scratch_mount_point_config]
+            if isinstance(scratch_mount_point_config, MountPointConfiguration)
+            else list(scratch_mount_point_config)
+        )
+        tmp_mount_point_configs = (
+            [tmp_mount_point_config]
+            if isinstance(tmp_mount_point_config, MountPointConfiguration)
+            else list(tmp_mount_point_config or [])
+        )
+
+        if not shared_mount_point_configs or not scratch_mount_point_configs:
             raise ValueError(
-                "If shared or scratch mount point configurations are provided,"
-                "Both shared and scratch mount point configurations must be provided."
+                "At least one shared and one scratch mount point configuration must be provided."
+            )
+
+        all_mount_point_configs = [
+            *shared_mount_point_configs,
+            *scratch_mount_point_configs,
+            *tmp_mount_point_configs,
+        ]
+        all_mount_points = [mpc.mount_point for mpc in all_mount_point_configs]
+        duplicate_mount_points = {mp for mp in all_mount_points if all_mount_points.count(mp) > 1}
+        if duplicate_mount_points:
+            raise ValueError(
+                "Mount points must be unique across all shared/scratch/tmp mount point "
+                "configurations (they are mounted together into this fragment's internal "
+                f"batch tasks). Duplicates: {sorted(duplicate_mount_points)}"
             )
 
         # ------------------- Setup -------------------
@@ -72,57 +126,59 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
             else scaffolding_job_queue.job_queue_name,
         }
 
-        # Create request input for the demand scaffolding
-        file_system_configurations = {}
+        # Create request input for the demand scaffolding.
+        # When every role has a single candidate (and no strategy was requested), emit the
+        # legacy singular wire shape without a selection_strategy key so older docker images
+        # (whose request models predate candidate lists) keep working.
+        multi_candidate = (
+            len(shared_mount_point_configs) > 1
+            or len(scratch_mount_point_configs) > 1
+            or len(tmp_mount_point_configs) > 1
+            or file_system_selection_strategy is not None
+        )
 
-        # Update arguments with mount points and volumes if provided
-        if shared_mount_point_config or scratch_mount_point_config or tmp_mount_point_config:
-            mount_points = []
-            volumes = []
-            if shared_mount_point_config:
-                # update file system configurations for scaffolding function
-                file_system_configurations["shared"] = {
-                    "file_system": shared_mount_point_config.file_system_id,
-                    "access_point": shared_mount_point_config.access_point_id,
-                    "container_path": shared_mount_point_config.mount_point,
-                }
-                # add to mount point and volumes list for batch invoked lambda functions
-                mount_points.append(
-                    shared_mount_point_config.to_batch_mount_point("shared", sfn_format=True)
-                )
-                volumes.append(
-                    shared_mount_point_config.to_batch_volume("shared", sfn_format=True)
-                )
+        def to_file_system_configuration(mpc: MountPointConfiguration) -> dict[str, Any]:
+            return {
+                "file_system": mpc.file_system_id,
+                "access_point": mpc.access_point_id,
+                "container_path": mpc.mount_point,
+            }
 
-            if scratch_mount_point_config:
-                # update file system configurations for scaffolding function
-                file_system_configurations["scratch"] = {
-                    "file_system": scratch_mount_point_config.file_system_id,
-                    "access_point": scratch_mount_point_config.access_point_id,
-                    "container_path": scratch_mount_point_config.mount_point,
-                }
-                # add to mount point and volumes list for batch invoked lambda functions
-                mount_points.append(
-                    scratch_mount_point_config.to_batch_mount_point("scratch", sfn_format=True)
-                )
-                volumes.append(
-                    scratch_mount_point_config.to_batch_volume("scratch", sfn_format=True)
-                )
-            if tmp_mount_point_config:
-                # update file system configurations for scaffolding function
-                file_system_configurations["tmp"] = {
-                    "file_system": tmp_mount_point_config.file_system_id,
-                    "access_point": tmp_mount_point_config.access_point_id,
-                    "container_path": tmp_mount_point_config.mount_point,
-                }
-                # add to mount point and volumes list for batch invoked lambda functions
-                mount_points.append(
-                    tmp_mount_point_config.to_batch_mount_point("tmp", sfn_format=True)
-                )
-                volumes.append(tmp_mount_point_config.to_batch_volume("tmp", sfn_format=True))
+        file_system_configurations: dict[str, Any] = {}
+        role_mount_point_configs: dict[str, list[MountPointConfiguration]] = {
+            "shared": shared_mount_point_configs,
+            "scratch": scratch_mount_point_configs,
+            "tmp": tmp_mount_point_configs,
+        }
 
-            batch_invoked_lambda_kwargs["mount_points"] = mount_points
-            batch_invoked_lambda_kwargs["volumes"] = volumes
+        if multi_candidate:
+            file_system_configurations["selection_strategy"] = (
+                file_system_selection_strategy or "RANDOM"
+            )
+
+        mount_points = []
+        volumes = []
+        for role, mount_point_configs in role_mount_point_configs.items():
+            if not mount_point_configs:
+                continue
+            if multi_candidate:
+                file_system_configurations[role] = [
+                    to_file_system_configuration(mpc) for mpc in mount_point_configs
+                ]
+            else:
+                file_system_configurations[role] = to_file_system_configuration(
+                    mount_point_configs[0]
+                )
+            # All candidates are mounted into the fragment's internal batch invoked lambda
+            # tasks; volume names are only indexed in multi-candidate mode to keep the
+            # single-candidate wire shape identical to the legacy one.
+            for i, mpc in enumerate(mount_point_configs):
+                volume_name = f"{role}{i}" if multi_candidate else role
+                mount_points.append(mpc.to_batch_mount_point(volume_name, sfn_format=True))
+                volumes.append(mpc.to_batch_volume(volume_name, sfn_format=True))
+
+        batch_invoked_lambda_kwargs["mount_points"] = mount_points
+        batch_invoked_lambda_kwargs["volumes"] = volumes
 
         request = {
             "demand_execution": sfn.JsonPath.object_at("$"),

@@ -32,10 +32,25 @@ class CoreStack(EnvBaseStack):
             ],
         )
 
-        self._efs_ecosystem = EFSEcosystem(
-            self, id="EFS", env_base=self.env_base, file_system_name=name, vpc=self.vpc
-        )
-        self._file_system = self._efs_ecosystem.file_system
+        self._efs_ecosystems = [
+            EFSEcosystem(
+                self, id="EFS", env_base=self.env_base, file_system_name=name, vpc=self.vpc
+            )
+        ]
+        # Extra file systems let concurrent demand executions spread their scratch/working
+        # directory I/O across multiple EFS burst-credit pools. Only prod carries the load
+        # (and cost) that justifies them.
+        if self.is_prod:
+            self._efs_ecosystems.extend(
+                EFSEcosystem(
+                    self,
+                    id=f"EFS-{i}",
+                    env_base=self.env_base,
+                    file_system_name=f"{name}-part{i}",
+                    vpc=self.vpc,
+                )
+                for i in range(1, 5)
+            )
 
     @property
     def vpc(self) -> EnvBaseVpc:
@@ -47,8 +62,18 @@ class CoreStack(EnvBaseStack):
 
     @property
     def efs_ecosystem(self) -> EFSEcosystem:
-        return self._efs_ecosystem
+        """The primary EFS ecosystem."""
+        return self._efs_ecosystems[0]
+
+    @property
+    def efs_ecosystems(self) -> list[EFSEcosystem]:
+        return self._efs_ecosystems
 
     @property
     def file_system(self) -> EnvBaseFileSystem:
-        return self._file_system
+        """The primary EFS file system."""
+        return self.efs_ecosystem.file_system
+
+    @property
+    def file_systems(self) -> list[EnvBaseFileSystem]:
+        return [ecosystem.file_system for ecosystem in self._efs_ecosystems]
