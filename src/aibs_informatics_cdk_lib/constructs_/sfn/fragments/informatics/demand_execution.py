@@ -1,3 +1,4 @@
+from collections import Counter
 from collections.abc import Sequence
 from typing import Any, Literal
 
@@ -35,8 +36,12 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
         scaffolding_job_queue: batch.JobQueue | str,
         batch_invoked_lambda_state_machine: sfn.StateMachine,
         data_sync_state_machine: sfn.StateMachine,
-        shared_mount_point_config: MountPointConfiguration | Sequence[MountPointConfiguration],
-        scratch_mount_point_config: MountPointConfiguration | Sequence[MountPointConfiguration],
+        shared_mount_point_config: MountPointConfiguration
+        | Sequence[MountPointConfiguration]
+        | None,
+        scratch_mount_point_config: MountPointConfiguration
+        | Sequence[MountPointConfiguration]
+        | None,
         tmp_mount_point_config: MountPointConfiguration
         | Sequence[MountPointConfiguration]
         | None = None,
@@ -70,21 +75,16 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
 
         # ----------------- Validation -----------------
 
-        shared_mount_point_configs = (
-            [shared_mount_point_config]
-            if isinstance(shared_mount_point_config, MountPointConfiguration)
-            else list(shared_mount_point_config)
-        )
-        scratch_mount_point_configs = (
-            [scratch_mount_point_config]
-            if isinstance(scratch_mount_point_config, MountPointConfiguration)
-            else list(scratch_mount_point_config)
-        )
-        tmp_mount_point_configs = (
-            [tmp_mount_point_config]
-            if isinstance(tmp_mount_point_config, MountPointConfiguration)
-            else list(tmp_mount_point_config or [])
-        )
+        def normalize(
+            config: MountPointConfiguration | Sequence[MountPointConfiguration] | None,
+        ) -> list[MountPointConfiguration]:
+            if isinstance(config, MountPointConfiguration):
+                return [config]
+            return list(config or [])
+
+        shared_mount_point_configs = normalize(shared_mount_point_config)
+        scratch_mount_point_configs = normalize(scratch_mount_point_config)
+        tmp_mount_point_configs = normalize(tmp_mount_point_config)
 
         if not shared_mount_point_configs or not scratch_mount_point_configs:
             raise ValueError(
@@ -96,8 +96,8 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
             *scratch_mount_point_configs,
             *tmp_mount_point_configs,
         ]
-        all_mount_points = [mpc.mount_point for mpc in all_mount_point_configs]
-        duplicate_mount_points = {mp for mp in all_mount_points if all_mount_points.count(mp) > 1}
+        mount_point_counts = Counter(mpc.mount_point for mpc in all_mount_point_configs)
+        duplicate_mount_points = [mp for mp, count in mount_point_counts.items() if count > 1]
         if duplicate_mount_points:
             raise ValueError(
                 "Mount points must be unique across all shared/scratch/tmp mount point "
