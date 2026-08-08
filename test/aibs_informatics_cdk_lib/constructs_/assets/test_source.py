@@ -8,7 +8,6 @@ from aibs_informatics_cdk_lib.constructs_.assets.source import (
     PackageSourceType,
 )
 
-
 # ---------------------------------------------------------------------------
 # GitSource
 # ---------------------------------------------------------------------------
@@ -16,7 +15,9 @@ from aibs_informatics_cdk_lib.constructs_.assets.source import (
 
 class TestGitSource:
     def test__version_id__prefers_commit(self):
-        source = GitSource(url="git@github.com:org/repo.git", commit="abc123", tag="v1", branch="main")
+        source = GitSource(
+            url="git@github.com:org/repo.git", commit="abc123", tag="v1", branch="main"
+        )
         assert source.version_id() == "abc123"
 
     def test__version_id__falls_back_to_tag(self):
@@ -209,12 +210,85 @@ class TestPackageSourceFromStr:
             ),
         ],
     )
-    def test__from_str__container_images(self, value, expected_image, expected_tag, expected_digest):
+    def test__from_str__container_images(
+        self, value, expected_image, expected_tag, expected_digest
+    ):
         source = PackageSource.from_str(value)
         assert isinstance(source, ContainerImageSource)
         assert source.image == expected_image
         assert source.tag == expected_tag
         assert source.digest == expected_digest
+
+    @mark.parametrize(
+        "value, expected_branch, expected_tag, expected_commit, expected_version_id",
+        [
+            param(
+                "git@github.com:org/repo.git#refs/heads/main",
+                "main",
+                None,
+                None,
+                "main",
+                id="refs/heads populates branch",
+            ),
+            param(
+                "git@github.com:org/repo.git#refs/tags/v1.2.3",
+                None,
+                "v1.2.3",
+                None,
+                "v1.2.3",
+                id="refs/tags populates tag",
+            ),
+            param(
+                "https://github.com/org/repo/releases/tag/v1.2.3",
+                None,
+                "v1.2.3",
+                None,
+                "v1.2.3",
+                id="releases/tag populates tag",
+            ),
+            param(
+                "https://github.com/org/repo/commit/abc1234",
+                None,
+                None,
+                "abc1234",
+                "abc1234",
+                id="commit path populates commit",
+            ),
+            param(
+                "git@github.com:org/repo.git#abc1234",
+                None,
+                None,
+                "abc1234",
+                "abc1234",
+                id="bare sha populates commit",
+            ),
+            param(
+                "git@github.com:org/repo.git#v1.2.3",
+                "v1.2.3",
+                None,
+                None,
+                "v1.2.3",
+                id="ambiguous ref populates branch",
+            ),
+            param(
+                "git@github.com:org/repo.git",
+                None,
+                None,
+                None,
+                "HEAD",
+                id="no ref",
+            ),
+        ],
+    )
+    def test__from_str__populates_ref_by_kind(
+        self, value, expected_branch, expected_tag, expected_commit, expected_version_id
+    ):
+        source = PackageSource.from_str(value)
+        assert isinstance(source, GitSource)
+        assert source.branch == expected_branch
+        assert source.tag == expected_tag
+        assert source.commit == expected_commit
+        assert source.version_id() == expected_version_id
 
     def test__from_str__invalid_string_raises(self):
         with pytest.raises(ValueError, match="Cannot parse"):
@@ -246,7 +320,9 @@ class TestPackageSourceType:
         from pydantic import TypeAdapter
 
         adapter = TypeAdapter(PackageSourceType)
-        result = adapter.validate_python({"source_type": "git", "url": "git@github.com:org/repo.git"})
+        result = adapter.validate_python(
+            {"source_type": "git", "url": "git@github.com:org/repo.git"}
+        )
         assert isinstance(result, GitSource)
 
     def test__discriminated_union__container_source(self):

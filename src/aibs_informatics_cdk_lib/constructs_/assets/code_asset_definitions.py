@@ -1,5 +1,6 @@
 import logging
 import os
+import warnings
 from pathlib import Path
 
 import aws_cdk as cdk
@@ -26,10 +27,39 @@ from aibs_informatics_cdk_lib.constructs_.assets.source import (
 AIBS_INFORMATICS_AWS_LAMBDA_REPO_ENV_VAR = "AIBS_INFORMATICS_AWS_LAMBDA_REPO"
 AIBS_INFORMATICS_AWS_LAMBDA_REPO = "git@github.com:AllenInstitute/aibs-informatics-aws-lambda.git"
 
+AIBS_INFORMATICS_AWS_LAMBDA_SOURCE_PARAM = "aibs_informatics_aws_lambda_source"
+DEPRECATED_AIBS_INFORMATICS_AWS_LAMBDA_SOURCE_PARAM = "aibs_informatics_aws_lambda_repo"
+
 logger = logging.getLogger(__name__)
 
 
+def _deprecated_repo_url(source: PackageSource) -> str | None:
+    """Back-compat shim for the ``AIBS_INFORMATICS_AWS_LAMBDA_REPO`` attribute.
+
+    Args:
+        source: The source the construct was configured with.
+
+    Returns:
+        The repo URL for a GitSource, or None for a ContainerImageSource, which has no
+        repo URL to report.
+    """
+    warnings.warn(
+        "`AIBS_INFORMATICS_AWS_LAMBDA_REPO` is deprecated; use `source` instead. "
+        "It returns None when the source is a ContainerImageSource.",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+    return source.url if isinstance(source, GitSource) else None
+
+
 class AssetsMixin:
+    _source: PackageSource
+
+    @property
+    def source(self) -> PackageSource:
+        """The source these assets are built from."""
+        return self._source
+
     @classmethod
     def _normalize_source(
         cls, source: PackageSource | str | None, default_repo_url: str
@@ -48,6 +78,44 @@ class AssetsMixin:
         if isinstance(source, str):
             return PackageSource.from_str(source)
         return source
+
+    @classmethod
+    def _resolve_deprecated_source(
+        cls,
+        source: PackageSource | str | None,
+        deprecated_source: PackageSource | str | None,
+        param_name: str = AIBS_INFORMATICS_AWS_LAMBDA_SOURCE_PARAM,
+        deprecated_param_name: str = DEPRECATED_AIBS_INFORMATICS_AWS_LAMBDA_SOURCE_PARAM,
+    ) -> PackageSource | str | None:
+        """Collapse a source parameter and its deprecated alias into one value.
+
+        Args:
+            source: The value passed under the current parameter name.
+            deprecated_source: The value passed under the deprecated parameter name.
+            param_name: The current parameter name, for messages.
+            deprecated_param_name: The deprecated parameter name, for messages.
+
+        Returns:
+            Whichever of the two was supplied, or None if neither was.
+
+        Raises:
+            ValueError: If both parameters were supplied.
+        """
+        if deprecated_source is None:
+            return source
+        if source is not None:
+            raise ValueError(
+                f"Cannot specify both `{param_name}` and `{deprecated_param_name}`. "
+                f"Use `{param_name}`."
+            )
+        warnings.warn(
+            f"`{deprecated_param_name}` is deprecated; use `{param_name}` instead. "
+            "A source may be a git URL, a local repo path, a container image reference, "
+            "or a PackageSource instance.",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+        return deprecated_source
 
     @classmethod
     def resolve_repo_path(cls, repo_url: str, repo_path_env_var: str | None) -> Path:
@@ -89,20 +157,43 @@ class AIBSInformaticsCodeAssets(constructs.Construct, AssetsMixin):
         construct_id: str,
         env_base: EnvBase,
         runtime: lambda_.Runtime | None = None,
+        aibs_informatics_aws_lambda_source: PackageSource | str | None = None,
         aibs_informatics_aws_lambda_repo: PackageSource | str | None = None,
     ) -> None:
+        """Code assets for the aibs-informatics packages.
+
+        Args:
+            scope: The parent construct.
+            construct_id: The construct id.
+            env_base: The environment base.
+            runtime: The lambda runtime to build against. Defaults to Python 3.11.
+            aibs_informatics_aws_lambda_source: The source for the aibs-informatics-aws-lambda
+                asset. May be a git URL, a local repo path, or a PackageSource. Defaults to
+                the public repo.
+            aibs_informatics_aws_lambda_repo: Deprecated alias for
+                ``aibs_informatics_aws_lambda_source``.
+        """
         super().__init__(scope, construct_id)
         self.env_base = env_base
         self.runtime = runtime or lambda_.Runtime.PYTHON_3_11
         self._source = self._normalize_source(
-            aibs_informatics_aws_lambda_repo, AIBS_INFORMATICS_AWS_LAMBDA_REPO
+            self._resolve_deprecated_source(
+                aibs_informatics_aws_lambda_source, aibs_informatics_aws_lambda_repo
+            ),
+            AIBS_INFORMATICS_AWS_LAMBDA_REPO,
         )
-        # Backward compatibility
-        self.AIBS_INFORMATICS_AWS_LAMBDA_REPO = (
-            self._source.url
-            if isinstance(self._source, GitSource)
-            else AIBS_INFORMATICS_AWS_LAMBDA_REPO
-        )
+
+    @property
+    def AIBS_INFORMATICS_AWS_LAMBDA_REPO(self) -> str | None:
+        """The git URL of the aibs-informatics-aws-lambda source repo.
+
+        .. deprecated::
+            Use ``source`` instead.
+
+        Returns:
+            The repo URL for a GitSource, or None for a ContainerImageSource.
+        """
+        return _deprecated_repo_url(self._source)
 
     @cached_property
     def AIBS_INFORMATICS_AWS_LAMBDA(self) -> CodeAsset:
@@ -194,19 +285,41 @@ class AIBSInformaticsDockerAssets(constructs.Construct, AssetsMixin):
         scope: constructs.Construct,
         construct_id: str,
         env_base: EnvBase,
+        aibs_informatics_aws_lambda_source: PackageSource | str | None = None,
         aibs_informatics_aws_lambda_repo: PackageSource | str | None = None,
     ) -> None:
+        """Docker assets for the aibs-informatics packages.
+
+        Args:
+            scope: The parent construct.
+            construct_id: The construct id.
+            env_base: The environment base.
+            aibs_informatics_aws_lambda_source: The source for the aibs-informatics-aws-lambda
+                asset. May be a git URL, a local repo path, a container image reference, or a
+                PackageSource. Defaults to the public repo.
+            aibs_informatics_aws_lambda_repo: Deprecated alias for
+                ``aibs_informatics_aws_lambda_source``.
+        """
         super().__init__(scope, construct_id)
         self.env_base = env_base
         self._source = self._normalize_source(
-            aibs_informatics_aws_lambda_repo, AIBS_INFORMATICS_AWS_LAMBDA_REPO
+            self._resolve_deprecated_source(
+                aibs_informatics_aws_lambda_source, aibs_informatics_aws_lambda_repo
+            ),
+            AIBS_INFORMATICS_AWS_LAMBDA_REPO,
         )
-        # Backward compatibility
-        self.AIBS_INFORMATICS_AWS_LAMBDA_REPO = (
-            self._source.url
-            if isinstance(self._source, GitSource)
-            else AIBS_INFORMATICS_AWS_LAMBDA_REPO
-        )
+
+    @property
+    def AIBS_INFORMATICS_AWS_LAMBDA_REPO(self) -> str | None:
+        """The git URL of the aibs-informatics-aws-lambda source repo.
+
+        .. deprecated::
+            Use ``source`` instead.
+
+        Returns:
+            The repo URL for a GitSource, or None for a ContainerImageSource.
+        """
+        return _deprecated_repo_url(self._source)
 
     @cached_property
     def AIBS_INFORMATICS_AWS_LAMBDA(self) -> aws_ecr_assets.DockerImageAsset | str:
@@ -251,21 +364,62 @@ class AIBSInformaticsAssets(constructs.Construct):
         construct_id: str,
         env_base: EnvBase,
         runtime: lambda_.Runtime | None = None,
+        code_source: GitSource | str | None = None,
+        docker_source: PackageSource | str | None = None,
         aibs_informatics_aws_lambda_repo: PackageSource | str | None = None,
     ) -> None:
+        """Code and docker assets for the aibs-informatics packages.
+
+        Code and docker assets take separate sources because they are not interchangeable:
+        a Code Asset requires a checkout to build, so ``code_source`` cannot be a Container
+        Image Source. ``docker_source`` accepts either.
+
+        Args:
+            scope: The parent construct.
+            construct_id: The construct id.
+            env_base: The environment base.
+            runtime: The lambda runtime to build code assets against.
+            code_source: The source for the aibs-informatics-aws-lambda code asset. May be a
+                git URL, a local repo path, or a GitSource. Defaults to the public repo.
+            docker_source: The source for the aibs-informatics-aws-lambda docker asset. May
+                additionally be a container image reference or a ContainerImageSource.
+                Defaults to the public repo.
+            aibs_informatics_aws_lambda_repo: Deprecated. Sets both ``code_source`` and
+                ``docker_source``.
+
+        Raises:
+            ValueError: If the deprecated parameter is combined with either new parameter.
+        """
         super().__init__(scope, construct_id)
         self.env_base = env_base
+
+        resolved_code_source: PackageSource | str | None = code_source
+        resolved_docker_source: PackageSource | str | None = docker_source
+        if aibs_informatics_aws_lambda_repo is not None:
+            if code_source is not None or docker_source is not None:
+                raise ValueError(
+                    "Cannot specify both `aibs_informatics_aws_lambda_repo` and "
+                    "`code_source`/`docker_source`. Use the latter."
+                )
+            warnings.warn(
+                "`aibs_informatics_aws_lambda_repo` is deprecated; use `code_source` and "
+                "`docker_source` instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            resolved_code_source = aibs_informatics_aws_lambda_repo
+            resolved_docker_source = aibs_informatics_aws_lambda_repo
 
         self.code_assets = AIBSInformaticsCodeAssets(
             self,
             "CodeAssets",
             env_base,
             runtime=runtime,
-            aibs_informatics_aws_lambda_repo=aibs_informatics_aws_lambda_repo,
+            aibs_informatics_aws_lambda_source=resolved_code_source,
         )
         self.docker_assets = AIBSInformaticsDockerAssets(
             self,
             "DockerAssets",
             env_base,
-            aibs_informatics_aws_lambda_repo=aibs_informatics_aws_lambda_repo,
+            aibs_informatics_aws_lambda_source=resolved_docker_source,
         )
