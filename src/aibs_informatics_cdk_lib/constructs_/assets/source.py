@@ -24,7 +24,14 @@ class PackageSource(BaseModel):
     source_type: str
 
     def version_id(self) -> str:
-        """Return a deterministic identifier for asset hashing and cache keys."""
+        """The deterministic identifier for the exact version this source names.
+
+        Returns:
+            An identifier that is stable for a given version of the source.
+
+        Raises:
+            NotImplementedError: Always; subclasses must implement this.
+        """
         raise NotImplementedError
 
     @classmethod
@@ -38,6 +45,9 @@ class PackageSource(BaseModel):
           - Container images:    ghcr.io/org/repo:tag
           - Container digests:   ghcr.io/org/repo@sha256:abc123
 
+        A git ref lands on the GitSource field matching its kind. Refs the URL does not
+        classify (e.g. ``#v1.2.3``) land on ``branch``; see ``GitUrl`` for why that is safe.
+
         Args:
             value: The string to parse.
 
@@ -49,7 +59,13 @@ class PackageSource(BaseModel):
         """
         if is_repo_url(value):
             git_url = GitUrl(value)
-            return GitSource(url=git_url.repo_base_url, branch=git_url.ref)
+            ref, ref_kind = git_url.ref, git_url.ref_kind
+            return GitSource(
+                url=git_url.repo_base_url,
+                branch=ref if ref_kind == "branch" else None,
+                tag=ref if ref_kind == "tag" else None,
+                commit=ref if ref_kind == "commit" else None,
+            )
 
         if is_local_repo(value):
             return GitSource(url=value)
@@ -78,6 +94,11 @@ class GitSource(PackageSource):
     tag: str | None = None
 
     def version_id(self) -> str:
+        """The ref this source pins, most specific first.
+
+        Returns:
+            The commit, tag, or branch -- or ``"HEAD"`` when no ref is pinned.
+        """
         return self.commit or self.tag or self.branch or "HEAD"
 
     @property
@@ -102,6 +123,11 @@ class ContainerImageSource(PackageSource):
     digest: str | None = None
 
     def version_id(self) -> str:
+        """The most specific identifier this source pins.
+
+        Returns:
+            The digest if one is pinned, otherwise the tag.
+        """
         return self.digest or self.tag
 
     @property
