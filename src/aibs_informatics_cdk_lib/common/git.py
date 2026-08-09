@@ -145,7 +145,13 @@ def is_local_repo(repo_path: str | Path) -> bool:
     """
     repo_path = Path(repo_path)
     try:
-        subprocess.check_output(["git", "-C", repo_path, "rev-parse", "--is-inside-work-tree"])
+        # This is a predicate, and it is routinely asked about values that are not paths
+        # at all (e.g. a container image reference). git's complaint about those is noise,
+        # so it is discarded rather than printed on every synth.
+        subprocess.check_output(
+            ["git", "-C", repo_path, "rev-parse", "--is-inside-work-tree"],
+            stderr=subprocess.DEVNULL,
+        )
         return True
     except subprocess.CalledProcessError:
         return False

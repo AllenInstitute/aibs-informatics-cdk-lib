@@ -4,13 +4,16 @@ from dataclasses import dataclass
 import constructs
 from aibs_informatics_core.env import EnvBase
 from aws_cdk import aws_batch as batch
-from aws_cdk import aws_ecr_assets as ecr_assets
 from aws_cdk import aws_efs as efs
 from aws_cdk import aws_events as events
 from aws_cdk import aws_events_targets as events_targets
 from aws_cdk import aws_s3 as s3
 from aws_cdk import aws_stepfunctions as sfn
 
+from aibs_informatics_cdk_lib.constructs_.assets.docker_asset import (
+    DockerAssetLike,
+    resolve_image_uri,
+)
 from aibs_informatics_cdk_lib.constructs_.efs.file_system import MountPointConfiguration
 from aibs_informatics_cdk_lib.constructs_.sfn.fragments.informatics.batch import (
     BatchInvokedBaseFragment,
@@ -22,7 +25,7 @@ def get_data_path_stats_fragment(
     scope: constructs.Construct,
     id: str,
     env_base: EnvBase,
-    aibs_informatics_docker_asset: ecr_assets.DockerImageAsset | str,
+    aibs_informatics_docker_asset: DockerAssetLike,
     batch_job_queue: batch.JobQueue | str,
     scaffolding_bucket: s3.Bucket,
     mount_point_configs: Iterable[MountPointConfiguration] | None = None,
@@ -35,7 +38,7 @@ def get_data_path_stats_fragment(
         scope (constructs.Construct): scope
         id (str): id of the fragment
         env_base (EnvBase): env base
-        aibs_informatics_docker_asset (Union[ecr_assets.DockerImageAsset, str]): docker image asset or image uri
+        aibs_informatics_docker_asset (DockerAssetLike): docker asset, docker image asset, or image uri
             that has the get_data_path_stats_handler function
         batch_job_queue (Union[batch.JobQueue, str]): default batch job queue or job queue name str that
             the batch job will be submitted to. This can be override by the payload.
@@ -53,11 +56,7 @@ def get_data_path_stats_fragment(
         id=id,
         env_base=env_base,
         name="get-data-path-stats",
-        image=(
-            aibs_informatics_docker_asset
-            if isinstance(aibs_informatics_docker_asset, str)
-            else aibs_informatics_docker_asset.image_uri
-        ),
+        image=resolve_image_uri(aibs_informatics_docker_asset),
         handler="aibs_informatics_aws_lambda.handlers.data_sync.get_data_path_stats_handler",
         job_queue=(
             batch_job_queue if isinstance(batch_job_queue, str) else batch_job_queue.job_queue_name
@@ -74,7 +73,7 @@ def outdated_data_path_scanner_fragment(
     scope: constructs.Construct,
     id: str,
     env_base: EnvBase,
-    aibs_informatics_docker_asset: ecr_assets.DockerImageAsset | str,
+    aibs_informatics_docker_asset: DockerAssetLike,
     batch_job_queue: batch.JobQueue | str,
     scaffolding_bucket: s3.Bucket,
     mount_point_configs: Iterable[MountPointConfiguration] | None = None,
@@ -87,7 +86,7 @@ def outdated_data_path_scanner_fragment(
         scope (constructs.Construct): scope
         id (str): id of the fragment
         env_base (EnvBase): env base
-        aibs_informatics_docker_asset (Union[ecr_assets.DockerImageAsset, str]): docker image asset or image uri
+        aibs_informatics_docker_asset (DockerAssetLike): docker asset, docker image asset, or image uri
             that has the outdated_data_path_scanner_handler function
         batch_job_queue (Union[batch.JobQueue, str]): default batch job queue or job queue name str that
             the batch job will be submitted to. This can be override by the payload.
@@ -106,11 +105,7 @@ def outdated_data_path_scanner_fragment(
         id=id,
         env_base=env_base,
         name="outdated-data-path-scanner",
-        image=(
-            aibs_informatics_docker_asset
-            if isinstance(aibs_informatics_docker_asset, str)
-            else aibs_informatics_docker_asset.image_uri
-        ),
+        image=resolve_image_uri(aibs_informatics_docker_asset),
         handler="aibs_informatics_aws_lambda.handlers.data_sync.outdated_data_path_scanner_handler",
         job_queue=(
             batch_job_queue if isinstance(batch_job_queue, str) else batch_job_queue.job_queue_name
@@ -129,7 +124,7 @@ def remove_data_paths_fragment(
     scope: constructs.Construct,
     id: str,
     env_base: EnvBase,
-    aibs_informatics_docker_asset: ecr_assets.DockerImageAsset | str,
+    aibs_informatics_docker_asset: DockerAssetLike,
     batch_job_queue: batch.JobQueue | str,
     scaffolding_bucket: s3.Bucket,
     mount_point_configs: Iterable[MountPointConfiguration] | None = None,
@@ -142,7 +137,7 @@ def remove_data_paths_fragment(
         scope (constructs.Construct): scope
         id (str): id of the fragment
         env_base (EnvBase): env base
-        aibs_informatics_docker_asset (Union[ecr_assets.DockerImageAsset, str]): docker image asset or image uri
+        aibs_informatics_docker_asset (DockerAssetLike): docker asset, docker image asset, or image uri
             that has the remove_data_paths_handler function
         batch_job_queue (Union[batch.JobQueue, str]): default batch job queue or job queue name str that
             the batch job will be submitted to. This can be override by the payload.
@@ -160,11 +155,7 @@ def remove_data_paths_fragment(
         id=id,
         env_base=env_base,
         name="remove-data-paths",
-        image=(
-            aibs_informatics_docker_asset
-            if isinstance(aibs_informatics_docker_asset, str)
-            else aibs_informatics_docker_asset.image_uri
-        ),
+        image=resolve_image_uri(aibs_informatics_docker_asset),
         handler="aibs_informatics_aws_lambda.handlers.data_sync.remove_data_paths_handler",
         job_queue=(
             batch_job_queue if isinstance(batch_job_queue, str) else batch_job_queue.job_queue_name
@@ -246,7 +237,7 @@ class CleanFileSystemFragment(BatchInvokedBaseFragment):
         scope: constructs.Construct,
         id: str,
         env_base: EnvBase,
-        aibs_informatics_docker_asset: ecr_assets.DockerImageAsset | str,
+        aibs_informatics_docker_asset: DockerAssetLike,
         batch_job_queue: batch.JobQueue | str,
         scaffolding_bucket: s3.Bucket,
         mount_point_configs: Iterable[MountPointConfiguration] | None = None,
@@ -259,8 +250,8 @@ class CleanFileSystemFragment(BatchInvokedBaseFragment):
             scope (Construct): construct scope
             id (str): id
             env_base (EnvBase): env base
-            aibs_informatics_docker_asset (DockerImageAsset|str): Docker image asset or image uri
-                str for the aibs informatics aws lambda
+            aibs_informatics_docker_asset (DockerAssetLike): Docker asset, docker image asset,
+                or image uri str for the aibs informatics aws lambda
             batch_job_queue (JobQueue|str): Default batch job queue or job queue name str that
                 the batch job will be submitted to. This can be override by the payload.
             primary_bucket (Bucket): Primary bucket used for request/response json blobs used in
@@ -274,11 +265,7 @@ class CleanFileSystemFragment(BatchInvokedBaseFragment):
         """  # noqa: E501
         super().__init__(scope, id, env_base)
 
-        aibs_informatics_image_uri = (
-            aibs_informatics_docker_asset
-            if isinstance(aibs_informatics_docker_asset, str)
-            else aibs_informatics_docker_asset.image_uri
-        )
+        aibs_informatics_image_uri = resolve_image_uri(aibs_informatics_docker_asset)
 
         start_pass_state = sfn.Pass(
             self,

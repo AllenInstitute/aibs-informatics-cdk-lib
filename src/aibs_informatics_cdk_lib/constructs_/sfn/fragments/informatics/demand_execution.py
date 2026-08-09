@@ -3,7 +3,6 @@ from typing import Any
 import constructs
 from aibs_informatics_core.env import EnvBase
 from aws_cdk import aws_batch as batch
-from aws_cdk import aws_ecr_assets as ecr_assets
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_s3 as s3
 from aws_cdk import aws_stepfunctions as sfn
@@ -17,6 +16,10 @@ from aibs_informatics_cdk_lib.common.aws.iam_utils import (
     sfn_policy_statement,
 )
 from aibs_informatics_cdk_lib.common.aws.sfn_utils import JsonReferencePath
+from aibs_informatics_cdk_lib.constructs_.assets.docker_asset import (
+    DockerAssetLike,
+    resolve_image_uri,
+)
 from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstructMixins
 from aibs_informatics_cdk_lib.constructs_.efs.file_system import MountPointConfiguration
 from aibs_informatics_cdk_lib.constructs_.sfn.fragments.base import EnvBaseStateMachineFragment
@@ -29,7 +32,7 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
         scope: constructs.Construct,
         id: str,
         env_base: EnvBase,
-        aibs_informatics_docker_asset: ecr_assets.DockerImageAsset | str,
+        aibs_informatics_docker_asset: DockerAssetLike,
         scaffolding_bucket: s3.Bucket,
         scaffolding_job_queue: batch.JobQueue | str,
         batch_invoked_lambda_state_machine: sfn.StateMachine,
@@ -64,9 +67,7 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
         # - specify the mount points and volumes if provided
         batch_invoked_lambda_kwargs: dict[str, Any] = {
             "bucket_name": scaffolding_bucket.bucket_name,
-            "image": aibs_informatics_docker_asset
-            if isinstance(aibs_informatics_docker_asset, str)
-            else aibs_informatics_docker_asset.image_uri,
+            "image": resolve_image_uri(aibs_informatics_docker_asset),
             "job_queue": scaffolding_job_queue
             if isinstance(scaffolding_job_queue, str)
             else scaffolding_job_queue.job_queue_name,
