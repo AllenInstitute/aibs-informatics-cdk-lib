@@ -27,12 +27,18 @@ dependencies = [
     { name = "pydantic" },
 ]
 
+[package.optional-dependencies]
+ecr-mirror = [
+    { name = "cdk-ecr-deployment" },
+]
+
 [package.dev-dependencies]
 all = [
     { name = "aibs-informatics-test-resources" },
     { name = "boto3-stubs", extra = ["batch", "s3"] },
     { name = "build" },
     { name = "bump-my-version" },
+    { name = "cdk-ecr-deployment" },
     { name = "griffe-pydantic" },
     { name = "mkdocs" },
     { name = "mkdocs-material" },
@@ -44,6 +50,7 @@ all = [
 ]
 dev = [
     { name = "aibs-informatics-test-resources" },
+    { name = "cdk-ecr-deployment" },
 ]
 docs = [
     { name = "griffe-pydantic" },
@@ -68,9 +75,11 @@ requires-dist = [
     { name = "aibs-informatics-aws-utils", specifier = "~=1.0" },
     { name = "aibs-informatics-core", specifier = ">=1.0.1,<2" },
     { name = "aws-cdk-lib", specifier = "~=2.96" },
+    { name = "cdk-ecr-deployment", marker = "extra == 'ecr-mirror'", specifier = ">=3.1,<5" },
     { name = "constructs", specifier = "~=10.0" },
     { name = "pydantic", specifier = "~=2.0" },
 ]
+provides-extras = ["ecr-mirror"]
 
 [package.metadata.requires-dev]
 all = [
@@ -78,6 +87,7 @@ all = [
     { name = "boto3-stubs", extras = ["s3", "batch"] },
     { name = "build" },
     { name = "bump-my-version" },
+    { name = "cdk-ecr-deployment", specifier = ">=3.1,<5" },
     { name = "griffe-pydantic", specifier = "~=1.1" },
     { name = "mkdocs", specifier = "~=1.6" },
     { name = "mkdocs-material", specifier = "~=9.5" },
@@ -87,7 +97,10 @@ all = [
     { name = "types-pyyaml" },
     { name = "wheel" },
 ]
-dev = [{ name = "aibs-informatics-test-resources", extras = ["all"], specifier = "~=0.0.4" }]
+dev = [
+    { name = "aibs-informatics-test-resources", extras = ["all"], specifier = "~=0.0.4" },
+    { name = "cdk-ecr-deployment", specifier = ">=3.1,<5" },
+]
 docs = [
     { name = "griffe-pydantic", specifier = "~=1.1" },
     { name = "mkdocs", specifier = "~=1.6" },
@@ -393,6 +406,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/6e/00/2432bb2d445b39b5407f0a90e01b9a271475eea7caf913d7a86bcb956385/cattrs-25.3.0.tar.gz", hash = "sha256:1ac88d9e5eda10436c4517e390a4142d88638fe682c436c93db7ce4a277b884a", size = 509321, upload-time = "2025-10-07T12:26:08.737Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d8/2b/a40e1488fdfa02d3f9a653a61a5935ea08b3c2225ee818db6a76c7ba9695/cattrs-25.3.0-py3-none-any.whl", hash = "sha256:9896e84e0a5bf723bc7b4b68f4481785367ce07a8a02e7e9ee6eb2819bc306ff", size = 70738, upload-time = "2025-10-07T12:26:06.603Z" },
+]
+
+[[package]]
+name = "cdk-ecr-deployment"
+version = "4.2.45"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "aws-cdk-lib" },
+    { name = "constructs" },
+    { name = "jsii" },
+    { name = "publication" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c1/9b/f83e95b1f4d1426cdc2b9d2d3f9c44f733260ef24d9a191ce702c988cb49/cdk_ecr_deployment-4.2.45.tar.gz", hash = "sha256:0dd1dafd88cdff6808d6407b2b1069d4d31b7971314675d63119efdf0fa5ba6f", size = 23293828, upload-time = "2026-08-05T07:42:08.746Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5e/da/5e6a747e4313f3076200932de5e5d8f0f43b518f244b96af62cfb88f96a2/cdk_ecr_deployment-4.2.45-py3-none-any.whl", hash = "sha256:ee5828688aaa4294ec31c9167512693f0e39ea1a69cd3e9a04bb90a16433aad8", size = 23292109, upload-time = "2026-08-05T07:42:05.47Z" },
 ]
 
 [[package]]
@@ -726,15 +754,6 @@ wheels = [
 ]
 
 [[package]]
-name = "importlib-resources"
-version = "6.5.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/cf/8c/f834fbf984f691b4f7ff60f50b514cc3de5cc08abfc3295564dd89c5e2e7/importlib_resources-6.5.2.tar.gz", hash = "sha256:185f87adef5bcc288449d98fb4fba07cea78bc036455dd44c5fc4a2fe78fed2c", size = 44693, upload-time = "2025-01-03T18:51:56.698Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a4/ed/1f1afb2e9e7f38a545d628f864d562a5ae64fe6f7a10e28ffb9b185b4e89/importlib_resources-6.5.2-py3-none-any.whl", hash = "sha256:789cfdc3ed28c78b67a06acb8126751ced69a3d5f79c095a98298cd8a760ccec", size = 37461, upload-time = "2025-01-03T18:51:54.306Z" },
-]
-
-[[package]]
 name = "iniconfig"
 version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -775,20 +794,19 @@ wheels = [
 
 [[package]]
 name = "jsii"
-version = "1.127.0"
+version = "1.139.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "cattrs" },
-    { name = "importlib-resources" },
     { name = "publication" },
     { name = "python-dateutil" },
     { name = "typeguard" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/81/e8/a163295e70ecc652bfd7960c83f9a61ee4283f2ef73d6df23ac57b430f6c/jsii-1.127.0.tar.gz", hash = "sha256:631a13d73265eaa22c0c0804e77fe59c8fcc3af3a94de9923af65380b6ad267a", size = 461782, upload-time = "2026-02-25T16:54:04.368Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c1/71/7c612c16291a6dc654bac00f56bef24c45f86e9a7c9668dc7d36f187e808/jsii-1.139.0.tar.gz", hash = "sha256:163c5d3ec00fd4ec89a33b9097f20a6f27626dd69d6875a8f7cc7577b8021ad0", size = 531387, upload-time = "2026-07-17T02:34:33.293Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b6/91/3b58a04d06cb6abbb3806ca5fcf4b8933a85e013d24d983d3535d9fb6566/jsii-1.127.0-py3-none-any.whl", hash = "sha256:92a11f39e461f5168e2467efd53351cc32b118314b95cc6323c2d044eb299eaf", size = 436980, upload-time = "2026-02-25T16:54:02.824Z" },
+    { url = "https://files.pythonhosted.org/packages/33/3e/fce01768f79b2d5d0cf6258b55045f4b083ee86fd5de24c1af38168312ab/jsii-1.139.0-py3-none-any.whl", hash = "sha256:11468f767c6da698ed9888a04352850af33ccccfec7656475626caf36fca8bbb", size = 501693, upload-time = "2026-07-17T02:34:31.747Z" },
 ]
 
 [[package]]
