@@ -64,20 +64,32 @@ class AssetsMixin:
     def _normalize_source(
         cls, source: PackageSource | str | None, default_repo_url: str
     ) -> PackageSource:
-        """Normalize a source parameter into a PackageSource instance.
+        """Normalize a source parameter into a supported PackageSource instance.
 
         Args:
-            source: A PackageSource, a string (git URL, local path, or image ref), or None.
+            source: A GitSource or ContainerImageSource, a string (git URL, local path, or
+                image ref), or None.
             default_repo_url: Default git repo URL to use when source is None.
 
         Returns:
             A resolved PackageSource instance.
+
+        Raises:
+            TypeError: If source is a PackageSource subclass this code path does not
+                support. Callers downstream reach for source-kind-specific properties
+                (e.g. GitSource.repo_url_with_ref), so an unrecognized subclass is
+                rejected here rather than failing later with an AttributeError.
         """
         if source is None:
             return GitSource(url=default_repo_url)
         if isinstance(source, str):
             return PackageSource.from_str(source)
-        return source
+        if isinstance(source, (GitSource, ContainerImageSource)):
+            return source
+        raise TypeError(
+            f"Unsupported package source type: {type(source).__name__}. "
+            "Expected GitSource or ContainerImageSource."
+        )
 
     @classmethod
     def _resolve_deprecated_source(
@@ -210,6 +222,11 @@ class AIBSInformaticsCodeAssets(constructs.Construct, AssetsMixin):
                 "AIBSInformaticsCodeAssets requires a GitSource. "
                 "ContainerImageSource cannot be used for Lambda code assets."
             )
+        if not isinstance(self._source, GitSource):
+            raise TypeError(
+                f"AIBSInformaticsCodeAssets requires a GitSource, got "
+                f"{type(self._source).__name__}."
+            )
 
         repo_path = self.resolve_repo_path(
             self._source.repo_url_with_ref, AIBS_INFORMATICS_AWS_LAMBDA_REPO_ENV_VAR
@@ -330,9 +347,17 @@ class AIBSInformaticsDockerAssets(constructs.Construct, AssetsMixin):
 
         Returns:
             The docker image asset or image URI string.
+
+        Raises:
+            TypeError: If the source is neither a ContainerImageSource nor a GitSource.
         """
         if isinstance(self._source, ContainerImageSource):
             return self._source.image_uri
+        if not isinstance(self._source, GitSource):
+            raise TypeError(
+                f"AIBSInformaticsDockerAssets requires a GitSource or ContainerImageSource, "
+                f"got {type(self._source).__name__}."
+            )
 
         repo_path = self.resolve_repo_path(
             self._source.repo_url_with_ref, AIBS_INFORMATICS_AWS_LAMBDA_REPO_ENV_VAR
