@@ -13,6 +13,7 @@ from aibs_informatics_cdk_lib.constructs_.assets.code_asset_definitions import (
 from aibs_informatics_cdk_lib.constructs_.assets.source import (
     ContainerImageSource,
     GitSource,
+    PackageSource,
 )
 from test.aibs_informatics_cdk_lib.base import CdkBaseTest
 
@@ -52,6 +53,19 @@ class TestNormalizeSource:
         original = ContainerImageSource(image="ghcr.io/org/repo", tag="v1")
         source = AssetsMixin._normalize_source(original, "git@github.com:org/default.git")
         assert source is original
+
+    def test__unsupported_package_source_raises(self):
+        """An unrecognized subclass must be rejected here, not deep in a cached_property.
+
+        Downstream code reaches for source-kind-specific properties, so passing one
+        through would surface as an AttributeError far from the actual mistake.
+        """
+
+        class CustomSource(PackageSource):
+            source_type: str = "custom"
+
+        with pytest.raises(TypeError, match="Unsupported package source type: CustomSource"):
+            AssetsMixin._normalize_source(CustomSource(), "git@github.com:org/default.git")
 
 
 # ---------------------------------------------------------------------------
