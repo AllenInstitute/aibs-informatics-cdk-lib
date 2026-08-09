@@ -118,6 +118,9 @@ nav:
           - Overview: api/project/index.md
           - Config: api/project/config.md
           - Utils: api/project/utils.md
+  - Decisions:
+      - Docker Asset construct: adr/0001-docker-asset-is-its-own-construct.md
+      - GHCR pull and ECR mirroring: adr/0002-direct-ghcr-pull-with-opt-in-ecr-mirroring.md
 
 extra:
   social:
