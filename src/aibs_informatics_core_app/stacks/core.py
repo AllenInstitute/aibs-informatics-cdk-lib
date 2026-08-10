@@ -14,6 +14,7 @@ class CoreStack(EnvBaseStack):
         id: str | None,
         env_base: EnvBase,
         name: str,
+        extra_efs_count: int = 0,
         **kwargs,
     ) -> None:
         super().__init__(scope, id, env_base, **kwargs)
@@ -39,7 +40,7 @@ class CoreStack(EnvBaseStack):
         ]
         # Extra file systems let concurrent demand executions spread their scratch/working
         # directory I/O across multiple EFS burst-credit pools. Only prod carries the load
-        # (and cost) that justifies them.
+        # (and cost) that justifies them, and callers opt in via extra_efs_count.
         if self.is_prod:
             self._efs_ecosystems.extend(
                 EFSEcosystem(
@@ -49,7 +50,7 @@ class CoreStack(EnvBaseStack):
                     file_system_name=f"{name}-part{i}",
                     vpc=self.vpc,
                 )
-                for i in range(1, 5)
+                for i in range(1, extra_efs_count + 1)
             )
 
     @property

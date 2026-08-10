@@ -79,7 +79,7 @@ class DemandExecutionFragmentTests(CdkBaseTest):
         assert pass_state is not None
         return pass_state.to_state_json()
 
-    def test__init__single_candidates__emits_legacy_wire_shape(self):
+    def test__init__single_candidates__emits_singular_request(self):
         stack, bucket, bisl_sm, ds_sm = self.get_stack_with_fixtures()
         shared = MountPointConfiguration.from_access_point(
             self.import_access_point(stack, "shared-ap", "fsap-11111111", "fs-11111111"),
