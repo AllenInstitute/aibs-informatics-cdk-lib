@@ -9,6 +9,7 @@ from aibs_informatics_cdk_lib.constructs_.assets.code_asset_definitions import (
     AIBSInformaticsCodeAssets,
     AIBSInformaticsDockerAssets,
     AssetsMixin,
+    _pop_deprecated_source_kwarg,
 )
 from aibs_informatics_cdk_lib.constructs_.assets.source import (
     ContainerImageSource,
@@ -94,6 +95,43 @@ class TestResolveDeprecatedSource:
 
 
 # ---------------------------------------------------------------------------
+# _pop_deprecated_source_kwarg
+# ---------------------------------------------------------------------------
+
+
+class TestPopDeprecatedSourceKwarg:
+    def test__deprecated_key_is_popped_and_returned(self):
+        kwargs: dict = {"aibs_informatics_aws_lambda_repo": "git@github.com:org/repo.git"}
+        assert _pop_deprecated_source_kwarg(kwargs, "Owner") == "git@github.com:org/repo.git"
+        assert kwargs == {}
+
+    def test__empty_kwargs_returns_none(self):
+        assert _pop_deprecated_source_kwarg({}, "Owner") is None
+
+    def test__unexpected_keyword_raises(self):
+        """**kwargs must not silently swallow a near miss.
+
+        A typo like `aibs_informatics_aws_lambda_rep` would otherwise leave the construct
+        on its default source while the caller believed they had pinned a version, which
+        is a silently wrong deploy rather than a loud failure.
+        """
+        with pytest.raises(
+            TypeError, match="unexpected keyword argument 'aibs_informatics_aws_lambda_rep'"
+        ):
+            _pop_deprecated_source_kwarg(
+                {"aibs_informatics_aws_lambda_rep": "git@github.com:org/repo.git"}, "Owner"
+            )
+
+    def test__unexpected_keywords_are_all_reported(self):
+        with pytest.raises(TypeError, match="'alpha', 'beta'"):
+            _pop_deprecated_source_kwarg({"beta": None, "alpha": None}, "Owner")
+
+    def test__owner_name_is_in_the_message(self):
+        with pytest.raises(TypeError, match=r"MyConstruct\.__init__\(\)"):
+            _pop_deprecated_source_kwarg({"nope": None}, "MyConstruct")
+
+
+# ---------------------------------------------------------------------------
 # AIBSInformaticsDockerAssets
 # ---------------------------------------------------------------------------
 
@@ -133,6 +171,17 @@ class TestAIBSInformaticsDockerAssets(CdkBaseTest):
                 self.env_base,
                 aibs_informatics_aws_lambda_source="git@github.com:org/a.git",
                 aibs_informatics_aws_lambda_repo="git@github.com:org/b.git",
+            )
+
+    def test__init__misspelled_kwarg_raises(self):
+        """A near miss on the deprecated alias must fail, not fall back to the default."""
+        stack = self.get_dummy_stack("test")
+        with pytest.raises(TypeError, match="unexpected keyword argument"):
+            AIBSInformaticsDockerAssets(
+                stack,
+                "DockerAssets",
+                self.env_base,
+                aibs_informatics_aws_lambda_rep="git@github.com:org/custom.git",
             )
 
     def test__init__git_source(self):
@@ -353,8 +402,8 @@ class TestAIBSInformaticsAssets(CdkBaseTest):
             stack,
             "Assets",
             self.env_base,
-            code_source=code_source,
-            docker_source=docker_source,
+            aibs_informatics_aws_lambda_code_source=code_source,
+            aibs_informatics_aws_lambda_docker_source=docker_source,
         )
         assert assets.code_assets.source is code_source
         assert assets.docker_assets.source is docker_source
@@ -362,7 +411,12 @@ class TestAIBSInformaticsAssets(CdkBaseTest):
     def test__init__only_docker_source_leaves_code_source_at_default(self):
         stack = self.get_dummy_stack("test")
         docker_source = ContainerImageSource(image="ghcr.io/org/repo", tag="v1.0.0")
-        assets = AIBSInformaticsAssets(stack, "Assets", self.env_base, docker_source=docker_source)
+        assets = AIBSInformaticsAssets(
+            stack,
+            "Assets",
+            self.env_base,
+            aibs_informatics_aws_lambda_docker_source=docker_source,
+        )
         assert isinstance(assets.code_assets.source, GitSource)
         assert assets.code_assets.source.url == AIBS_INFORMATICS_AWS_LAMBDA_REPO
         assert assets.docker_assets.source is docker_source
@@ -373,33 +427,25 @@ class TestAIBSInformaticsAssets(CdkBaseTest):
             stack,
             "Assets",
             self.env_base,
-            code_source="git@github.com:org/custom.git",
-            docker_source="ghcr.io/org/repo:v1",
+            aibs_informatics_aws_lambda_code_source="git@github.com:org/custom.git",
+            aibs_informatics_aws_lambda_docker_source="ghcr.io/org/repo:v1",
         )
         assert isinstance(assets.code_assets.source, GitSource)
         assert assets.code_assets.source.url == "git@github.com:org/custom.git"
         assert isinstance(assets.docker_assets.source, ContainerImageSource)
         assert assets.docker_assets.source.image_uri == "ghcr.io/org/repo:v1"
 
-    def test__init__deprecated_repo_kwarg_sets_both(self):
-        stack = self.get_dummy_stack("test")
-        repo_url = "git@github.com:org/custom.git"
-        with pytest.warns(DeprecationWarning, match="aibs_informatics_aws_lambda_repo"):
-            assets = AIBSInformaticsAssets(
-                stack, "Assets", self.env_base, aibs_informatics_aws_lambda_repo=repo_url
-            )
-        assert isinstance(assets.code_assets.source, GitSource)
-        assert isinstance(assets.docker_assets.source, GitSource)
-        assert assets.code_assets.source.url == repo_url
-        assert assets.docker_assets.source.url == repo_url
+    def test__init__no_deprecated_repo_kwarg(self):
+        """This construct never shipped an `aibs_informatics_aws_lambda_repo` parameter.
 
-    def test__init__deprecated_repo_kwarg_with_new_kwarg_raises(self):
+        `main` takes only (scope, construct_id, env_base, runtime), so there is nothing to
+        stay compatible with here and no shim to maintain.
+        """
         stack = self.get_dummy_stack("test")
-        with pytest.raises(ValueError, match="Cannot specify both"):
+        with pytest.raises(TypeError, match="aibs_informatics_aws_lambda_repo"):
             AIBSInformaticsAssets(
                 stack,
                 "Assets",
                 self.env_base,
-                docker_source="ghcr.io/org/repo:v1",
                 aibs_informatics_aws_lambda_repo="git@github.com:org/custom.git",
             )
