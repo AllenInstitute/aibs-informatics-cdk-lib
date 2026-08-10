@@ -82,6 +82,12 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
           key is added. Only images built from a handler that understands candidate lists
           can deserialize this.
 
+        The authoritative schema for this request is
+        ``aibs_informatics_aws_lambda.handlers.demand.model.PrepareDemandScaffoldingRequest``
+        (the file system roles are ``DemandFileSystemConfigurations``). It is defined there
+        rather than here because the handler is what deserializes it; there is no import to
+        follow, so changes to either side must be coordinated by hand.
+
         Args:
             shared_mount_point_config: Candidate config(s) for the read-only shared volume.
             scratch_mount_point_config: Candidate config(s) for the scratch volume that

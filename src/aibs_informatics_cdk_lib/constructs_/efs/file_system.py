@@ -443,8 +443,9 @@ class MountPointConfiguration:
     def to_file_system_configuration(self) -> dict[str, Any]:
         """Convert to a demand execution file system configuration.
 
-        Matches the ``FileSystemConfiguration`` model that the demand scaffolding
-        handler deserializes in aibs-informatics-aws-lambda.
+        Mirrors ``aibs_informatics_aws_lambda.handlers.demand.model.FileSystemConfiguration``,
+        which the demand scaffolding handler deserializes this into. That model is the
+        authoritative definition of these keys; keep the two in sync.
 
         Returns:
             Dictionary containing the file system configuration.
