@@ -25,6 +25,15 @@ from aibs_informatics_cdk_lib.constructs_.sfn.fragments.base import EnvBaseState
 from aibs_informatics_cdk_lib.constructs_.sfn.states.common import CommonOperation
 
 
+def _normalize_mount_point_configs(
+    config: MountPointConfiguration | Sequence[MountPointConfiguration] | None,
+) -> list[MountPointConfiguration]:
+    """Normalize a single/sequence/None mount point config into a candidate list."""
+    if isinstance(config, MountPointConfiguration):
+        return [config]
+    return list(config or [])
+
+
 class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixins):
     def __init__(
         self,
@@ -61,30 +70,34 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
         are mounted together into those internal tasks, every candidate must use a
         distinct ``mount_point``.
 
+        The scaffolding request is serialized into the Step Function definition as JSON,
+        so its structure is a compatibility contract with whichever docker image the
+        scaffolding job happens to run. Two structures are emitted:
+
+        - Single-candidate (every role has one candidate and no strategy was requested):
+          each role is a single JSON object and no ``selection_strategy`` key is written.
+          This is the same request structure that pre-multi-EFS images already accept, so
+          they keep working against a state machine synthesized from this fragment.
+        - Multi-candidate: each role is a JSON array of objects and a ``selection_strategy``
+          key is added. Only images built from a handler that understands candidate lists
+          can deserialize this.
+
         Args:
             shared_mount_point_config: Candidate config(s) for the read-only shared volume.
             scratch_mount_point_config: Candidate config(s) for the scratch volume that
                 hosts execution working directories.
             tmp_mount_point_config: Optional candidate config(s) for a dedicated tmp volume.
             file_system_selection_strategy: Strategy the scaffolding handler uses to pick
-                one candidate per role. Defaults to the handler's default (RANDOM) and is
-                omitted from the request entirely when every role has a single candidate
-                (preserving the legacy wire shape for older docker images).
+                one candidate per role. Defaults to the handler's default (RANDOM), and is
+                omitted from the request entirely when every role has a single candidate.
         """
         super().__init__(scope, id, env_base)
 
         # ----------------- Validation -----------------
 
-        def normalize(
-            config: MountPointConfiguration | Sequence[MountPointConfiguration] | None,
-        ) -> list[MountPointConfiguration]:
-            if isinstance(config, MountPointConfiguration):
-                return [config]
-            return list(config or [])
-
-        shared_mount_point_configs = normalize(shared_mount_point_config)
-        scratch_mount_point_configs = normalize(scratch_mount_point_config)
-        tmp_mount_point_configs = normalize(tmp_mount_point_config)
+        shared_mount_point_configs = _normalize_mount_point_configs(shared_mount_point_config)
+        scratch_mount_point_configs = _normalize_mount_point_configs(scratch_mount_point_config)
+        tmp_mount_point_configs = _normalize_mount_point_configs(tmp_mount_point_config)
 
         if not shared_mount_point_configs or not scratch_mount_point_configs:
             raise ValueError(
@@ -127,8 +140,8 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
         }
 
         # Create request input for the demand scaffolding.
-        # When every role has a single candidate (and no strategy was requested), emit the
-        # legacy singular wire shape without a selection_strategy key so older docker images
+        # When every role has a single candidate (and no strategy was requested), emit each
+        # role as a single JSON object with no selection_strategy key, so older docker images
         # (whose request models predate candidate lists) keep working.
         multi_candidate = (
             len(shared_mount_point_configs) > 1
@@ -136,13 +149,6 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
             or len(tmp_mount_point_configs) > 1
             or file_system_selection_strategy is not None
         )
-
-        def to_file_system_configuration(mpc: MountPointConfiguration) -> dict[str, Any]:
-            return {
-                "file_system": mpc.file_system_id,
-                "access_point": mpc.access_point_id,
-                "container_path": mpc.mount_point,
-            }
 
         file_system_configurations: dict[str, Any] = {}
         role_mount_point_configs: dict[str, list[MountPointConfiguration]] = {
@@ -161,17 +167,11 @@ class DemandExecutionFragment(EnvBaseStateMachineFragment, EnvBaseConstructMixin
         for role, mount_point_configs in role_mount_point_configs.items():
             if not mount_point_configs:
                 continue
-            if multi_candidate:
-                file_system_configurations[role] = [
-                    to_file_system_configuration(mpc) for mpc in mount_point_configs
-                ]
-            else:
-                file_system_configurations[role] = to_file_system_configuration(
-                    mount_point_configs[0]
-                )
+            fs_configs = [mpc.to_file_system_configuration() for mpc in mount_point_configs]
+            file_system_configurations[role] = fs_configs if multi_candidate else fs_configs[0]
             # All candidates are mounted into the fragment's internal batch invoked lambda
-            # tasks; volume names are only indexed in multi-candidate mode to keep the
-            # single-candidate wire shape identical to the legacy one.
+            # tasks; volume names are only indexed in multi-candidate mode so that the
+            # single-candidate request stays identical to what older images expect.
             for i, mpc in enumerate(mount_point_configs):
                 volume_name = f"{role}{i}" if multi_candidate else role
                 mount_points.append(mpc.to_batch_mount_point(volume_name, sfn_format=True))
