@@ -62,7 +62,7 @@ class CoreStack(EnvBaseStack):
         return self._bucket
 
     @property
-    def efs_ecosystem(self) -> EFSEcosystem:
+    def primary_efs_ecosystem(self) -> EFSEcosystem:
         """The primary EFS ecosystem."""
         return self._efs_ecosystems[0]
 
@@ -71,9 +71,9 @@ class CoreStack(EnvBaseStack):
         return self._efs_ecosystems
 
     @property
-    def file_system(self) -> EnvBaseFileSystem:
+    def primary_file_system(self) -> EnvBaseFileSystem:
         """The primary EFS file system."""
-        return self.efs_ecosystem.file_system
+        return self.primary_efs_ecosystem.file_system
 
     @property
     def file_systems(self) -> list[EnvBaseFileSystem]:
