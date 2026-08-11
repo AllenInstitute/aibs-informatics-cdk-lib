@@ -440,6 +440,22 @@ class MountPointConfiguration:
             return convert_to_sfn_api_action_case(volume)
         return volume
 
+    def to_file_system_configuration(self) -> dict[str, Any]:
+        """Convert to a demand execution file system configuration.
+
+        Mirrors ``aibs_informatics_aws_lambda.handlers.demand.model.FileSystemConfiguration``,
+        which the demand scaffolding handler deserializes this into. That model is the
+        authoritative definition of these keys; keep the two in sync.
+
+        Returns:
+            Dictionary containing the file system configuration.
+        """
+        return {
+            "file_system": self.file_system_id,
+            "access_point": self.access_point_id,
+            "container_path": self.mount_point,
+        }
+
 
 def create_access_point(
     scope: constructs.Construct,

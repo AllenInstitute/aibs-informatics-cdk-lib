@@ -14,6 +14,7 @@ class CoreStack(EnvBaseStack):
         id: str | None,
         env_base: EnvBase,
         name: str,
+        extra_efs_count: int = 0,
         **kwargs,
     ) -> None:
         super().__init__(scope, id, env_base, **kwargs)
@@ -32,10 +33,25 @@ class CoreStack(EnvBaseStack):
             ],
         )
 
-        self._efs_ecosystem = EFSEcosystem(
-            self, id="EFS", env_base=self.env_base, file_system_name=name, vpc=self.vpc
-        )
-        self._file_system = self._efs_ecosystem.file_system
+        self._efs_ecosystems = [
+            EFSEcosystem(
+                self, id="EFS", env_base=self.env_base, file_system_name=name, vpc=self.vpc
+            )
+        ]
+        # Extra file systems let concurrent demand executions spread their scratch/working
+        # directory I/O across multiple EFS burst-credit pools. Only prod carries the load
+        # (and cost) that justifies them, and callers opt in via extra_efs_count.
+        if self.is_prod:
+            self._efs_ecosystems.extend(
+                EFSEcosystem(
+                    self,
+                    id=f"EFS-{i}",
+                    env_base=self.env_base,
+                    file_system_name=f"{name}-part{i}",
+                    vpc=self.vpc,
+                )
+                for i in range(1, extra_efs_count + 1)
+            )
 
     @property
     def vpc(self) -> EnvBaseVpc:
@@ -46,9 +62,19 @@ class CoreStack(EnvBaseStack):
         return self._bucket
 
     @property
-    def efs_ecosystem(self) -> EFSEcosystem:
-        return self._efs_ecosystem
+    def primary_efs_ecosystem(self) -> EFSEcosystem:
+        """The primary EFS ecosystem."""
+        return self._efs_ecosystems[0]
 
     @property
-    def file_system(self) -> EnvBaseFileSystem:
-        return self._file_system
+    def efs_ecosystems(self) -> list[EFSEcosystem]:
+        return self._efs_ecosystems
+
+    @property
+    def primary_file_system(self) -> EnvBaseFileSystem:
+        """The primary EFS file system."""
+        return self.primary_efs_ecosystem.file_system
+
+    @property
+    def file_systems(self) -> list[EnvBaseFileSystem]:
+        return [ecosystem.file_system for ecosystem in self._efs_ecosystems]

@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 
 import constructs
 from aibs_informatics_aws_utils.constants.efs import (
@@ -84,7 +84,7 @@ class DemandExecutionStack(EnvBaseStack):
         env_base: EnvBase,
         assets: AIBSInformaticsAssets,
         scaffolding_bucket: s3.Bucket,
-        efs_ecosystem: EFSEcosystem,
+        efs_ecosystems: Sequence[EFSEcosystem],
         scaffolding_job_queue: batch.JobQueue | str,
         data_sync_job_queue: batch.JobQueue | str,
         execution_job_queue: batch.JobQueue | str,
@@ -92,7 +92,7 @@ class DemandExecutionStack(EnvBaseStack):
     ):
         super().__init__(scope, id, env_base, **kwargs)
 
-        self.efs_ecosystem = efs_ecosystem
+        self.efs_ecosystems = list(efs_ecosystems)
 
         self.execution_job_queue = (
             execution_job_queue
@@ -112,15 +112,30 @@ class DemandExecutionStack(EnvBaseStack):
 
         self._assets = assets
 
-        root_mount_point_config = MountPointConfiguration.from_access_point(
-            self.efs_ecosystem.root_access_point, EFS_MOUNT_PATH
-        )
-        shared_mount_point_config = MountPointConfiguration.from_access_point(
-            self.efs_ecosystem.shared_access_point, "/opt/shared", read_only=True
-        )
-        scratch_mount_point_config = MountPointConfiguration.from_access_point(
-            self.efs_ecosystem.scratch_access_point, "/opt/scratch"
-        )
+        # Mount paths must be unique per candidate: the demand execution fragment's internal
+        # tasks and the data-sync / clean-fs state machines mount all of them simultaneously.
+        root_mount_point_configs = [
+            MountPointConfiguration.from_access_point(
+                ecosystem.root_access_point,
+                f"{EFS_MOUNT_PATH}/{ecosystem.file_system.file_system_id}",
+            )
+            for ecosystem in self.efs_ecosystems
+        ]
+        shared_mount_point_configs = [
+            MountPointConfiguration.from_access_point(
+                ecosystem.shared_access_point,
+                f"/opt/{ecosystem.shared_access_point.access_point_id}/shared",
+                read_only=True,
+            )
+            for ecosystem in self.efs_ecosystems
+        ]
+        scratch_mount_point_configs = [
+            MountPointConfiguration.from_access_point(
+                ecosystem.scratch_access_point,
+                f"/opt/{ecosystem.scratch_access_point.access_point_id}/scratch",
+            )
+            for ecosystem in self.efs_ecosystems
+        ]
 
         batch_invoked_lambda_fragment = BatchInvokedLambdaFunction.with_defaults(
             self,
@@ -129,7 +144,7 @@ class DemandExecutionStack(EnvBaseStack):
             name="batch-invoked-lambda",
             job_queue=self.scaffolding_job_queue,
             bucket_name=scaffolding_bucket.bucket_name,
-            mount_point_configs=[root_mount_point_config],
+            mount_point_configs=root_mount_point_configs,
         )
         self.batch_invoked_lambda_state_machine = batch_invoked_lambda_fragment.to_state_machine(
             "batch-invoked-lambda-state-machine"
@@ -142,7 +157,7 @@ class DemandExecutionStack(EnvBaseStack):
             aibs_informatics_docker_asset=self._assets.docker_assets.AIBS_INFORMATICS_AWS_LAMBDA,
             batch_job_queue=self.data_sync_job_queue,
             scaffolding_bucket=scaffolding_bucket,
-            mount_point_configs=[root_mount_point_config],
+            mount_point_configs=root_mount_point_configs,
         )
 
         self.data_sync_state_machine = data_sync.to_state_machine("data-sync-v2")
@@ -156,8 +171,8 @@ class DemandExecutionStack(EnvBaseStack):
             scaffolding_job_queue=self.scaffolding_job_queue,
             batch_invoked_lambda_state_machine=self.batch_invoked_lambda_state_machine,
             data_sync_state_machine=self.data_sync_state_machine,
-            shared_mount_point_config=shared_mount_point_config,
-            scratch_mount_point_config=scratch_mount_point_config,
+            shared_mount_point_config=shared_mount_point_configs,
+            scratch_mount_point_config=scratch_mount_point_configs,
             tags={
                 "ai:cost-allocation:aibs-informatics-service": "n/a",
                 "ai:cost-allocation:aibs-informatics-workflow-type": "$.execution_type",
@@ -175,26 +190,33 @@ class DemandExecutionStack(EnvBaseStack):
             aibs_informatics_docker_asset=self._assets.docker_assets.AIBS_INFORMATICS_AWS_LAMBDA,
             batch_job_queue=self.execution_job_queue,
             scaffolding_bucket=scaffolding_bucket,
-            mount_point_configs=[root_mount_point_config],
+            mount_point_configs=root_mount_point_configs,
         )
         self.clean_file_system_state_machine = clean_fs.to_state_machine("clean-file-system")
 
-        CleanFileSystemTriggerRuleConfig(
-            rule_name="clean-file-system-trigger",
-            trigger_configs=[
-                CleanFileSystemTriggerConfig(
-                    file_system=self.efs_ecosystem.file_system,
-                    path=path,
-                    days_since_last_accessed=days_since_last_accessed,
-                    max_depth=max_depth,
-                    min_depth=min_depth,
-                    min_size_bytes_allowed=0,
-                )
-                for path, days_since_last_accessed, min_depth, max_depth in [
-                    (EFS_TMP_PATH, 3.0, 1, 1),
-                    (EFS_SCRATCH_PATH, 3.0, 1, 1),
-                    (f"{EFS_SCRATCH_PATH}/tmp", 3.0, 1, 1),
-                    (EFS_SHARED_PATH, 3.0, 1, 1),
-                ]
-            ],
-        ).create_rule(self, clean_file_system_state_machine=self.clean_file_system_state_machine)
+        # Every file system needs its own janitor rule: failed executions can leave working
+        # directories behind on whichever file system was selected for them.
+        for i, ecosystem in enumerate(self.efs_ecosystems):
+            CleanFileSystemTriggerRuleConfig(
+                rule_name="clean-file-system-trigger"
+                if i == 0
+                else f"clean-file-system-trigger-{i}",
+                trigger_configs=[
+                    CleanFileSystemTriggerConfig(
+                        file_system=ecosystem.file_system,
+                        path=path,
+                        days_since_last_accessed=days_since_last_accessed,
+                        max_depth=max_depth,
+                        min_depth=min_depth,
+                        min_size_bytes_allowed=0,
+                    )
+                    for path, days_since_last_accessed, min_depth, max_depth in [
+                        (EFS_TMP_PATH, 3.0, 1, 1),
+                        (EFS_SCRATCH_PATH, 3.0, 1, 1),
+                        (f"{EFS_SCRATCH_PATH}/tmp", 3.0, 1, 1),
+                        (EFS_SHARED_PATH, 3.0, 1, 1),
+                    ]
+                ],
+            ).create_rule(
+                self, clean_file_system_state_machine=self.clean_file_system_state_machine
+            )
