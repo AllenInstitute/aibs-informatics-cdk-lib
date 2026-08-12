@@ -33,55 +33,6 @@ DEPRECATED_AIBS_INFORMATICS_AWS_LAMBDA_SOURCE_PARAM = "aibs_informatics_aws_lamb
 logger = logging.getLogger(__name__)
 
 
-def _deprecated_repo_url(source: PackageSource) -> str | None:
-    """Back-compat shim for the ``AIBS_INFORMATICS_AWS_LAMBDA_REPO`` attribute.
-
-    Args:
-        source: The source the construct was configured with.
-
-    Returns:
-        The repo URL for a GitSource, or None for a ContainerImageSource, which has no
-        repo URL to report.
-    """
-    warnings.warn(
-        "`AIBS_INFORMATICS_AWS_LAMBDA_REPO` is deprecated; use `source` instead. "
-        "It returns None when the source is a ContainerImageSource.",
-        DeprecationWarning,
-        stacklevel=3,
-    )
-    return source.url if isinstance(source, GitSource) else None
-
-
-def _pop_deprecated_source_kwarg(
-    kwargs: dict[str, PackageSource | str | None],
-    owner: str,
-    deprecated_param_name: str = DEPRECATED_AIBS_INFORMATICS_AWS_LAMBDA_SOURCE_PARAM,
-) -> PackageSource | str | None:
-    """Pop the deprecated source alias out of ``**kwargs`` and reject anything else.
-
-    The alias is absorbed into ``**kwargs`` rather than named as a parameter so it stays
-    out of the public signature and the generated API reference.
-
-    Args:
-        kwargs: The keyword arguments the constructor collected.
-        owner: The class name, for the error message.
-        deprecated_param_name: The deprecated keyword to accept.
-
-    Returns:
-        The value passed under the deprecated keyword, or None.
-
-    Raises:
-        TypeError: For any other keyword. Without this, ``**kwargs`` would silently
-            swallow a near miss like ``aibs_informatics_aws_lambda_rep=...`` and leave
-            the construct on its default source while the caller believed it was pinned.
-    """
-    deprecated_source = kwargs.pop(deprecated_param_name, None)
-    if kwargs:
-        unexpected = ", ".join(f"'{name}'" for name in sorted(kwargs))
-        raise TypeError(f"{owner}.__init__() got an unexpected keyword argument {unexpected}")
-    return deprecated_source
-
-
 class AssetsMixin:
     _source: PackageSource
 
@@ -90,25 +41,30 @@ class AssetsMixin:
         """The source these assets are built from."""
         return self._source
 
+    @property
+    def AIBS_INFORMATICS_AWS_LAMBDA_REPO(self) -> str | None:
+        """The git URL of the source repo, or None for a ContainerImageSource.
+
+        .. deprecated::
+            Use ``source`` instead.
+        """
+        warnings.warn(
+            "`AIBS_INFORMATICS_AWS_LAMBDA_REPO` is deprecated; use `source` instead. "
+            "It returns None when the source is a ContainerImageSource.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self._source.url if isinstance(self._source, GitSource) else None
+
     @classmethod
     def _normalize_source(
         cls, source: PackageSource | str | None, default_repo_url: str
     ) -> PackageSource:
         """Normalize a source parameter into a supported PackageSource instance.
 
-        Args:
-            source: A GitSource or ContainerImageSource, a string (git URL, local path, or
-                image ref), or None.
-            default_repo_url: Default git repo URL to use when source is None.
-
-        Returns:
-            A resolved PackageSource instance.
-
-        Raises:
-            TypeError: If source is a PackageSource subclass this code path does not
-                support. Callers downstream reach for source-kind-specific properties
-                (e.g. GitSource.repo_url_with_ref), so an unrecognized subclass is
-                rejected here rather than failing later with an AttributeError.
+        An unsupported PackageSource subclass is rejected here because downstream callers
+        reach for source-kind-specific properties (e.g. GitSource.repo_url_with_ref) and
+        would otherwise fail later with an AttributeError.
         """
         if source is None:
             return GitSource(url=default_repo_url)
@@ -125,35 +81,39 @@ class AssetsMixin:
     def _resolve_deprecated_source(
         cls,
         source: PackageSource | str | None,
-        deprecated_source: PackageSource | str | None,
-        param_name: str = AIBS_INFORMATICS_AWS_LAMBDA_SOURCE_PARAM,
-        deprecated_param_name: str = DEPRECATED_AIBS_INFORMATICS_AWS_LAMBDA_SOURCE_PARAM,
+        kwargs: dict[str, PackageSource | str | None],
     ) -> PackageSource | str | None:
-        """Collapse a source parameter and its deprecated alias into one value.
+        """Collapse the source parameter and its deprecated alias, consuming ``kwargs``.
 
-        Args:
-            source: The value passed under the current parameter name.
-            deprecated_source: The value passed under the deprecated parameter name.
-            param_name: The current parameter name, for messages.
-            deprecated_param_name: The deprecated parameter name, for messages.
+        The alias lives in ``**kwargs`` rather than in the signature so it stays out of the
+        public API and the generated reference. That means this must raise on any other
+        keyword: a typo like ``aibs_informatics_aws_lambda_rep=...`` would otherwise be
+        swallowed, leaving the construct on its default source while the caller believed
+        they had pinned a version.
 
-        Returns:
-            Whichever of the two was supplied, or None if neither was.
-
-        Raises:
-            ValueError: If both parameters were supplied.
+        ``stacklevel=3`` targets a subclass forwarding the alias through
+        ``super().__init__()``, which is how every downstream consumer passes it. A direct
+        call lands on jsii's metaclass instead; no single value serves both, and
+        ``skip_file_prefixes`` needs Python 3.12.
         """
+        deprecated_source = kwargs.pop(DEPRECATED_AIBS_INFORMATICS_AWS_LAMBDA_SOURCE_PARAM, None)
+        if kwargs:
+            unexpected = ", ".join(f"'{name}'" for name in sorted(kwargs))
+            raise TypeError(
+                f"{cls.__name__}.__init__() got an unexpected keyword argument {unexpected}"
+            )
         if deprecated_source is None:
             return source
         if source is not None:
             raise ValueError(
-                f"Cannot specify both `{param_name}` and `{deprecated_param_name}`. "
-                f"Use `{param_name}`."
+                f"Cannot specify both `{AIBS_INFORMATICS_AWS_LAMBDA_SOURCE_PARAM}` and "
+                f"`{DEPRECATED_AIBS_INFORMATICS_AWS_LAMBDA_SOURCE_PARAM}`. "
+                f"Use `{AIBS_INFORMATICS_AWS_LAMBDA_SOURCE_PARAM}`."
             )
         warnings.warn(
-            f"`{deprecated_param_name}` is deprecated; use `{param_name}` instead. "
-            "A source may be a git URL, a local repo path, a container image reference, "
-            "or a PackageSource instance.",
+            f"`{DEPRECATED_AIBS_INFORMATICS_AWS_LAMBDA_SOURCE_PARAM}` is deprecated; use "
+            f"`{AIBS_INFORMATICS_AWS_LAMBDA_SOURCE_PARAM}` instead. A source may be a git URL, "
+            "a local repo path, a container image reference, or a PackageSource instance.",
             DeprecationWarning,
             stacklevel=3,
         )
@@ -219,24 +179,9 @@ class AIBSInformaticsCodeAssets(constructs.Construct, AssetsMixin):
         self.env_base = env_base
         self.runtime = runtime or lambda_.Runtime.PYTHON_3_11
         self._source = self._normalize_source(
-            self._resolve_deprecated_source(
-                aibs_informatics_aws_lambda_source,
-                _pop_deprecated_source_kwarg(kwargs, type(self).__name__),
-            ),
+            self._resolve_deprecated_source(aibs_informatics_aws_lambda_source, kwargs),
             AIBS_INFORMATICS_AWS_LAMBDA_REPO,
         )
-
-    @property
-    def AIBS_INFORMATICS_AWS_LAMBDA_REPO(self) -> str | None:
-        """The git URL of the aibs-informatics-aws-lambda source repo.
-
-        .. deprecated::
-            Use ``source`` instead.
-
-        Returns:
-            The repo URL for a GitSource, or None for a ContainerImageSource.
-        """
-        return _deprecated_repo_url(self._source)
 
     @cached_property
     def AIBS_INFORMATICS_AWS_LAMBDA(self) -> CodeAsset:
@@ -351,24 +296,9 @@ class AIBSInformaticsDockerAssets(constructs.Construct, AssetsMixin):
         super().__init__(scope, construct_id)
         self.env_base = env_base
         self._source = self._normalize_source(
-            self._resolve_deprecated_source(
-                aibs_informatics_aws_lambda_source,
-                _pop_deprecated_source_kwarg(kwargs, type(self).__name__),
-            ),
+            self._resolve_deprecated_source(aibs_informatics_aws_lambda_source, kwargs),
             AIBS_INFORMATICS_AWS_LAMBDA_REPO,
         )
-
-    @property
-    def AIBS_INFORMATICS_AWS_LAMBDA_REPO(self) -> str | None:
-        """The git URL of the aibs-informatics-aws-lambda source repo.
-
-        .. deprecated::
-            Use ``source`` instead.
-
-        Returns:
-            The repo URL for a GitSource, or None for a ContainerImageSource.
-        """
-        return _deprecated_repo_url(self._source)
 
     @cached_property
     def AIBS_INFORMATICS_AWS_LAMBDA(self) -> aws_ecr_assets.DockerImageAsset | str:

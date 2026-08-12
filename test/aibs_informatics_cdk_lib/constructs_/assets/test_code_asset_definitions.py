@@ -9,7 +9,6 @@ from aibs_informatics_cdk_lib.constructs_.assets.code_asset_definitions import (
     AIBSInformaticsCodeAssets,
     AIBSInformaticsDockerAssets,
     AssetsMixin,
-    _pop_deprecated_source_kwarg,
 )
 from aibs_informatics_cdk_lib.constructs_.assets.source import (
     ContainerImageSource,
@@ -56,11 +55,7 @@ class TestNormalizeSource:
         assert source is original
 
     def test__unsupported_package_source_raises(self):
-        """An unrecognized subclass must be rejected here, not deep in a cached_property.
-
-        Downstream code reaches for source-kind-specific properties, so passing one
-        through would surface as an AttributeError far from the actual mistake.
-        """
+        """An unrecognized subclass must be rejected here, not deep in a cached_property."""
 
         class CustomSource(PackageSource):
             source_type: str = "custom"
@@ -76,59 +71,45 @@ class TestNormalizeSource:
 
 class TestResolveDeprecatedSource:
     def test__neither_supplied_returns_none(self):
-        assert AssetsMixin._resolve_deprecated_source(None, None) is None
+        assert AssetsMixin._resolve_deprecated_source(None, {}) is None
 
     def test__current_param_returned_without_warning(self):
         source = GitSource(url="git@github.com:org/repo.git")
         with warnings.catch_warnings():
             warnings.simplefilter("error", DeprecationWarning)
-            assert AssetsMixin._resolve_deprecated_source(source, None) is source
+            assert AssetsMixin._resolve_deprecated_source(source, {}) is source
 
-    def test__deprecated_param_warns_and_is_returned(self):
+    def test__deprecated_kwarg_is_popped_warned_and_returned(self):
         source = GitSource(url="git@github.com:org/repo.git")
+        kwargs: dict = {"aibs_informatics_aws_lambda_repo": source}
         with pytest.warns(DeprecationWarning, match="aibs_informatics_aws_lambda_repo"):
-            assert AssetsMixin._resolve_deprecated_source(None, source) is source
+            assert AssetsMixin._resolve_deprecated_source(None, kwargs) is source
+        assert kwargs == {}
 
     def test__both_supplied_raises(self):
         with pytest.raises(ValueError, match="Cannot specify both"):
-            AssetsMixin._resolve_deprecated_source("a", "b")
+            AssetsMixin._resolve_deprecated_source("a", {"aibs_informatics_aws_lambda_repo": "b"})
 
+    @pytest.mark.parametrize(
+        "kwargs, match",
+        [
+            pytest.param(
+                {"aibs_informatics_aws_lambda_rep": "git@github.com:org/repo.git"},
+                "unexpected keyword argument 'aibs_informatics_aws_lambda_rep'",
+                id="near_miss_on_the_alias",
+            ),
+            pytest.param({"beta": None, "alpha": None}, "'alpha', 'beta'", id="all_reported"),
+        ],
+    )
+    def test__unexpected_keyword_raises(self, kwargs: dict, match: str):
+        """**kwargs must not silently swallow a near miss like a misspelled alias.
 
-# ---------------------------------------------------------------------------
-# _pop_deprecated_source_kwarg
-# ---------------------------------------------------------------------------
-
-
-class TestPopDeprecatedSourceKwarg:
-    def test__deprecated_key_is_popped_and_returned(self):
-        kwargs: dict = {"aibs_informatics_aws_lambda_repo": "git@github.com:org/repo.git"}
-        assert _pop_deprecated_source_kwarg(kwargs, "Owner") == "git@github.com:org/repo.git"
-        assert kwargs == {}
-
-    def test__empty_kwargs_returns_none(self):
-        assert _pop_deprecated_source_kwarg({}, "Owner") is None
-
-    def test__unexpected_keyword_raises(self):
-        """**kwargs must not silently swallow a near miss.
-
-        A typo like `aibs_informatics_aws_lambda_rep` would otherwise leave the construct
-        on its default source while the caller believed they had pinned a version, which
-        is a silently wrong deploy rather than a loud failure.
+        That the message names the concrete construct is pinned by
+        TestAIBSInformaticsDockerAssets.test__init__misspelled_kwarg_raises; asserting it
+        here would only ever show `AssetsMixin`, which has no __init__.
         """
-        with pytest.raises(
-            TypeError, match="unexpected keyword argument 'aibs_informatics_aws_lambda_rep'"
-        ):
-            _pop_deprecated_source_kwarg(
-                {"aibs_informatics_aws_lambda_rep": "git@github.com:org/repo.git"}, "Owner"
-            )
-
-    def test__unexpected_keywords_are_all_reported(self):
-        with pytest.raises(TypeError, match="'alpha', 'beta'"):
-            _pop_deprecated_source_kwarg({"beta": None, "alpha": None}, "Owner")
-
-    def test__owner_name_is_in_the_message(self):
-        with pytest.raises(TypeError, match=r"MyConstruct\.__init__\(\)"):
-            _pop_deprecated_source_kwarg({"nope": None}, "MyConstruct")
+        with pytest.raises(TypeError, match=match):
+            AssetsMixin._resolve_deprecated_source(None, kwargs)
 
 
 # ---------------------------------------------------------------------------
@@ -176,7 +157,9 @@ class TestAIBSInformaticsDockerAssets(CdkBaseTest):
     def test__init__misspelled_kwarg_raises(self):
         """A near miss on the deprecated alias must fail, not fall back to the default."""
         stack = self.get_dummy_stack("test")
-        with pytest.raises(TypeError, match="unexpected keyword argument"):
+        with pytest.raises(
+            TypeError, match=r"AIBSInformaticsDockerAssets\.__init__\(\) got an unexpected keyword"
+        ):
             AIBSInformaticsDockerAssets(
                 stack,
                 "DockerAssets",
@@ -436,11 +419,7 @@ class TestAIBSInformaticsAssets(CdkBaseTest):
         assert assets.docker_assets.source.image_uri == "ghcr.io/org/repo:v1"
 
     def test__init__no_deprecated_repo_kwarg(self):
-        """This construct never shipped an `aibs_informatics_aws_lambda_repo` parameter.
-
-        `main` takes only (scope, construct_id, env_base, runtime), so there is nothing to
-        stay compatible with here and no shim to maintain.
-        """
+        """This construct never shipped an `aibs_informatics_aws_lambda_repo` parameter."""
         stack = self.get_dummy_stack("test")
         with pytest.raises(TypeError, match="aibs_informatics_aws_lambda_repo"):
             AIBSInformaticsAssets(
