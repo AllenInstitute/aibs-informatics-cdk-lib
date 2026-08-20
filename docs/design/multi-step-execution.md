@@ -7,6 +7,10 @@ generalized during the design session: verification is now one use case among se
 the feature is general multi-step composition. The rename is deliberate; the old title
 described something narrower than what is designed here.
 
+**Shareable summary:** [Multi-Step Demand Execution](https://alleninstitute.atlassian.net/wiki/spaces/DAS/pages/1965686819/Multi-Step+Demand+Execution) in Confluence space `DAS`, a sibling of
+*Enhancing Demand Execution EFS FS Lifecycle Management* (DT-9913). This document is authoritative;
+that page is the summary.
+
 **Read first:** [`demand-execution.md`](./demand-execution.md) — the design reference for the
 system as deployed. Citations here use its conventions (`cdk:`, `lambda:`, `aws-utils:`,
 `core:`) and are verified against `main` in each repo.
@@ -476,6 +480,7 @@ workflow engine.
 |---|---|
 | System reference | [`demand-execution.md`](./demand-execution.md) |
 | Glossary | `CONTEXT.md` (repo root) |
+| Confluence summary | [Multi-Step Demand Execution](https://alleninstitute.atlassian.net/wiki/spaces/DAS/pages/1965686819/Multi-Step+Demand+Execution) |
 | The serialization trap | `core:models/demand_execution/parameters.py`, `sanitize_serialized_params` |
 | The one job-submission state | `cdk:constructs_/sfn/fragments/informatics/demand_execution.py` |
 | The Map-over-a-list precedent | same file, `"Transfer Inputs TO Batch Job"` |
