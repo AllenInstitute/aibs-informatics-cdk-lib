@@ -14,26 +14,57 @@ from aws_cdk import aws_s3_assets, aws_s3_deployment
 logger = logging.getLogger(__name__)
 
 
+# Patterns for the `exclude` prop of CDK asset constructs.
+#
+# Two conventions matter here and are easy to get wrong:
+#
+#   1. Every directory needs BOTH a bare form ("**/build") and a contents form
+#      ("**/build/**"). CDK's copy walks a directory unless the directory path
+#      itself matches, so a contents-only pattern still walks all of `.venv` and
+#      rejects each file individually.
+#   2. No brace expansion. `aws_s3_assets.Asset` matches with minimatch
+#      (IgnoreMode.GLOB), which supports braces, but `DockerImageAsset` defaults
+#      to IgnoreMode.DOCKER, whose matcher does not -- there,
+#      "**/{.venv,build}/**" matches nothing at all. These lists are used with
+#      both, so they are written in the intersection of the two dialects.
 PYTHON_GLOB_EXCLUDES = [
+    "**/.git",
     "**/.git/**",
-    "**/*.{egg,egg-info,pyc,pyo}",
-    "**/{.egg,.egg-info,.eggs}/**",
-    "**/{.venv,__pycache__,build,dist}/**",
+    "**/.eggs",
+    "**/.eggs/**",
+    "**/.venv",
+    "**/.venv/**",
+    "**/__pycache__",
+    "**/__pycache__/**",
+    "**/build",
+    "**/build/**",
+    "**/dist",
+    "**/dist/**",
+    "**/*.egg",
+    "**/*.egg/**",
+    "**/*.egg-info",
+    "**/*.egg-info/**",
+    "**/*.pyc",
+    "**/*.pyo",
 ]
 
+# Language-agnostic subset of the above, for assets that are not Python packages.
 GLOBAL_GLOB_EXCLUDES = [
+    "**/.git",
     "**/.git/**",
-    "**/*.egg",
-    "**/.egg-info",
-    "**/.pyc",
-    "**/.pyo",
-    "**/.egg/**",
-    "**/.egg-info/**",
-    "**/.eggs/**",
-    "**/.venv/**",
-    "**/__pycache__/**",
+    "**/build",
     "**/build/**",
+    "**/dist",
     "**/dist/**",
+]
+
+# Cloud assembly output. Excluding this is what keeps a previous synth's staged
+# asset directories from being re-bundled into the next one, so it must actually
+# match: a trailing slash ("**/cdk.out/") makes minimatch expect an empty final
+# path segment and matches neither the directory nor anything beneath it.
+CDK_OUT_GLOB_EXCLUDES = [
+    "**/cdk.out",
+    "**/cdk.out/**",
 ]
 
 
@@ -212,11 +243,15 @@ class CodeAsset:
                     * pip mode: installs the local project (.)
                     * uv mode: uv export produces a frozen requirements-autogen.txt, then that is installed.
             includes (Optional[Sequence[str]]):
-                Additional glob patterns to explicitly include when generating the asset hash. Useful for
-                forcing hash sensitivity to files that might otherwise be excluded.
+                Additional *regex* patterns (matched with `re.fullmatch` against absolute paths, by
+                `generate_path_hash`) to explicitly include when generating the asset hash. Useful for
+                forcing hash sensitivity to files that might otherwise be excluded. Note these are a
+                different dialect from the glob patterns taken by the `exclude` prop of the CDK asset
+                constructs -- a glob passed here silently matches nothing.
             excludes (Optional[Sequence[str]]):
-                Additional glob patterns to exclude (beyond built-in Python / tooling ignores) for hashing
-                and packaging. Helps reduce asset size and improve cache hits.
+                Additional *regex* patterns (see `includes`) to exclude, beyond
+                PYTHON_REGEX_EXCLUDES, when generating the asset hash. These affect the asset hash
+                only; what actually gets packaged is governed by the glob `exclude` list below.
             runtime (aws_cdk.aws_lambda.Runtime):
                 Lambda runtime whose bundling image will be used (default: PYTHON_3_11).
             platform (Optional[str]):
@@ -295,7 +330,7 @@ class CodeAsset:
             #   2. we also don't want to include certain files for size reasons.
             exclude=[
                 *PYTHON_GLOB_EXCLUDES,
-                "**/cdk.out/",
+                *CDK_OUT_GLOB_EXCLUDES,
             ],
             # ignore_mode=cdk.IgnoreMode.GIT,
             bundling=cdk.BundlingOptions(
