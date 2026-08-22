@@ -18,6 +18,7 @@ from aibs_informatics_cdk_lib.constructs_.assets.code_asset import (
     PYTHON_REGEX_EXCLUDES,
     CodeAsset,
 )
+from aibs_informatics_cdk_lib.constructs_.assets.docker_asset import DockerAsset
 from aibs_informatics_cdk_lib.constructs_.assets.source import (
     ContainerImageSource,
     GitSource,
@@ -301,20 +302,20 @@ class AIBSInformaticsDockerAssets(constructs.Construct, AssetsMixin):
         )
 
     @cached_property
-    def AIBS_INFORMATICS_AWS_LAMBDA(self) -> aws_ecr_assets.DockerImageAsset | str:
+    def AIBS_INFORMATICS_AWS_LAMBDA(self) -> DockerAsset:
         """Returns a docker asset for aibs-informatics-aws-lambda.
 
-        When the source is a GitSource, returns a DockerImageAsset built from the repo.
-        When the source is a ContainerImageSource, returns the image URI string.
+        When the source is a GitSource, the image is built locally from the repo. When
+        the source is a ContainerImageSource, the published image is used as-is.
 
         Returns:
-            The docker image asset or image URI string.
+            The docker asset, which knows how to present itself to each AWS service.
 
         Raises:
             TypeError: If the source is neither a ContainerImageSource nor a GitSource.
         """
         if isinstance(self._source, ContainerImageSource):
-            return self._source.image_uri
+            return DockerAsset.from_registry(self, "aibs-informatics-aws-lambda", self._source)
         if not isinstance(self._source, GitSource):
             raise TypeError(
                 f"AIBSInformaticsDockerAssets requires a GitSource or ContainerImageSource, "
@@ -325,10 +326,11 @@ class AIBSInformaticsDockerAssets(constructs.Construct, AssetsMixin):
             self._source.repo_url_with_ref, AIBS_INFORMATICS_AWS_LAMBDA_REPO_ENV_VAR
         )
 
-        return aws_ecr_assets.DockerImageAsset(
+        return DockerAsset.from_local_build(
             self,
             "aibs-informatics-aws-lambda",
             directory=repo_path.as_posix(),
+            source=self._source,
             build_ssh="default",
             platform=aws_ecr_assets.Platform.LINUX_AMD64,
             asset_name="aibs-informatics-aws-lambda",
