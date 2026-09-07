@@ -1,14 +1,20 @@
 import aws_cdk as cdk
 from aws_cdk import aws_s3_assets
 
+from aibs_informatics_cdk_lib.constructs_.assets import code_asset
 from aibs_informatics_cdk_lib.constructs_.assets.code_asset import (
     CDK_OUT_GLOB_EXCLUDES,
-    GLOBAL_GLOB_EXCLUDES,
     PYTHON_GLOB_EXCLUDES,
 )
 from test.aibs_informatics_cdk_lib.base import BaseTest
 
 EXCLUDES = [*PYTHON_GLOB_EXCLUDES, *CDK_OUT_GLOB_EXCLUDES]
+
+# Discovered rather than listed, so a new *_GLOB_EXCLUDES constant is covered by
+# the invariant tests below without anyone remembering to add it here.
+GLOB_EXCLUDE_LISTS = {
+    name: value for name, value in vars(code_asset).items() if name.endswith("_GLOB_EXCLUDES")
+}
 
 
 class GlobExcludeTests(BaseTest):
@@ -70,22 +76,30 @@ class GlobExcludeTests(BaseTest):
         self.write("src", "a.py", content="a = 2")
         assert before != self.asset_hash()
 
+    def test__glob_exclude_lists_were_discovered(self):
+        """Guards the discovery itself -- an empty mapping would vacuously pass."""
+        assert set(GLOB_EXCLUDE_LISTS) >= {
+            "PYTHON_GLOB_EXCLUDES",
+            "GLOBAL_GLOB_EXCLUDES",
+            "CDK_OUT_GLOB_EXCLUDES",
+        }
+
     def test__glob_excludes_contain_bare_and_contents_forms(self):
         """CDK only prunes a directory when the directory path itself matches.
 
         Without the bare form, CDK walks all of `.venv` and rejects each file
         individually -- correct, but it reads every entry to do it.
         """
-        for patterns in (PYTHON_GLOB_EXCLUDES, GLOBAL_GLOB_EXCLUDES):
+        for name, patterns in GLOB_EXCLUDE_LISTS.items():
             for pattern in patterns:
                 if not pattern.endswith("/**"):
                     continue
-                with self.subTest(pattern=pattern):
+                with self.subTest(constant=name, pattern=pattern):
                     assert pattern[: -len("/**")] in patterns
 
     def test__glob_excludes_avoid_brace_expansion(self):
         """These lists are also used with IgnoreMode.DOCKER, which has no braces."""
-        for patterns in (PYTHON_GLOB_EXCLUDES, GLOBAL_GLOB_EXCLUDES, CDK_OUT_GLOB_EXCLUDES):
+        for name, patterns in GLOB_EXCLUDE_LISTS.items():
             for pattern in patterns:
-                with self.subTest(pattern=pattern):
+                with self.subTest(constant=name, pattern=pattern):
                     assert "{" not in pattern and "}" not in pattern
