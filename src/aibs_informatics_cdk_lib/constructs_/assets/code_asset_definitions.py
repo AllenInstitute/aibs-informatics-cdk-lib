@@ -12,6 +12,7 @@ from aws_cdk import aws_lambda as lambda_
 
 from aibs_informatics_cdk_lib.common.git import clone_repo, is_local_repo, is_repo_url
 from aibs_informatics_cdk_lib.constructs_.assets.code_asset import (
+    CDK_OUT_GLOB_EXCLUDES,
     GLOBAL_GLOB_EXCLUDES,
     PYTHON_GLOB_EXCLUDES,
     PYTHON_REGEX_EXCLUDES,
@@ -104,7 +105,8 @@ class AIBSInformaticsCodeAssets(constructs.Construct, AssetsMixin):
             #   2. we also don't want to include certain files for size reasons.
             exclude=[
                 *PYTHON_GLOB_EXCLUDES,
-                "**/cdk.out/",
+                *CDK_OUT_GLOB_EXCLUDES,
+                "**/scripts",
                 "**/scripts/**",
             ],
             bundling=cdk.BundlingOptions(
