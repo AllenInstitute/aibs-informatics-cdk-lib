@@ -67,6 +67,11 @@ CDK_OUT_GLOB_EXCLUDES = [
     "**/cdk.out/**",
 ]
 
+SCRIPTS_GLOB_EXCLUDES = [
+    "**/scripts",
+    "**/scripts/**",
+]
+
 
 PYTHON_REGEX_EXCLUDES = [
     r".*(.git)/.*",

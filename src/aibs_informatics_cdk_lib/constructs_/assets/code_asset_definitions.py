@@ -16,6 +16,7 @@ from aibs_informatics_cdk_lib.constructs_.assets.code_asset import (
     GLOBAL_GLOB_EXCLUDES,
     PYTHON_GLOB_EXCLUDES,
     PYTHON_REGEX_EXCLUDES,
+    SCRIPTS_GLOB_EXCLUDES,
     CodeAsset,
 )
 
@@ -106,8 +107,7 @@ class AIBSInformaticsCodeAssets(constructs.Construct, AssetsMixin):
             exclude=[
                 *PYTHON_GLOB_EXCLUDES,
                 *CDK_OUT_GLOB_EXCLUDES,
-                "**/scripts",
-                "**/scripts/**",
+                *SCRIPTS_GLOB_EXCLUDES,
             ],
             bundling=cdk.BundlingOptions(
                 image=bundling_image,

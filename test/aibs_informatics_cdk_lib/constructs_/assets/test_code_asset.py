@@ -82,6 +82,7 @@ class GlobExcludeTests(BaseTest):
             "PYTHON_GLOB_EXCLUDES",
             "GLOBAL_GLOB_EXCLUDES",
             "CDK_OUT_GLOB_EXCLUDES",
+            "SCRIPTS_GLOB_EXCLUDES",
         }
 
     def test__glob_excludes_contain_bare_and_contents_forms(self):
