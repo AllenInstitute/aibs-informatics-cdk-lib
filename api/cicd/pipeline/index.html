@@ -1,0 +1,3387 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="AWS Cloud Development Kit (CDK) constructs and utilities for AIBS Informatics">
+      
+      
+      
+        <link rel="canonical" href="https://AllenInstitute.github.io/aibs-informatics-cdk-lib/api/cicd/pipeline/">
+      
+      
+        <link rel="prev" href="../">
+      
+      
+        <link rel="next" href="../target/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Pipeline - AIBS Informatics CDK Library</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#pipeline" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="AIBS Informatics CDK Library" class="md-header__button md-logo" aria-label="AIBS Informatics CDK Library" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            AIBS Informatics CDK Library
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Pipeline
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/AllenInstitute/aibs-informatics-cdk-lib" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    AllenInstitute/aibs-informatics-cdk-lib
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../getting-started/installation/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../user-guide/overview/" class="md-tabs__link">
+          
+  
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="AIBS Informatics CDK Library" class="md-nav__button md-logo" aria-label="AIBS Informatics CDK Library" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    AIBS Informatics CDK Library
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/AllenInstitute/aibs-informatics-cdk-lib" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    AllenInstitute/aibs-informatics-cdk-lib
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/constructs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Constructs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/stacks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stacks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/stages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Common
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Common
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../common/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../common/aws/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AWS Utilities
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../common/build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Build Utilities
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../common/git/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git Utilities
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Constructs
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Constructs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../constructs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../constructs/base/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Base
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../constructs/assets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Assets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../constructs/batch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../constructs/cw/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CloudWatch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../constructs/dynamodb/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DynamoDB
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../constructs/ec2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EC2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../constructs/efs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EFS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../constructs/s3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    S3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../constructs/service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Service
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../constructs/ssm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SSM
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../constructs/sfn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Step Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stacks
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Stacks
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stacks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stacks/base/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Base
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stages
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Stages
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/base/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Base
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CI/CD
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipeline
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#aibs_informatics_cdk_lib.cicd.pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;pipeline
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" pipeline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aibs_informatics_cdk_lib.cicd.pipeline-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Modules
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Modules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aibs_informatics_cdk_lib.cicd.pipeline.base" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;base
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" base">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aibs_informatics_cdk_lib.cicd.pipeline.base-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Classes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Classes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aibs_informatics_cdk_lib.cicd.pipeline.base.BasePipelineStack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;BasePipelineStack
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aibs_informatics_cdk_lib.cicd.pipeline.base-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aibs_informatics_cdk_lib.cicd.pipeline.base.pipeline_stage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;pipeline_stage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../target/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Target
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_7" id="__nav_4_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project/utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#aibs_informatics_cdk_lib.cicd.pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;pipeline
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" pipeline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aibs_informatics_cdk_lib.cicd.pipeline-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Modules
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Modules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aibs_informatics_cdk_lib.cicd.pipeline.base" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;base
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" base">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aibs_informatics_cdk_lib.cicd.pipeline.base-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Classes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Classes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aibs_informatics_cdk_lib.cicd.pipeline.base.BasePipelineStack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;BasePipelineStack
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aibs_informatics_cdk_lib.cicd.pipeline.base-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aibs_informatics_cdk_lib.cicd.pipeline.base.pipeline_stage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;pipeline_stage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="pipeline">Pipeline<a class="headerlink" href="#pipeline" title="Permanent link">&para;</a></h1>
+<p>CDK Pipeline constructs for CI/CD workflows.</p>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<h2 id="aibs_informatics_cdk_lib.cicd.pipeline" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <span class="doc doc-object-name doc-module-name">pipeline</span>
+
+
+<a href="#aibs_informatics_cdk_lib.cicd.pipeline" class="headerlink" title="Permanent link">&para;</a></h2>
+
+    <div class="doc doc-contents first">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<h3 id="aibs_informatics_cdk_lib.cicd.pipeline-modules">Modules<a href="#aibs_informatics_cdk_lib.cicd.pipeline-modules" class="headerlink" title="Permanent link">&para;</a></h3>
+
+<div class="doc doc-object doc-module">
+
+
+
+<h4 id="aibs_informatics_cdk_lib.cicd.pipeline.base" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <span class="doc doc-object-name doc-module-name">base</span>
+
+
+<a href="#aibs_informatics_cdk_lib.cicd.pipeline.base" class="headerlink" title="Permanent link">&para;</a></h4>
+
+    <div class="doc doc-contents ">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<h5 id="aibs_informatics_cdk_lib.cicd.pipeline.base-classes">Classes<a href="#aibs_informatics_cdk_lib.cicd.pipeline.base-classes" class="headerlink" title="Permanent link">&para;</a></h5>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h6 id="aibs_informatics_cdk_lib.cicd.pipeline.base.BasePipelineStack" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">BasePipelineStack</span>
+
+
+<a href="#aibs_informatics_cdk_lib.cicd.pipeline.base.BasePipelineStack" class="headerlink" title="Permanent link">&para;</a></h6>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">BasePipelineStack</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">scope</span><span class="p">:</span> <span class="n"><span title="constructs.Construct">Construct</span></span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="nb">id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">env_base</span><span class="p">:</span> <span class="n"><span title="aibs_informatics_core.env.EnvBase">EnvBase</span></span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            BaseProjectConfig (aibs_informatics_cdk_lib.project.config.BaseProjectConfig)" href="../../project/config/#aibs_informatics_cdk_lib.project.config.BaseProjectConfig">BaseProjectConfig</a></span><span class="p">[</span><span class="n"><span title="aibs_informatics_cdk_lib.cicd.pipeline.base.GLOBAL_CONFIG">GLOBAL_CONFIG</span></span><span class="p">,</span> <span class="n"><span title="aibs_informatics_cdk_lib.cicd.pipeline.base.STAGE_CONFIG">STAGE_CONFIG</span></span><span class="p">],</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="o">**</span><span class="n">kwargs</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="            EnvBaseStack (aibs_informatics_cdk_lib.stacks.base.EnvBaseStack)" href="../../stacks/#aibs_informatics_cdk_lib.stacks.base.EnvBaseStack">EnvBaseStack</a></code>, <code><span title="typing.Generic">Generic</span>[<span title="aibs_informatics_cdk_lib.cicd.pipeline.base.STAGE_CONFIG">STAGE_CONFIG</span>, <span title="aibs_informatics_cdk_lib.cicd.pipeline.base.GLOBAL_CONFIG">GLOBAL_CONFIG</span>]</code></p>
+
+
+
+        <p>Defines the CI/CD Pipeline for the an Environment.</p>
+<p>This class is meant to be subclassed to define the pipeline for a specific project.</p>
+<p>You are required to implement the <code>initialize_pipeline</code> method which should return
+a <code>pipelines.CodePipeline</code> object. You can then add stages to the pipeline by defining
+methods that are decorated with the <code>@pipeline_stage</code> decorator.</p>
+<p>Example:</p>
+<p>```python</p>
+<p>class MyPipelineStack(BasePipelineStack):</p>
+<div class="highlight"><pre><span></span><code>@pipeline_stage(order=1, pre_steps=[...], post_steps=[...])
+def build_stage(self) -&gt; cdk.Stage:
+    # Define the steps for the build stage
+    build_steps = [
+        pipelines.CodeBuildStep(
+            &quot;Build&quot;,
+            input=self.get_pipeline_source(self.pipeline_config.source),
+            commands=[
+                &quot;echo &#39;Building the project&#39;&quot;,
+                &quot;npm install&quot;,
+                &quot;npm run build&quot;,
+            ],
+            role_policy_statements=[
+                self.get_policy_with_secrets(self.pipeline_config.source.oauth_secret_name),
+            ],
+        ),
+    ]
+
+    # Create the build stage
+    build_stage = pipelines.Stage(
+        self,
+        &quot;BuildStage&quot;,
+        stage_name=&quot;Build&quot;,
+        actions=build_steps,
+    )
+
+    return build_stage
+
+
+The following steps are available for pipelines inheriting from this class:
+    promotion_stage:    A stage that is added after all other stages. This stage
+                        is used to promote the deployment to another environment.
+    notifications:      A notification topic that is used to send notifications. You can
+                        enable notifications for pipeline failures and successes. This
+                        can be configured in the `pipeline_config.notifications` attribute.
+</code></pre></div>
+
+
+
+
+
+
+
+
+                  <details class="mkdocstrings-source">
+                    <summary>Source code in <code>src/aibs_informatics_cdk_lib/cicd/pipeline/base.py</code></summary>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-185">185</a></span>
+<span class="normal"><a href="#__codelineno-0-186">186</a></span>
+<span class="normal"><a href="#__codelineno-0-187">187</a></span>
+<span class="normal"><a href="#__codelineno-0-188">188</a></span>
+<span class="normal"><a href="#__codelineno-0-189">189</a></span>
+<span class="normal"><a href="#__codelineno-0-190">190</a></span>
+<span class="normal"><a href="#__codelineno-0-191">191</a></span>
+<span class="normal"><a href="#__codelineno-0-192">192</a></span>
+<span class="normal"><a href="#__codelineno-0-193">193</a></span>
+<span class="normal"><a href="#__codelineno-0-194">194</a></span>
+<span class="normal"><a href="#__codelineno-0-195">195</a></span>
+<span class="normal"><a href="#__codelineno-0-196">196</a></span>
+<span class="normal"><a href="#__codelineno-0-197">197</a></span>
+<span class="normal"><a href="#__codelineno-0-198">198</a></span>
+<span class="normal"><a href="#__codelineno-0-199">199</a></span>
+<span class="normal"><a href="#__codelineno-0-200">200</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-185" name="__codelineno-0-185"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+<a id="__codelineno-0-186" name="__codelineno-0-186"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-187" name="__codelineno-0-187"></a>    <span class="n">scope</span><span class="p">:</span> <span class="n">constructs</span><span class="o">.</span><span class="n">Construct</span><span class="p">,</span>
+<a id="__codelineno-0-188" name="__codelineno-0-188"></a>    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-0-189" name="__codelineno-0-189"></a>    <span class="n">env_base</span><span class="p">:</span> <span class="n">EnvBase</span><span class="p">,</span>
+<a id="__codelineno-0-190" name="__codelineno-0-190"></a>    <span class="n">config</span><span class="p">:</span> <span class="n">BaseProjectConfig</span><span class="p">[</span><span class="n">GLOBAL_CONFIG</span><span class="p">,</span> <span class="n">STAGE_CONFIG</span><span class="p">],</span>
+<a id="__codelineno-0-191" name="__codelineno-0-191"></a>    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<a id="__codelineno-0-192" name="__codelineno-0-192"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-193" name="__codelineno-0-193"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">project_config</span> <span class="o">=</span> <span class="n">config</span>
+<a id="__codelineno-0-194" name="__codelineno-0-194"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">stage_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_stage_config</span><span class="p">(</span><span class="n">env_base</span><span class="o">.</span><span class="n">env_type</span><span class="p">)</span>
+<a id="__codelineno-0-195" name="__codelineno-0-195"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">stage_config</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">env_base</span><span class="o">.</span><span class="n">env_label</span>
+<a id="__codelineno-0-196" name="__codelineno-0-196"></a>    <span class="n">env</span> <span class="o">=</span> <span class="n">cdk</span><span class="o">.</span><span class="n">Environment</span><span class="p">(</span>
+<a id="__codelineno-0-197" name="__codelineno-0-197"></a>        <span class="n">account</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stage_config</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">account</span><span class="p">,</span> <span class="n">region</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stage_config</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">region</span>
+<a id="__codelineno-0-198" name="__codelineno-0-198"></a>    <span class="p">)</span>
+<a id="__codelineno-0-199" name="__codelineno-0-199"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span> <span class="n">env_base</span><span class="o">=</span><span class="n">env_base</span><span class="p">,</span> <span class="n">env</span><span class="o">=</span><span class="n">env</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-200" name="__codelineno-0-200"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">build_pipeline</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+                  </details>
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+<h7 id="aibs_informatics_cdk_lib.cicd.pipeline.base.BasePipelineStack-functions">Functions<a href="#aibs_informatics_cdk_lib.cicd.pipeline.base.BasePipelineStack-functions" class="headerlink" title="Permanent link">&para;</a></h7>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="aibs_informatics_cdk_lib.cicd.pipeline.base.BasePipelineStack.build_pipeline" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">build_pipeline</span>
+
+
+<a href="#aibs_informatics_cdk_lib.cicd.pipeline.base.BasePipelineStack.build_pipeline" class="headerlink" title="Permanent link">&para;</a></h8>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">build_pipeline</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Builds the pipeline. This method should be called after the pipeline is initialized.</p>
+<p>This should not be overridden by subclasses unless you know what you are doing.</p>
+
+
+<details class="this-method-will" open>
+  <summary>This method will</summary>
+  <ol>
+<li>Initialize the pipeline</li>
+<li>Add stages to the pipeline</li>
+<li>Add a promotion stage</li>
+<li>Build the pipeline</li>
+<li>Setup notifications</li>
+</ol>
+</details>
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/aibs_informatics_cdk_lib/cicd/pipeline/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-206">206</a></span>
+<span class="normal"><a href="#__codelineno-0-207">207</a></span>
+<span class="normal"><a href="#__codelineno-0-208">208</a></span>
+<span class="normal"><a href="#__codelineno-0-209">209</a></span>
+<span class="normal"><a href="#__codelineno-0-210">210</a></span>
+<span class="normal"><a href="#__codelineno-0-211">211</a></span>
+<span class="normal"><a href="#__codelineno-0-212">212</a></span>
+<span class="normal"><a href="#__codelineno-0-213">213</a></span>
+<span class="normal"><a href="#__codelineno-0-214">214</a></span>
+<span class="normal"><a href="#__codelineno-0-215">215</a></span>
+<span class="normal"><a href="#__codelineno-0-216">216</a></span>
+<span class="normal"><a href="#__codelineno-0-217">217</a></span>
+<span class="normal"><a href="#__codelineno-0-218">218</a></span>
+<span class="normal"><a href="#__codelineno-0-219">219</a></span>
+<span class="normal"><a href="#__codelineno-0-220">220</a></span>
+<span class="normal"><a href="#__codelineno-0-221">221</a></span>
+<span class="normal"><a href="#__codelineno-0-222">222</a></span>
+<span class="normal"><a href="#__codelineno-0-223">223</a></span>
+<span class="normal"><a href="#__codelineno-0-224">224</a></span>
+<span class="normal"><a href="#__codelineno-0-225">225</a></span>
+<span class="normal"><a href="#__codelineno-0-226">226</a></span>
+<span class="normal"><a href="#__codelineno-0-227">227</a></span>
+<span class="normal"><a href="#__codelineno-0-228">228</a></span>
+<span class="normal"><a href="#__codelineno-0-229">229</a></span>
+<span class="normal"><a href="#__codelineno-0-230">230</a></span>
+<span class="normal"><a href="#__codelineno-0-231">231</a></span>
+<span class="normal"><a href="#__codelineno-0-232">232</a></span>
+<span class="normal"><a href="#__codelineno-0-233">233</a></span>
+<span class="normal"><a href="#__codelineno-0-234">234</a></span>
+<span class="normal"><a href="#__codelineno-0-235">235</a></span>
+<span class="normal"><a href="#__codelineno-0-236">236</a></span>
+<span class="normal"><a href="#__codelineno-0-237">237</a></span>
+<span class="normal"><a href="#__codelineno-0-238">238</a></span>
+<span class="normal"><a href="#__codelineno-0-239">239</a></span>
+<span class="normal"><a href="#__codelineno-0-240">240</a></span>
+<span class="normal"><a href="#__codelineno-0-241">241</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-206" name="__codelineno-0-206"></a><span class="k">def</span><span class="w"> </span><span class="nf">build_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-0-207" name="__codelineno-0-207"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Builds the pipeline. This method should be called after the pipeline is initialized.</span>
+<a id="__codelineno-0-208" name="__codelineno-0-208"></a>
+<a id="__codelineno-0-209" name="__codelineno-0-209"></a><span class="sd">    This should not be overridden by subclasses unless you know what you are doing.</span>
+<a id="__codelineno-0-210" name="__codelineno-0-210"></a>
+<a id="__codelineno-0-211" name="__codelineno-0-211"></a><span class="sd">    This method will:</span>
+<a id="__codelineno-0-212" name="__codelineno-0-212"></a><span class="sd">        1. Initialize the pipeline</span>
+<a id="__codelineno-0-213" name="__codelineno-0-213"></a><span class="sd">        2. Add stages to the pipeline</span>
+<a id="__codelineno-0-214" name="__codelineno-0-214"></a><span class="sd">        3. Add a promotion stage</span>
+<a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="sd">        4. Build the pipeline</span>
+<a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="sd">        5. Setup notifications</span>
+<a id="__codelineno-0-217" name="__codelineno-0-217"></a>
+<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-219" name="__codelineno-0-219"></a>    <span class="c1"># Initialize Pipeline</span>
+<a id="__codelineno-0-220" name="__codelineno-0-220"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">initialize_pipeline</span><span class="p">()</span>
+<a id="__codelineno-0-221" name="__codelineno-0-221"></a>
+<a id="__codelineno-0-222" name="__codelineno-0-222"></a>    <span class="c1"># Add Stages</span>
+<a id="__codelineno-0-223" name="__codelineno-0-223"></a>    <span class="k">for</span> <span class="n">stage_method</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_stage_methods</span><span class="p">():</span>
+<a id="__codelineno-0-224" name="__codelineno-0-224"></a>        <span class="n">stage_info</span><span class="p">:</span> <span class="n">PipelineStageInfo</span> <span class="o">=</span> <span class="n">stage_method</span><span class="o">.</span><span class="n">_pipeline_stage_info</span>  <span class="c1"># type: ignore[attr-defined]</span>
+<a id="__codelineno-0-225" name="__codelineno-0-225"></a>        <span class="n">pre_steps</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">post_steps</span> <span class="o">=</span> <span class="n">stage_method</span><span class="p">()</span>
+<a id="__codelineno-0-226" name="__codelineno-0-226"></a>
+<a id="__codelineno-0-227" name="__codelineno-0-227"></a>        <span class="k">if</span> <span class="n">stage_info</span><span class="o">.</span><span class="n">pre_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-228" name="__codelineno-0-228"></a>            <span class="n">pre_steps</span> <span class="o">=</span> <span class="p">[</span><span class="o">*</span><span class="n">stage_info</span><span class="o">.</span><span class="n">pre_steps</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="n">pre_steps</span> <span class="ow">or</span> <span class="p">[])]</span>
+<a id="__codelineno-0-229" name="__codelineno-0-229"></a>        <span class="k">if</span> <span class="n">stage_info</span><span class="o">.</span><span class="n">post_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-230" name="__codelineno-0-230"></a>            <span class="n">post_steps</span> <span class="o">=</span> <span class="p">[</span><span class="o">*</span><span class="n">stage_info</span><span class="o">.</span><span class="n">post_steps</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="n">post_steps</span> <span class="ow">or</span> <span class="p">[])]</span>
+<a id="__codelineno-0-231" name="__codelineno-0-231"></a>
+<a id="__codelineno-0-232" name="__codelineno-0-232"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">add_stage</span><span class="p">(</span><span class="n">stage</span><span class="p">,</span> <span class="n">pre</span><span class="o">=</span><span class="n">pre_steps</span><span class="p">,</span> <span class="n">post</span><span class="o">=</span><span class="n">post_steps</span><span class="p">)</span>
+<a id="__codelineno-0-233" name="__codelineno-0-233"></a>
+<a id="__codelineno-0-234" name="__codelineno-0-234"></a>    <span class="c1"># Add Promotion Stage</span>
+<a id="__codelineno-0-235" name="__codelineno-0-235"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">add_promotion_stage</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="p">)</span>
+<a id="__codelineno-0-236" name="__codelineno-0-236"></a>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a>    <span class="c1"># Build the pipeline</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="o">.</span><span class="n">build_pipeline</span><span class="p">()</span>
+<a id="__codelineno-0-239" name="__codelineno-0-239"></a>
+<a id="__codelineno-0-240" name="__codelineno-0-240"></a>    <span class="c1"># Post Build Setup</span>
+<a id="__codelineno-0-241" name="__codelineno-0-241"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">setup_notifications</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="aibs_informatics_cdk_lib.cicd.pipeline.base.BasePipelineStack.add_promotion_stage" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_promotion_stage</span>
+
+
+<a href="#aibs_informatics_cdk_lib.cicd.pipeline.base.BasePipelineStack.add_promotion_stage" class="headerlink" title="Permanent link">&para;</a></h8>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_promotion_stage</span><span class="p">(</span><span class="n">pipeline</span><span class="p">:</span> <span class="n"><span title="aws_cdk.pipelines.CodePipeline">CodePipeline</span></span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Adds a promotion stage to a CodePipeline</p>
+<p>Promotion stages are used to promote the deployment to another environment.
+These promotions are done through github pull requests. This is a major foundation
+for the deployment process.</p>
+<p>The environment promotion definitions are defined in the <code>global_config.stage_promotions</code>.
+This is a mapping of source environment types to target environment types.</p>
+<p>The branch that is used for the promotion is defined in <code>pipeline_config.source.branch</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>pipeline</code>
+            </td>
+            <td>
+                  <code><span title="aws_cdk.pipelines.CodePipeline">CodePipeline</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Code Pipeline</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/aibs_informatics_cdk_lib/cicd/pipeline/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-243">243</a></span>
+<span class="normal"><a href="#__codelineno-0-244">244</a></span>
+<span class="normal"><a href="#__codelineno-0-245">245</a></span>
+<span class="normal"><a href="#__codelineno-0-246">246</a></span>
+<span class="normal"><a href="#__codelineno-0-247">247</a></span>
+<span class="normal"><a href="#__codelineno-0-248">248</a></span>
+<span class="normal"><a href="#__codelineno-0-249">249</a></span>
+<span class="normal"><a href="#__codelineno-0-250">250</a></span>
+<span class="normal"><a href="#__codelineno-0-251">251</a></span>
+<span class="normal"><a href="#__codelineno-0-252">252</a></span>
+<span class="normal"><a href="#__codelineno-0-253">253</a></span>
+<span class="normal"><a href="#__codelineno-0-254">254</a></span>
+<span class="normal"><a href="#__codelineno-0-255">255</a></span>
+<span class="normal"><a href="#__codelineno-0-256">256</a></span>
+<span class="normal"><a href="#__codelineno-0-257">257</a></span>
+<span class="normal"><a href="#__codelineno-0-258">258</a></span>
+<span class="normal"><a href="#__codelineno-0-259">259</a></span>
+<span class="normal"><a href="#__codelineno-0-260">260</a></span>
+<span class="normal"><a href="#__codelineno-0-261">261</a></span>
+<span class="normal"><a href="#__codelineno-0-262">262</a></span>
+<span class="normal"><a href="#__codelineno-0-263">263</a></span>
+<span class="normal"><a href="#__codelineno-0-264">264</a></span>
+<span class="normal"><a href="#__codelineno-0-265">265</a></span>
+<span class="normal"><a href="#__codelineno-0-266">266</a></span>
+<span class="normal"><a href="#__codelineno-0-267">267</a></span>
+<span class="normal"><a href="#__codelineno-0-268">268</a></span>
+<span class="normal"><a href="#__codelineno-0-269">269</a></span>
+<span class="normal"><a href="#__codelineno-0-270">270</a></span>
+<span class="normal"><a href="#__codelineno-0-271">271</a></span>
+<span class="normal"><a href="#__codelineno-0-272">272</a></span>
+<span class="normal"><a href="#__codelineno-0-273">273</a></span>
+<span class="normal"><a href="#__codelineno-0-274">274</a></span>
+<span class="normal"><a href="#__codelineno-0-275">275</a></span>
+<span class="normal"><a href="#__codelineno-0-276">276</a></span>
+<span class="normal"><a href="#__codelineno-0-277">277</a></span>
+<span class="normal"><a href="#__codelineno-0-278">278</a></span>
+<span class="normal"><a href="#__codelineno-0-279">279</a></span>
+<span class="normal"><a href="#__codelineno-0-280">280</a></span>
+<span class="normal"><a href="#__codelineno-0-281">281</a></span>
+<span class="normal"><a href="#__codelineno-0-282">282</a></span>
+<span class="normal"><a href="#__codelineno-0-283">283</a></span>
+<span class="normal"><a href="#__codelineno-0-284">284</a></span>
+<span class="normal"><a href="#__codelineno-0-285">285</a></span>
+<span class="normal"><a href="#__codelineno-0-286">286</a></span>
+<span class="normal"><a href="#__codelineno-0-287">287</a></span>
+<span class="normal"><a href="#__codelineno-0-288">288</a></span>
+<span class="normal"><a href="#__codelineno-0-289">289</a></span>
+<span class="normal"><a href="#__codelineno-0-290">290</a></span>
+<span class="normal"><a href="#__codelineno-0-291">291</a></span>
+<span class="normal"><a href="#__codelineno-0-292">292</a></span>
+<span class="normal"><a href="#__codelineno-0-293">293</a></span>
+<span class="normal"><a href="#__codelineno-0-294">294</a></span>
+<span class="normal"><a href="#__codelineno-0-295">295</a></span>
+<span class="normal"><a href="#__codelineno-0-296">296</a></span>
+<span class="normal"><a href="#__codelineno-0-297">297</a></span>
+<span class="normal"><a href="#__codelineno-0-298">298</a></span>
+<span class="normal"><a href="#__codelineno-0-299">299</a></span>
+<span class="normal"><a href="#__codelineno-0-300">300</a></span>
+<span class="normal"><a href="#__codelineno-0-301">301</a></span>
+<span class="normal"><a href="#__codelineno-0-302">302</a></span>
+<span class="normal"><a href="#__codelineno-0-303">303</a></span>
+<span class="normal"><a href="#__codelineno-0-304">304</a></span>
+<span class="normal"><a href="#__codelineno-0-305">305</a></span>
+<span class="normal"><a href="#__codelineno-0-306">306</a></span>
+<span class="normal"><a href="#__codelineno-0-307">307</a></span>
+<span class="normal"><a href="#__codelineno-0-308">308</a></span>
+<span class="normal"><a href="#__codelineno-0-309">309</a></span>
+<span class="normal"><a href="#__codelineno-0-310">310</a></span>
+<span class="normal"><a href="#__codelineno-0-311">311</a></span>
+<span class="normal"><a href="#__codelineno-0-312">312</a></span>
+<span class="normal"><a href="#__codelineno-0-313">313</a></span>
+<span class="normal"><a href="#__codelineno-0-314">314</a></span>
+<span class="normal"><a href="#__codelineno-0-315">315</a></span>
+<span class="normal"><a href="#__codelineno-0-316">316</a></span>
+<span class="normal"><a href="#__codelineno-0-317">317</a></span>
+<span class="normal"><a href="#__codelineno-0-318">318</a></span>
+<span class="normal"><a href="#__codelineno-0-319">319</a></span>
+<span class="normal"><a href="#__codelineno-0-320">320</a></span>
+<span class="normal"><a href="#__codelineno-0-321">321</a></span>
+<span class="normal"><a href="#__codelineno-0-322">322</a></span>
+<span class="normal"><a href="#__codelineno-0-323">323</a></span>
+<span class="normal"><a href="#__codelineno-0-324">324</a></span>
+<span class="normal"><a href="#__codelineno-0-325">325</a></span>
+<span class="normal"><a href="#__codelineno-0-326">326</a></span>
+<span class="normal"><a href="#__codelineno-0-327">327</a></span>
+<span class="normal"><a href="#__codelineno-0-328">328</a></span>
+<span class="normal"><a href="#__codelineno-0-329">329</a></span>
+<span class="normal"><a href="#__codelineno-0-330">330</a></span>
+<span class="normal"><a href="#__codelineno-0-331">331</a></span>
+<span class="normal"><a href="#__codelineno-0-332">332</a></span>
+<span class="normal"><a href="#__codelineno-0-333">333</a></span>
+<span class="normal"><a href="#__codelineno-0-334">334</a></span>
+<span class="normal"><a href="#__codelineno-0-335">335</a></span>
+<span class="normal"><a href="#__codelineno-0-336">336</a></span>
+<span class="normal"><a href="#__codelineno-0-337">337</a></span>
+<span class="normal"><a href="#__codelineno-0-338">338</a></span>
+<span class="normal"><a href="#__codelineno-0-339">339</a></span>
+<span class="normal"><a href="#__codelineno-0-340">340</a></span>
+<span class="normal"><a href="#__codelineno-0-341">341</a></span>
+<span class="normal"><a href="#__codelineno-0-342">342</a></span>
+<span class="normal"><a href="#__codelineno-0-343">343</a></span>
+<span class="normal"><a href="#__codelineno-0-344">344</a></span>
+<span class="normal"><a href="#__codelineno-0-345">345</a></span>
+<span class="normal"><a href="#__codelineno-0-346">346</a></span>
+<span class="normal"><a href="#__codelineno-0-347">347</a></span>
+<span class="normal"><a href="#__codelineno-0-348">348</a></span>
+<span class="normal"><a href="#__codelineno-0-349">349</a></span>
+<span class="normal"><a href="#__codelineno-0-350">350</a></span>
+<span class="normal"><a href="#__codelineno-0-351">351</a></span>
+<span class="normal"><a href="#__codelineno-0-352">352</a></span>
+<span class="normal"><a href="#__codelineno-0-353">353</a></span>
+<span class="normal"><a href="#__codelineno-0-354">354</a></span>
+<span class="normal"><a href="#__codelineno-0-355">355</a></span>
+<span class="normal"><a href="#__codelineno-0-356">356</a></span>
+<span class="normal"><a href="#__codelineno-0-357">357</a></span>
+<span class="normal"><a href="#__codelineno-0-358">358</a></span>
+<span class="normal"><a href="#__codelineno-0-359">359</a></span>
+<span class="normal"><a href="#__codelineno-0-360">360</a></span>
+<span class="normal"><a href="#__codelineno-0-361">361</a></span>
+<span class="normal"><a href="#__codelineno-0-362">362</a></span>
+<span class="normal"><a href="#__codelineno-0-363">363</a></span>
+<span class="normal"><a href="#__codelineno-0-364">364</a></span>
+<span class="normal"><a href="#__codelineno-0-365">365</a></span>
+<span class="normal"><a href="#__codelineno-0-366">366</a></span>
+<span class="normal"><a href="#__codelineno-0-367">367</a></span>
+<span class="normal"><a href="#__codelineno-0-368">368</a></span>
+<span class="normal"><a href="#__codelineno-0-369">369</a></span>
+<span class="normal"><a href="#__codelineno-0-370">370</a></span>
+<span class="normal"><a href="#__codelineno-0-371">371</a></span>
+<span class="normal"><a href="#__codelineno-0-372">372</a></span>
+<span class="normal"><a href="#__codelineno-0-373">373</a></span>
+<span class="normal"><a href="#__codelineno-0-374">374</a></span>
+<span class="normal"><a href="#__codelineno-0-375">375</a></span>
+<span class="normal"><a href="#__codelineno-0-376">376</a></span>
+<span class="normal"><a href="#__codelineno-0-377">377</a></span>
+<span class="normal"><a href="#__codelineno-0-378">378</a></span>
+<span class="normal"><a href="#__codelineno-0-379">379</a></span>
+<span class="normal"><a href="#__codelineno-0-380">380</a></span>
+<span class="normal"><a href="#__codelineno-0-381">381</a></span>
+<span class="normal"><a href="#__codelineno-0-382">382</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-243" name="__codelineno-0-243"></a><span class="k">def</span><span class="w"> </span><span class="nf">add_promotion_stage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipeline</span><span class="p">:</span> <span class="n">pipelines</span><span class="o">.</span><span class="n">CodePipeline</span><span class="p">):</span>
+<a id="__codelineno-0-244" name="__codelineno-0-244"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Adds a promotion stage to a CodePipeline</span>
+<a id="__codelineno-0-245" name="__codelineno-0-245"></a>
+<a id="__codelineno-0-246" name="__codelineno-0-246"></a><span class="sd">    Promotion stages are used to promote the deployment to another environment.</span>
+<a id="__codelineno-0-247" name="__codelineno-0-247"></a><span class="sd">    These promotions are done through github pull requests. This is a major foundation</span>
+<a id="__codelineno-0-248" name="__codelineno-0-248"></a><span class="sd">    for the deployment process.</span>
+<a id="__codelineno-0-249" name="__codelineno-0-249"></a>
+<a id="__codelineno-0-250" name="__codelineno-0-250"></a><span class="sd">    The environment promotion definitions are defined in the `global_config.stage_promotions`.</span>
+<a id="__codelineno-0-251" name="__codelineno-0-251"></a><span class="sd">    This is a mapping of source environment types to target environment types.</span>
+<a id="__codelineno-0-252" name="__codelineno-0-252"></a>
+<a id="__codelineno-0-253" name="__codelineno-0-253"></a><span class="sd">    The branch that is used for the promotion is defined in `pipeline_config.source.branch`.</span>
+<a id="__codelineno-0-254" name="__codelineno-0-254"></a>
+<a id="__codelineno-0-255" name="__codelineno-0-255"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="sd">        pipeline (pipelines.CodePipeline): Code Pipeline</span>
+<a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-258" name="__codelineno-0-258"></a>    <span class="n">global_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_config</span>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a>    <span class="n">pipeline_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipeline_config</span>
+<a id="__codelineno-0-260" name="__codelineno-0-260"></a>
+<a id="__codelineno-0-261" name="__codelineno-0-261"></a>    <span class="c1"># In order to add a CodePipeline Stage without stacks, we must use `add_wave`</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a>    <span class="c1"># https://github.com/aws/aws-cdk/issues/15945#issuecomment-895392052</span>
+<a id="__codelineno-0-263" name="__codelineno-0-263"></a>    <span class="n">promote_wave</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">add_wave</span><span class="p">(</span><span class="s2">&quot;Release&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-264" name="__codelineno-0-264"></a>
+<a id="__codelineno-0-265" name="__codelineno-0-265"></a>    <span class="c1"># POST Steps</span>
+<a id="__codelineno-0-266" name="__codelineno-0-266"></a>    <span class="k">if</span> <span class="p">(</span><span class="n">source_env_type</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stage_config</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">env_type</span><span class="p">)</span> <span class="ow">in</span> <span class="n">global_config</span><span class="o">.</span><span class="n">stage_promotions</span><span class="p">:</span>
+<a id="__codelineno-0-267" name="__codelineno-0-267"></a>        <span class="n">promotion_target_env_type</span> <span class="o">=</span> <span class="n">global_config</span><span class="o">.</span><span class="n">stage_promotions</span><span class="p">[</span><span class="n">source_env_type</span><span class="p">]</span>
+<a id="__codelineno-0-268" name="__codelineno-0-268"></a>        <span class="n">promotion_target_pipeline_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">project_config</span><span class="o">.</span><span class="n">get_stage_config</span><span class="p">(</span>
+<a id="__codelineno-0-269" name="__codelineno-0-269"></a>            <span class="n">promotion_target_env_type</span>
+<a id="__codelineno-0-270" name="__codelineno-0-270"></a>        <span class="p">)</span><span class="o">.</span><span class="n">pipeline</span>
+<a id="__codelineno-0-271" name="__codelineno-0-271"></a>        <span class="k">assert</span> <span class="n">promotion_target_pipeline_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-272" name="__codelineno-0-272"></a>        <span class="n">create_pull_request_step</span> <span class="o">=</span> <span class="n">pipelines</span><span class="o">.</span><span class="n">CodeBuildStep</span><span class="p">(</span>
+<a id="__codelineno-0-273" name="__codelineno-0-273"></a>            <span class="s2">&quot;CreateReleasePullRequest&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-274" name="__codelineno-0-274"></a>            <span class="nb">input</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_pipeline_source</span><span class="p">(</span><span class="n">pipeline_config</span><span class="o">.</span><span class="n">source</span><span class="p">),</span>
+<a id="__codelineno-0-275" name="__codelineno-0-275"></a>            <span class="c1"># Environment needs to have privelaged access</span>
+<a id="__codelineno-0-276" name="__codelineno-0-276"></a>            <span class="n">build_environment</span><span class="o">=</span><span class="n">BuildEnvironment</span><span class="p">(</span><span class="n">privileged</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+<a id="__codelineno-0-277" name="__codelineno-0-277"></a>            <span class="c1"># By default bin/sh is used, so lets set to bash</span>
+<a id="__codelineno-0-278" name="__codelineno-0-278"></a>            <span class="c1"># https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html#build-spec.shell</span>
+<a id="__codelineno-0-279" name="__codelineno-0-279"></a>            <span class="n">partial_build_spec</span><span class="o">=</span><span class="n">BuildSpec</span><span class="o">.</span><span class="n">from_object</span><span class="p">(</span>
+<a id="__codelineno-0-280" name="__codelineno-0-280"></a>                <span class="p">{</span>
+<a id="__codelineno-0-281" name="__codelineno-0-281"></a>                    <span class="s2">&quot;env&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-0-282" name="__codelineno-0-282"></a>                        <span class="s2">&quot;shell&quot;</span><span class="p">:</span> <span class="s2">&quot;bash&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-283" name="__codelineno-0-283"></a>                        <span class="s2">&quot;variables&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-0-284" name="__codelineno-0-284"></a>                            <span class="s2">&quot;CICD_RELEASE_REVIEWER&quot;</span><span class="p">:</span> <span class="s2">&quot;AllenInstitute/marmot&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-285" name="__codelineno-0-285"></a>                            <span class="s2">&quot;CICD_RELEASE_SOURCE_ENV_TYPE&quot;</span><span class="p">:</span> <span class="n">source_env_type</span><span class="p">,</span>
+<a id="__codelineno-0-286" name="__codelineno-0-286"></a>                            <span class="s2">&quot;CICD_RELEASE_TARGET_ENV_TYPE&quot;</span><span class="p">:</span> <span class="n">promotion_target_env_type</span><span class="p">,</span>
+<a id="__codelineno-0-287" name="__codelineno-0-287"></a>                            <span class="s2">&quot;CICD_RELEASE_TARGET_BRANCH&quot;</span><span class="p">:</span> <span class="n">promotion_target_pipeline_config</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">branch</span><span class="p">,</span>  <span class="c1"># noqa: E501</span>
+<a id="__codelineno-0-288" name="__codelineno-0-288"></a>                        <span class="p">},</span>
+<a id="__codelineno-0-289" name="__codelineno-0-289"></a>                        <span class="c1"># https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html#build-spec.env.secrets-manager</span>
+<a id="__codelineno-0-290" name="__codelineno-0-290"></a>                        <span class="s2">&quot;secrets-manager&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-0-291" name="__codelineno-0-291"></a>                            <span class="s2">&quot;GITHUB_TOKEN&quot;</span><span class="p">:</span> <span class="n">pipeline_config</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">oauth_secret_name</span><span class="p">,</span>
+<a id="__codelineno-0-292" name="__codelineno-0-292"></a>                        <span class="p">},</span>
+<a id="__codelineno-0-293" name="__codelineno-0-293"></a>                        <span class="s2">&quot;git-credential-helper&quot;</span><span class="p">:</span> <span class="s2">&quot;yes&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-294" name="__codelineno-0-294"></a>                    <span class="p">},</span>
+<a id="__codelineno-0-295" name="__codelineno-0-295"></a>                <span class="p">}</span>
+<a id="__codelineno-0-296" name="__codelineno-0-296"></a>            <span class="p">),</span>
+<a id="__codelineno-0-297" name="__codelineno-0-297"></a>            <span class="n">install_commands</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-0-298" name="__codelineno-0-298"></a>                <span class="c1"># Installing Github CLI (via https://github.com/cli/cli/blob/trunk/docs/install_linux.md)</span>
+<a id="__codelineno-0-299" name="__codelineno-0-299"></a>                <span class="c1">#   1. Resolve Download URL via GH API</span>
+<a id="__codelineno-0-300" name="__codelineno-0-300"></a>                <span class="c1">#   2. Download binary archive</span>
+<a id="__codelineno-0-301" name="__codelineno-0-301"></a>                <span class="c1">#   3. Unarchive and move binary into /usr/local/bin</span>
+<a id="__codelineno-0-302" name="__codelineno-0-302"></a>                <span class="c1">#   4. Verify command is available</span>
+<a id="__codelineno-0-303" name="__codelineno-0-303"></a>                <span class="c1"># Step 1:</span>
+<a id="__codelineno-0-304" name="__codelineno-0-304"></a>                <span class="s1">&#39;GH_CLI_DOWNLOAD_LINK=$(curl -H &quot;Authorization:token $GITHUB_TOKEN&quot; -sSL &quot;https://api.github.com/repos/cli/cli/releases/latest&quot; | jq -r </span><span class="se">\&#39;</span><span class="s1">.assets[] | select(.name|test(&quot;.*_linux_amd64.tar.gz&quot;)) | .browser_download_url</span><span class="se">\&#39;</span><span class="s1">)&#39;</span><span class="p">,</span>  <span class="c1"># noqa: E501</span>
+<a id="__codelineno-0-305" name="__codelineno-0-305"></a>                <span class="s2">&quot;GH_CLI_TAR_GZ_PATH=$(basename $GH_CLI_DOWNLOAD_LINK)&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-306" name="__codelineno-0-306"></a>                <span class="s2">&quot;GH_CLI_DIR=$(basename $GH_CLI_TAR_GZ_PATH .tar.gz)&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-307" name="__codelineno-0-307"></a>                <span class="c1"># Step 2:</span>
+<a id="__codelineno-0-308" name="__codelineno-0-308"></a>                <span class="s1">&#39;curl -H &quot;Authorization:token $GITHUB_TOKEN&quot; -sSL $GH_CLI_DOWNLOAD_LINK -o $GH_CLI_TAR_GZ_PATH&#39;</span><span class="p">,</span>  <span class="c1"># noqa: E501</span>
+<a id="__codelineno-0-309" name="__codelineno-0-309"></a>                <span class="c1"># Step 3:</span>
+<a id="__codelineno-0-310" name="__codelineno-0-310"></a>                <span class="s2">&quot;tar -xf $GH_CLI_TAR_GZ_PATH&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-311" name="__codelineno-0-311"></a>                <span class="s2">&quot;sudo cp $GH_CLI_DIR/bin/gh /usr/local/bin/&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-312" name="__codelineno-0-312"></a>                <span class="c1"># Step 4:</span>
+<a id="__codelineno-0-313" name="__codelineno-0-313"></a>                <span class="s2">&quot;gh --version &amp;&gt; /dev/null&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-314" name="__codelineno-0-314"></a>            <span class="p">],</span>
+<a id="__codelineno-0-315" name="__codelineno-0-315"></a>            <span class="n">commands</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-0-316" name="__codelineno-0-316"></a>                <span class="c1"># Setting up repository WITH git metadata</span>
+<a id="__codelineno-0-317" name="__codelineno-0-317"></a>                <span class="c1">#   Why?</span>
+<a id="__codelineno-0-318" name="__codelineno-0-318"></a>                <span class="c1">#   because Github Version 1 CodePipeline Source does not support</span>
+<a id="__codelineno-0-319" name="__codelineno-0-319"></a>                <span class="c1">#   option for including git metadata. Github Version 2 does this,</span>
+<a id="__codelineno-0-320" name="__codelineno-0-320"></a>                <span class="c1">#   but we cannot use this configuration currently.</span>
+<a id="__codelineno-0-321" name="__codelineno-0-321"></a>                <span class="c1">#   What is going on below?</span>
+<a id="__codelineno-0-322" name="__codelineno-0-322"></a>                <span class="c1">#   1. clone the git repository and work off of that.</span>
+<a id="__codelineno-0-323" name="__codelineno-0-323"></a>                <span class="c1">#   2. Enable caching and store credentials</span>
+<a id="__codelineno-0-324" name="__codelineno-0-324"></a>                <span class="c1">#   3. Checkout branch based on source commit</span>
+<a id="__codelineno-0-325" name="__codelineno-0-325"></a>                <span class="c1">#   4. Run our CI/CD release script</span>
+<a id="__codelineno-0-326" name="__codelineno-0-326"></a>                <span class="s2">&quot;export REPO_DIR=$(mktemp -d)&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-327" name="__codelineno-0-327"></a>                <span class="s2">&quot;cd $REPO_DIR&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-328" name="__codelineno-0-328"></a>                <span class="sa">f</span><span class="s2">&quot;git clone https://$</span><span class="se">{{</span><span class="s2">GITHUB_TOKEN</span><span class="se">}}</span><span class="s2">@github.com/</span><span class="si">{</span><span class="n">pipeline_config</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">repository</span><span class="si">}</span><span class="s2">.git .&quot;</span><span class="p">,</span>  <span class="c1"># noqa: E501</span>
+<a id="__codelineno-0-329" name="__codelineno-0-329"></a>                <span class="c1"># Enables credential caching</span>
+<a id="__codelineno-0-330" name="__codelineno-0-330"></a>                <span class="s2">&quot;git config credential.helper store&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-331" name="__codelineno-0-331"></a>                <span class="c1"># Supposed to force the caching of the credentials</span>
+<a id="__codelineno-0-332" name="__codelineno-0-332"></a>                <span class="s2">&quot;git pull&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-333" name="__codelineno-0-333"></a>                <span class="c1"># Creates a temporary branch using the source commit as its head.</span>
+<a id="__codelineno-0-334" name="__codelineno-0-334"></a>                <span class="c1">#   This ensures that we use the release branch.</span>
+<a id="__codelineno-0-335" name="__codelineno-0-335"></a>                <span class="s2">&quot;git checkout -b $(basename $REPO_DIR) $CODEBUILD_RESOLVED_SOURCE_VERSION&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-336" name="__codelineno-0-336"></a>                <span class="c1">## Step: Download and run release script</span>
+<a id="__codelineno-0-337" name="__codelineno-0-337"></a>                <span class="c1"># Create a temporary directory and file to store the release script</span>
+<a id="__codelineno-0-338" name="__codelineno-0-338"></a>                <span class="s2">&quot;export RELEASE_SCRIPT_PATH=$(mktemp -d)/cicd-release.sh&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-339" name="__codelineno-0-339"></a>                <span class="s2">&quot;mkdir -p $(dirname $RELEASE_SCRIPT_PATH)&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-340" name="__codelineno-0-340"></a>                <span class="c1"># The release script will not be available to us unless we set up</span>
+<a id="__codelineno-0-341" name="__codelineno-0-341"></a>                <span class="c1"># a virtual environment and install our source package. This is because the</span>
+<a id="__codelineno-0-342" name="__codelineno-0-342"></a>                <span class="c1"># release script is in a dependent package (aibs-informatics-cdk-lib) and</span>
+<a id="__codelineno-0-343" name="__codelineno-0-343"></a>                <span class="c1"># is not included in the source package used as input for this step.</span>
+<a id="__codelineno-0-344" name="__codelineno-0-344"></a>                <span class="c1"># Assuming we want to avoid having to install the package, We have two options:</span>
+<a id="__codelineno-0-345" name="__codelineno-0-345"></a>                <span class="c1"># TODO: Decide which approach is better (prefer 2)</span>
+<a id="__codelineno-0-346" name="__codelineno-0-346"></a>                <span class="c1">#   1. Download the release script from the source repository (using gh cli)</span>
+<a id="__codelineno-0-347" name="__codelineno-0-347"></a>                <span class="c1">#       - This requires the use of the Github CLI</span>
+<a id="__codelineno-0-348" name="__codelineno-0-348"></a>                <span class="c1">#       - This does not couple changes being deployed with the script in repo</span>
+<a id="__codelineno-0-349" name="__codelineno-0-349"></a>                <span class="c1">#       - This is the most direct approach</span>
+<a id="__codelineno-0-350" name="__codelineno-0-350"></a>                <span class="c1">#   2. Base64 encode the release script and decode it on the other side</span>
+<a id="__codelineno-0-351" name="__codelineno-0-351"></a>                <span class="c1">#       - This is a bit more complex</span>
+<a id="__codelineno-0-352" name="__codelineno-0-352"></a>                <span class="c1">#       - This couples changes being deployed with the script in repo</span>
+<a id="__codelineno-0-353" name="__codelineno-0-353"></a>                <span class="p">(</span>
+<a id="__codelineno-0-354" name="__codelineno-0-354"></a>                    <span class="c1"># Download the release script from the source repository (using gh cli)</span>
+<a id="__codelineno-0-355" name="__codelineno-0-355"></a>                    <span class="s1">&#39;gh api repos/AllenInstitute/aibs-informatics-cdk-lib/contents/src/aibs_informatics_cdk_lib/cicd/pipeline/scripts/cicd-release.sh --raw -H &quot;Accept: application/vnd.github.v3.raw&quot; &gt; $RELEASE_SCRIPT_PATH&#39;</span>  <span class="c1"># noqa: E501</span>
+<a id="__codelineno-0-356" name="__codelineno-0-356"></a>                    <span class="k">if</span> <span class="kc">False</span>
+<a id="__codelineno-0-357" name="__codelineno-0-357"></a>                    <span class="c1"># Here we are base64 encoding the release script and decoding it on the</span>
+<a id="__codelineno-0-358" name="__codelineno-0-358"></a>                    <span class="c1"># other side.</span>
+<a id="__codelineno-0-359" name="__codelineno-0-359"></a>                    <span class="c1"># Steps:</span>
+<a id="__codelineno-0-360" name="__codelineno-0-360"></a>                    <span class="c1">#   1. Read the release script file</span>
+<a id="__codelineno-0-361" name="__codelineno-0-361"></a>                    <span class="c1">#   2. Base64 encode the file</span>
+<a id="__codelineno-0-362" name="__codelineno-0-362"></a>                    <span class="c1">#   3. Decode the base64 encoded file and write it to the release script</span>
+<a id="__codelineno-0-363" name="__codelineno-0-363"></a>                    <span class="c1">#      path</span>
+<a id="__codelineno-0-364" name="__codelineno-0-364"></a>                    <span class="c1"># TODO: i think `importlib.resources.files` is preferred way to go here,</span>
+<a id="__codelineno-0-365" name="__codelineno-0-365"></a>                    <span class="c1">#       but it requires specifying the package path. This is a bit more</span>
+<a id="__codelineno-0-366" name="__codelineno-0-366"></a>                    <span class="c1">#       difficult to do in this context. So we are using the Path approach.</span>
+<a id="__codelineno-0-367" name="__codelineno-0-367"></a>                    <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;echo </span><span class="si">{</span><span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">((</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="s1">&#39;scripts&#39;</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="s1">&#39;cicd-release.sh&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">()</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span><span class="si">}</span><span class="s2"> | base64 --decode &gt; $RELEASE_SCRIPT_PATH&quot;</span>  <span class="c1"># noqa: E501</span>
+<a id="__codelineno-0-368" name="__codelineno-0-368"></a>                <span class="p">),</span>
+<a id="__codelineno-0-369" name="__codelineno-0-369"></a>                <span class="c1"># Run the release script</span>
+<a id="__codelineno-0-370" name="__codelineno-0-370"></a>                <span class="s2">&quot;bash $RELEASE_SCRIPT_PATH&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-371" name="__codelineno-0-371"></a>            <span class="p">],</span>
+<a id="__codelineno-0-372" name="__codelineno-0-372"></a>            <span class="n">role_policy_statements</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-0-373" name="__codelineno-0-373"></a>                <span class="n">CODE_BUILD_IAM_POLICY</span><span class="p">,</span>
+<a id="__codelineno-0-374" name="__codelineno-0-374"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">get_policy_with_secrets</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pipeline_config</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">oauth_secret_name</span><span class="p">),</span>
+<a id="__codelineno-0-375" name="__codelineno-0-375"></a>            <span class="p">],</span>
+<a id="__codelineno-0-376" name="__codelineno-0-376"></a>        <span class="p">)</span>
+<a id="__codelineno-0-377" name="__codelineno-0-377"></a>        <span class="c1"># Add dependencies to all other &quot;post&quot; steps</span>
+<a id="__codelineno-0-378" name="__codelineno-0-378"></a>        <span class="k">if</span> <span class="n">promote_wave</span><span class="o">.</span><span class="n">post</span><span class="p">:</span>
+<a id="__codelineno-0-379" name="__codelineno-0-379"></a>            <span class="k">for</span> <span class="n">post_step</span> <span class="ow">in</span> <span class="n">promote_wave</span><span class="o">.</span><span class="n">post</span><span class="p">:</span>
+<a id="__codelineno-0-380" name="__codelineno-0-380"></a>                <span class="n">create_pull_request_step</span><span class="o">.</span><span class="n">add_step_dependency</span><span class="p">(</span><span class="n">post_step</span><span class="p">)</span>
+<a id="__codelineno-0-381" name="__codelineno-0-381"></a>
+<a id="__codelineno-0-382" name="__codelineno-0-382"></a>        <span class="n">promote_wave</span><span class="o">.</span><span class="n">add_post</span><span class="p">(</span><span class="n">create_pull_request_step</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="aibs_informatics_cdk_lib.cicd.pipeline.base.BasePipelineStack.get_pipeline_source" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">get_pipeline_source</span>
+
+
+<a href="#aibs_informatics_cdk_lib.cicd.pipeline.base.BasePipelineStack.get_pipeline_source" class="headerlink" title="Permanent link">&para;</a></h8>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_pipeline_source</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">source_config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            CodePipelineSourceConfig (aibs_informatics_cdk_lib.project.config.CodePipelineSourceConfig)" href="../../project/config/#aibs_informatics_cdk_lib.project.config.CodePipelineSourceConfig">CodePipelineSourceConfig</a></span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="aws_cdk.pipelines.CodePipelineSource">CodePipelineSource</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Constructs a Github Repo source from a config</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>source_config</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="            CodePipelineSourceConfig (aibs_informatics_cdk_lib.project.config.CodePipelineSourceConfig)" href="../../project/config/#aibs_informatics_cdk_lib.project.config.CodePipelineSourceConfig">CodePipelineSourceConfig</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>config</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="aws_cdk.pipelines.CodePipelineSource">CodePipelineSource</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>pipelines.CodePipelineSource:</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/aibs_informatics_cdk_lib/cicd/pipeline/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-470">470</a></span>
+<span class="normal"><a href="#__codelineno-0-471">471</a></span>
+<span class="normal"><a href="#__codelineno-0-472">472</a></span>
+<span class="normal"><a href="#__codelineno-0-473">473</a></span>
+<span class="normal"><a href="#__codelineno-0-474">474</a></span>
+<span class="normal"><a href="#__codelineno-0-475">475</a></span>
+<span class="normal"><a href="#__codelineno-0-476">476</a></span>
+<span class="normal"><a href="#__codelineno-0-477">477</a></span>
+<span class="normal"><a href="#__codelineno-0-478">478</a></span>
+<span class="normal"><a href="#__codelineno-0-479">479</a></span>
+<span class="normal"><a href="#__codelineno-0-480">480</a></span>
+<span class="normal"><a href="#__codelineno-0-481">481</a></span>
+<span class="normal"><a href="#__codelineno-0-482">482</a></span>
+<span class="normal"><a href="#__codelineno-0-483">483</a></span>
+<span class="normal"><a href="#__codelineno-0-484">484</a></span>
+<span class="normal"><a href="#__codelineno-0-485">485</a></span>
+<span class="normal"><a href="#__codelineno-0-486">486</a></span>
+<span class="normal"><a href="#__codelineno-0-487">487</a></span>
+<span class="normal"><a href="#__codelineno-0-488">488</a></span>
+<span class="normal"><a href="#__codelineno-0-489">489</a></span>
+<span class="normal"><a href="#__codelineno-0-490">490</a></span>
+<span class="normal"><a href="#__codelineno-0-491">491</a></span>
+<span class="normal"><a href="#__codelineno-0-492">492</a></span>
+<span class="normal"><a href="#__codelineno-0-493">493</a></span>
+<span class="normal"><a href="#__codelineno-0-494">494</a></span>
+<span class="normal"><a href="#__codelineno-0-495">495</a></span>
+<span class="normal"><a href="#__codelineno-0-496">496</a></span>
+<span class="normal"><a href="#__codelineno-0-497">497</a></span>
+<span class="normal"><a href="#__codelineno-0-498">498</a></span>
+<span class="normal"><a href="#__codelineno-0-499">499</a></span>
+<span class="normal"><a href="#__codelineno-0-500">500</a></span>
+<span class="normal"><a href="#__codelineno-0-501">501</a></span>
+<span class="normal"><a href="#__codelineno-0-502">502</a></span>
+<span class="normal"><a href="#__codelineno-0-503">503</a></span>
+<span class="normal"><a href="#__codelineno-0-504">504</a></span>
+<span class="normal"><a href="#__codelineno-0-505">505</a></span>
+<span class="normal"><a href="#__codelineno-0-506">506</a></span>
+<span class="normal"><a href="#__codelineno-0-507">507</a></span>
+<span class="normal"><a href="#__codelineno-0-508">508</a></span>
+<span class="normal"><a href="#__codelineno-0-509">509</a></span>
+<span class="normal"><a href="#__codelineno-0-510">510</a></span>
+<span class="normal"><a href="#__codelineno-0-511">511</a></span>
+<span class="normal"><a href="#__codelineno-0-512">512</a></span>
+<span class="normal"><a href="#__codelineno-0-513">513</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-470" name="__codelineno-0-470"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_pipeline_source</span><span class="p">(</span>
+<a id="__codelineno-0-471" name="__codelineno-0-471"></a>    <span class="bp">self</span><span class="p">,</span> <span class="n">source_config</span><span class="p">:</span> <span class="n">CodePipelineSourceConfig</span>
+<a id="__codelineno-0-472" name="__codelineno-0-472"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pipelines</span><span class="o">.</span><span class="n">CodePipelineSource</span><span class="p">:</span>
+<a id="__codelineno-0-473" name="__codelineno-0-473"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-474" name="__codelineno-0-474"></a><span class="sd">    Constructs a Github Repo source from a config</span>
+<a id="__codelineno-0-475" name="__codelineno-0-475"></a>
+<a id="__codelineno-0-476" name="__codelineno-0-476"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-477" name="__codelineno-0-477"></a><span class="sd">        source_config (CodePipelineSourceConfig): config</span>
+<a id="__codelineno-0-478" name="__codelineno-0-478"></a>
+<a id="__codelineno-0-479" name="__codelineno-0-479"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-480" name="__codelineno-0-480"></a><span class="sd">        pipelines.CodePipelineSource:</span>
+<a id="__codelineno-0-481" name="__codelineno-0-481"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-482" name="__codelineno-0-482"></a>    <span class="c1"># CDK doesnt like when we reconstruct code pipeline source with the same repo name.</span>
+<a id="__codelineno-0-483" name="__codelineno-0-483"></a>    <span class="c1"># So we need to cache the results for a given result if config has same repo name.</span>
+<a id="__codelineno-0-484" name="__codelineno-0-484"></a>
+<a id="__codelineno-0-485" name="__codelineno-0-485"></a>    <span class="k">if</span> <span class="n">source_config</span><span class="o">.</span><span class="n">repository</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_cache</span><span class="p">:</span>
+<a id="__codelineno-0-486" name="__codelineno-0-486"></a>        <span class="k">if</span> <span class="n">source_config</span><span class="o">.</span><span class="n">codestar_connection</span><span class="p">:</span>
+<a id="__codelineno-0-487" name="__codelineno-0-487"></a>            <span class="n">source</span> <span class="o">=</span> <span class="n">pipelines</span><span class="o">.</span><span class="n">CodePipelineSource</span><span class="o">.</span><span class="n">connection</span><span class="p">(</span>
+<a id="__codelineno-0-488" name="__codelineno-0-488"></a>                <span class="n">repo_string</span><span class="o">=</span><span class="n">source_config</span><span class="o">.</span><span class="n">repository</span><span class="p">,</span>
+<a id="__codelineno-0-489" name="__codelineno-0-489"></a>                <span class="n">branch</span><span class="o">=</span><span class="n">source_config</span><span class="o">.</span><span class="n">branch</span><span class="p">,</span>
+<a id="__codelineno-0-490" name="__codelineno-0-490"></a>                <span class="n">connection_arn</span><span class="o">=</span><span class="n">build_arn</span><span class="p">(</span>
+<a id="__codelineno-0-491" name="__codelineno-0-491"></a>                    <span class="n">service</span><span class="o">=</span><span class="s2">&quot;codestar-connections&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-492" name="__codelineno-0-492"></a>                    <span class="n">resource_type</span><span class="o">=</span><span class="s2">&quot;connection&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-493" name="__codelineno-0-493"></a>                    <span class="n">resource_delim</span><span class="o">=</span><span class="s2">&quot;/&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-494" name="__codelineno-0-494"></a>                    <span class="n">resource_id</span><span class="o">=</span><span class="n">source_config</span><span class="o">.</span><span class="n">codestar_connection</span><span class="p">,</span>
+<a id="__codelineno-0-495" name="__codelineno-0-495"></a>                <span class="p">),</span>
+<a id="__codelineno-0-496" name="__codelineno-0-496"></a>                <span class="n">code_build_clone_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-497" name="__codelineno-0-497"></a>                <span class="n">trigger_on_push</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-498" name="__codelineno-0-498"></a>            <span class="p">)</span>
+<a id="__codelineno-0-499" name="__codelineno-0-499"></a>        <span class="k">elif</span> <span class="n">source_config</span><span class="o">.</span><span class="n">oauth_secret_name</span><span class="p">:</span>
+<a id="__codelineno-0-500" name="__codelineno-0-500"></a>            <span class="n">source</span> <span class="o">=</span> <span class="n">pipelines</span><span class="o">.</span><span class="n">CodePipelineSource</span><span class="o">.</span><span class="n">git_hub</span><span class="p">(</span>
+<a id="__codelineno-0-501" name="__codelineno-0-501"></a>                <span class="n">repo_string</span><span class="o">=</span><span class="n">source_config</span><span class="o">.</span><span class="n">repository</span><span class="p">,</span>
+<a id="__codelineno-0-502" name="__codelineno-0-502"></a>                <span class="n">branch</span><span class="o">=</span><span class="n">source_config</span><span class="o">.</span><span class="n">branch</span><span class="p">,</span>
+<a id="__codelineno-0-503" name="__codelineno-0-503"></a>                <span class="n">authentication</span><span class="o">=</span><span class="n">cdk</span><span class="o">.</span><span class="n">SecretValue</span><span class="o">.</span><span class="n">secrets_manager</span><span class="p">(</span>
+<a id="__codelineno-0-504" name="__codelineno-0-504"></a>                    <span class="n">secret_id</span><span class="o">=</span><span class="n">source_config</span><span class="o">.</span><span class="n">oauth_secret_name</span>
+<a id="__codelineno-0-505" name="__codelineno-0-505"></a>                <span class="p">),</span>
+<a id="__codelineno-0-506" name="__codelineno-0-506"></a>                <span class="n">trigger</span><span class="o">=</span><span class="n">aws_codepipeline_actions</span><span class="o">.</span><span class="n">GitHubTrigger</span><span class="o">.</span><span class="n">WEBHOOK</span><span class="p">,</span>
+<a id="__codelineno-0-507" name="__codelineno-0-507"></a>            <span class="p">)</span>
+<a id="__codelineno-0-508" name="__codelineno-0-508"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-509" name="__codelineno-0-509"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-510" name="__codelineno-0-510"></a>                <span class="s2">&quot;Invalid source config. Must have codestar_connection or oauth_secret_name&quot;</span>
+<a id="__codelineno-0-511" name="__codelineno-0-511"></a>            <span class="p">)</span>
+<a id="__codelineno-0-512" name="__codelineno-0-512"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">source_cache</span><span class="p">[</span><span class="n">source_config</span><span class="o">.</span><span class="n">repository</span><span class="p">]</span> <span class="o">=</span> <span class="n">source</span>
+<a id="__codelineno-0-513" name="__codelineno-0-513"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_cache</span><span class="p">[</span><span class="n">source_config</span><span class="o">.</span><span class="n">repository</span><span class="p">]</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+<h5 id="aibs_informatics_cdk_lib.cicd.pipeline.base-functions">Functions<a href="#aibs_informatics_cdk_lib.cicd.pipeline.base-functions" class="headerlink" title="Permanent link">&para;</a></h5>
+
+<div class="doc doc-object doc-function">
+
+
+<h6 id="aibs_informatics_cdk_lib.cicd.pipeline.base.pipeline_stage" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">pipeline_stage</span>
+
+
+<a href="#aibs_informatics_cdk_lib.cicd.pipeline.base.pipeline_stage" class="headerlink" title="Permanent link">&para;</a></h6>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">pipeline_stage</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">order</span><span class="p">:</span> <span class="n"><span title="int">int</span></span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">pre_steps</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="aws_cdk.pipelines.Step">Step</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">post_steps</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="aws_cdk.pipelines.Step">Step</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Method decorator for defining a pipeline stage in a BasePipelineStack subclass.</p>
+<p>you can decorate two types of methods:
+1. A method that returns a cdk.Stage
+2. A method that returns a tuple of pre_steps, cdk.Stage, post_steps
+    where pre_steps and post_steps are lists of pipelines.Step objects.</p>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">PipelineStack</span><span class="p">(</span><span class="n">BasePipelineStack</span><span class="p">):</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">...</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="nd">@pipeline_stage</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Source&quot;</span><span class="p">,</span> <span class="n">pre_steps</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">])</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">source_stage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cdk</span><span class="o">.</span><span class="n">Stage</span><span class="p">:</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="k">return</span> <span class="n">SourceStage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_construct_id</span><span class="p">(</span><span class="s2">&quot;source-stage&quot;</span><span class="p">))</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="nd">@pipeline_stage</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Build&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">build_stage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cdk</span><span class="o">.</span><span class="n">Stage</span><span class="p">:</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="k">return</span> <span class="n">BuildStage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_construct_id</span><span class="p">(</span><span class="s2">&quot;build-stage&quot;</span><span class="p">))</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="nd">@pipeline_stage</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Deploy&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">deploy_stage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">pipelines</span><span class="o">.</span><span class="n">Step</span><span class="p">],</span> <span class="n">cdk</span><span class="o">.</span><span class="n">Stage</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">pipelines</span><span class="o">.</span><span class="n">Step</span><span class="p">]]:</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        <span class="n">pre_steps</span> <span class="o">=</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        <span class="n">post_steps</span> <span class="o">=</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="n">stage</span> <span class="o">=</span> <span class="n">DeployStage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_construct_id</span><span class="p">(</span><span class="s2">&quot;deploy-stage&quot;</span><span class="p">))</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        <span class="k">return</span> <span class="n">pre_steps</span><span class="p">,</span> <span class="n">stage</span><span class="p">,</span> <span class="n">post_steps</span>
+</code></pre></div>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>order</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Order of the stage. Lower numbers are executed first. E.g. 1, 2, 3, ...
+You can repeat numbers, however, the order will be arbitrary.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>name</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Name of the stage</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>pre_steps</code>
+            </td>
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<span title="List">List</span>[<span title="aws_cdk.pipelines.Step">Step</span>]]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional pre steps to add before the stage.
+Defaults to None.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>post_steps</code>
+            </td>
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<span title="List">List</span>[<span title="aws_cdk.pipelines.Step">Step</span>]]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional post steps to add after the stage.
+Defaults to None.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/aibs_informatics_cdk_lib/cicd/pipeline/base.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-52"> 52</a></span>
+<span class="normal"><a href="#__codelineno-0-53"> 53</a></span>
+<span class="normal"><a href="#__codelineno-0-54"> 54</a></span>
+<span class="normal"><a href="#__codelineno-0-55"> 55</a></span>
+<span class="normal"><a href="#__codelineno-0-56"> 56</a></span>
+<span class="normal"><a href="#__codelineno-0-57"> 57</a></span>
+<span class="normal"><a href="#__codelineno-0-58"> 58</a></span>
+<span class="normal"><a href="#__codelineno-0-59"> 59</a></span>
+<span class="normal"><a href="#__codelineno-0-60"> 60</a></span>
+<span class="normal"><a href="#__codelineno-0-61"> 61</a></span>
+<span class="normal"><a href="#__codelineno-0-62"> 62</a></span>
+<span class="normal"><a href="#__codelineno-0-63"> 63</a></span>
+<span class="normal"><a href="#__codelineno-0-64"> 64</a></span>
+<span class="normal"><a href="#__codelineno-0-65"> 65</a></span>
+<span class="normal"><a href="#__codelineno-0-66"> 66</a></span>
+<span class="normal"><a href="#__codelineno-0-67"> 67</a></span>
+<span class="normal"><a href="#__codelineno-0-68"> 68</a></span>
+<span class="normal"><a href="#__codelineno-0-69"> 69</a></span>
+<span class="normal"><a href="#__codelineno-0-70"> 70</a></span>
+<span class="normal"><a href="#__codelineno-0-71"> 71</a></span>
+<span class="normal"><a href="#__codelineno-0-72"> 72</a></span>
+<span class="normal"><a href="#__codelineno-0-73"> 73</a></span>
+<span class="normal"><a href="#__codelineno-0-74"> 74</a></span>
+<span class="normal"><a href="#__codelineno-0-75"> 75</a></span>
+<span class="normal"><a href="#__codelineno-0-76"> 76</a></span>
+<span class="normal"><a href="#__codelineno-0-77"> 77</a></span>
+<span class="normal"><a href="#__codelineno-0-78"> 78</a></span>
+<span class="normal"><a href="#__codelineno-0-79"> 79</a></span>
+<span class="normal"><a href="#__codelineno-0-80"> 80</a></span>
+<span class="normal"><a href="#__codelineno-0-81"> 81</a></span>
+<span class="normal"><a href="#__codelineno-0-82"> 82</a></span>
+<span class="normal"><a href="#__codelineno-0-83"> 83</a></span>
+<span class="normal"><a href="#__codelineno-0-84"> 84</a></span>
+<span class="normal"><a href="#__codelineno-0-85"> 85</a></span>
+<span class="normal"><a href="#__codelineno-0-86"> 86</a></span>
+<span class="normal"><a href="#__codelineno-0-87"> 87</a></span>
+<span class="normal"><a href="#__codelineno-0-88"> 88</a></span>
+<span class="normal"><a href="#__codelineno-0-89"> 89</a></span>
+<span class="normal"><a href="#__codelineno-0-90"> 90</a></span>
+<span class="normal"><a href="#__codelineno-0-91"> 91</a></span>
+<span class="normal"><a href="#__codelineno-0-92"> 92</a></span>
+<span class="normal"><a href="#__codelineno-0-93"> 93</a></span>
+<span class="normal"><a href="#__codelineno-0-94"> 94</a></span>
+<span class="normal"><a href="#__codelineno-0-95"> 95</a></span>
+<span class="normal"><a href="#__codelineno-0-96"> 96</a></span>
+<span class="normal"><a href="#__codelineno-0-97"> 97</a></span>
+<span class="normal"><a href="#__codelineno-0-98"> 98</a></span>
+<span class="normal"><a href="#__codelineno-0-99"> 99</a></span>
+<span class="normal"><a href="#__codelineno-0-100">100</a></span>
+<span class="normal"><a href="#__codelineno-0-101">101</a></span>
+<span class="normal"><a href="#__codelineno-0-102">102</a></span>
+<span class="normal"><a href="#__codelineno-0-103">103</a></span>
+<span class="normal"><a href="#__codelineno-0-104">104</a></span>
+<span class="normal"><a href="#__codelineno-0-105">105</a></span>
+<span class="normal"><a href="#__codelineno-0-106">106</a></span>
+<span class="normal"><a href="#__codelineno-0-107">107</a></span>
+<span class="normal"><a href="#__codelineno-0-108">108</a></span>
+<span class="normal"><a href="#__codelineno-0-109">109</a></span>
+<span class="normal"><a href="#__codelineno-0-110">110</a></span>
+<span class="normal"><a href="#__codelineno-0-111">111</a></span>
+<span class="normal"><a href="#__codelineno-0-112">112</a></span>
+<span class="normal"><a href="#__codelineno-0-113">113</a></span>
+<span class="normal"><a href="#__codelineno-0-114">114</a></span>
+<span class="normal"><a href="#__codelineno-0-115">115</a></span>
+<span class="normal"><a href="#__codelineno-0-116">116</a></span>
+<span class="normal"><a href="#__codelineno-0-117">117</a></span>
+<span class="normal"><a href="#__codelineno-0-118">118</a></span>
+<span class="normal"><a href="#__codelineno-0-119">119</a></span>
+<span class="normal"><a href="#__codelineno-0-120">120</a></span>
+<span class="normal"><a href="#__codelineno-0-121">121</a></span>
+<span class="normal"><a href="#__codelineno-0-122">122</a></span>
+<span class="normal"><a href="#__codelineno-0-123">123</a></span>
+<span class="normal"><a href="#__codelineno-0-124">124</a></span>
+<span class="normal"><a href="#__codelineno-0-125">125</a></span>
+<span class="normal"><a href="#__codelineno-0-126">126</a></span>
+<span class="normal"><a href="#__codelineno-0-127">127</a></span>
+<span class="normal"><a href="#__codelineno-0-128">128</a></span>
+<span class="normal"><a href="#__codelineno-0-129">129</a></span>
+<span class="normal"><a href="#__codelineno-0-130">130</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="k">def</span><span class="w"> </span><span class="nf">pipeline_stage</span><span class="p">(</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53"></a>    <span class="n">order</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<a id="__codelineno-0-54" name="__codelineno-0-54"></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-0-55" name="__codelineno-0-55"></a>    <span class="n">pre_steps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">pipelines</span><span class="o">.</span><span class="n">Step</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-56" name="__codelineno-0-56"></a>    <span class="n">post_steps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">pipelines</span><span class="o">.</span><span class="n">Step</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="p">):</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Method decorator for defining a pipeline stage in a BasePipelineStack subclass.</span>
+<a id="__codelineno-0-59" name="__codelineno-0-59"></a>
+<a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">    you can decorate two types of methods:</span>
+<a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">    1. A method that returns a cdk.Stage</span>
+<a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="sd">    2. A method that returns a tuple of pre_steps, cdk.Stage, post_steps</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="sd">        where pre_steps and post_steps are lists of pipelines.Step objects.</span>
+<a id="__codelineno-0-64" name="__codelineno-0-64"></a>
+<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">    Example:</span>
+<a id="__codelineno-0-66" name="__codelineno-0-66"></a>
+<a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="sd">    ```python</span>
+<a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="sd">    class PipelineStack(BasePipelineStack):</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a>
+<a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="sd">        ...</span>
+<a id="__codelineno-0-71" name="__codelineno-0-71"></a>
+<a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">        @pipeline_stage(order=0, name=&quot;Source&quot;, pre_steps=[...])</span>
+<a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="sd">        def source_stage(self) -&gt; cdk.Stage:</span>
+<a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="sd">            return SourceStage(self, self.get_construct_id(&quot;source-stage&quot;))</span>
+<a id="__codelineno-0-75" name="__codelineno-0-75"></a>
+<a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">        @pipeline_stage(order=1, name=&quot;Build&quot;)</span>
+<a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="sd">        def build_stage(self) -&gt; cdk.Stage:</span>
+<a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">            return BuildStage(self, self.get_construct_id(&quot;build-stage&quot;))</span>
+<a id="__codelineno-0-79" name="__codelineno-0-79"></a>
+<a id="__codelineno-0-80" name="__codelineno-0-80"></a><span class="sd">        @pipeline_stage(order=2, name=&quot;Deploy&quot;)</span>
+<a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="sd">        def deploy_stage(self) -&gt; Tuple[List[pipelines.Step], cdk.Stage, List[pipelines.Step]]:</span>
+<a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="sd">            pre_steps = [...]</span>
+<a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="sd">            post_steps = [...]</span>
+<a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">            stage = DeployStage(self, self.get_construct_id(&quot;deploy-stage&quot;))</span>
+<a id="__codelineno-0-85" name="__codelineno-0-85"></a><span class="sd">            return pre_steps, stage, post_steps</span>
+<a id="__codelineno-0-86" name="__codelineno-0-86"></a>
+<a id="__codelineno-0-87" name="__codelineno-0-87"></a><span class="sd">    ```</span>
+<a id="__codelineno-0-88" name="__codelineno-0-88"></a>
+<a id="__codelineno-0-89" name="__codelineno-0-89"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-90" name="__codelineno-0-90"></a><span class="sd">        order (int): Order of the stage. Lower numbers are executed first. E.g. 1, 2, 3, ...</span>
+<a id="__codelineno-0-91" name="__codelineno-0-91"></a><span class="sd">            You can repeat numbers, however, the order will be arbitrary.</span>
+<a id="__codelineno-0-92" name="__codelineno-0-92"></a><span class="sd">        name (str): Name of the stage</span>
+<a id="__codelineno-0-93" name="__codelineno-0-93"></a><span class="sd">        pre_steps (Optional[List[pipelines.Step]], optional): Optional pre steps to add before the stage.</span>
+<a id="__codelineno-0-94" name="__codelineno-0-94"></a><span class="sd">            Defaults to None.</span>
+<a id="__codelineno-0-95" name="__codelineno-0-95"></a><span class="sd">        post_steps (Optional[List[pipelines.Step]], optional): Optional post steps to add after the stage.</span>
+<a id="__codelineno-0-96" name="__codelineno-0-96"></a><span class="sd">            Defaults to None.</span>
+<a id="__codelineno-0-97" name="__codelineno-0-97"></a><span class="sd">    &quot;&quot;&quot;</span>  <span class="c1"># noqa: E501</span>
+<a id="__codelineno-0-98" name="__codelineno-0-98"></a>
+<a id="__codelineno-0-99" name="__codelineno-0-99"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">decorator_pipeline_stage</span><span class="p">(</span>
+<a id="__codelineno-0-100" name="__codelineno-0-100"></a>        <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">PIPELINE_STACK</span><span class="p">],</span> <span class="n">cdk</span><span class="o">.</span><span class="n">Stage</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">cdk</span><span class="o">.</span><span class="n">Stage</span><span class="p">]],</span>
+<a id="__codelineno-0-101" name="__codelineno-0-101"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span>
+<a id="__codelineno-0-102" name="__codelineno-0-102"></a>        <span class="p">[</span><span class="n">PIPELINE_STACK</span><span class="p">],</span>
+<a id="__codelineno-0-103" name="__codelineno-0-103"></a>        <span class="nb">tuple</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">pipelines</span><span class="o">.</span><span class="n">Step</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cdk</span><span class="o">.</span><span class="n">Stage</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">pipelines</span><span class="o">.</span><span class="n">Step</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">],</span>
+<a id="__codelineno-0-104" name="__codelineno-0-104"></a>    <span class="p">]:</span>
+<a id="__codelineno-0-105" name="__codelineno-0-105"></a>        <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+<a id="__codelineno-0-106" name="__codelineno-0-106"></a>        <span class="k">def</span><span class="w"> </span><span class="nf">wrapper_pipeline_stage</span><span class="p">(</span>
+<a id="__codelineno-0-107" name="__codelineno-0-107"></a>            <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+<a id="__codelineno-0-108" name="__codelineno-0-108"></a>        <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">pipelines</span><span class="o">.</span><span class="n">Step</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cdk</span><span class="o">.</span><span class="n">Stage</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">pipelines</span><span class="o">.</span><span class="n">Step</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<a id="__codelineno-0-109" name="__codelineno-0-109"></a>            <span class="n">results</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<a id="__codelineno-0-110" name="__codelineno-0-110"></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">cdk</span><span class="o">.</span><span class="n">Stage</span><span class="p">):</span>
+<a id="__codelineno-0-111" name="__codelineno-0-111"></a>                <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="kc">None</span>
+<a id="__codelineno-0-112" name="__codelineno-0-112"></a>            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span>
+<a id="__codelineno-0-113" name="__codelineno-0-113"></a>            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span>
+<a id="__codelineno-0-114" name="__codelineno-0-114"></a>            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">cdk</span><span class="o">.</span><span class="n">Stage</span><span class="p">)</span>
+<a id="__codelineno-0-115" name="__codelineno-0-115"></a>            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="n">results</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span>
+<a id="__codelineno-0-116" name="__codelineno-0-116"></a>            <span class="k">return</span> <span class="n">cast</span><span class="p">(</span>
+<a id="__codelineno-0-117" name="__codelineno-0-117"></a>                <span class="nb">tuple</span><span class="p">[</span>
+<a id="__codelineno-0-118" name="__codelineno-0-118"></a>                    <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">pipelines</span><span class="o">.</span><span class="n">Step</span><span class="p">]],</span>
+<a id="__codelineno-0-119" name="__codelineno-0-119"></a>                    <span class="n">cdk</span><span class="o">.</span><span class="n">Stage</span><span class="p">,</span>
+<a id="__codelineno-0-120" name="__codelineno-0-120"></a>                    <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">pipelines</span><span class="o">.</span><span class="n">Step</span><span class="p">]],</span>
+<a id="__codelineno-0-121" name="__codelineno-0-121"></a>                <span class="p">],</span>
+<a id="__codelineno-0-122" name="__codelineno-0-122"></a>                <span class="n">results</span><span class="p">,</span>
+<a id="__codelineno-0-123" name="__codelineno-0-123"></a>            <span class="p">)</span>
+<a id="__codelineno-0-124" name="__codelineno-0-124"></a>
+<a id="__codelineno-0-125" name="__codelineno-0-125"></a>        <span class="n">wrapper_pipeline_stage</span><span class="o">.</span><span class="n">_pipeline_stage_info</span> <span class="o">=</span> <span class="n">PipelineStageInfo</span><span class="p">(</span>  <span class="c1"># type: ignore[attr-defined]</span>
+<a id="__codelineno-0-126" name="__codelineno-0-126"></a>            <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">pre_steps</span><span class="o">=</span><span class="n">pre_steps</span><span class="p">,</span> <span class="n">post_steps</span><span class="o">=</span><span class="n">post_steps</span>
+<a id="__codelineno-0-127" name="__codelineno-0-127"></a>        <span class="p">)</span>
+<a id="__codelineno-0-128" name="__codelineno-0-128"></a>        <span class="k">return</span> <span class="n">wrapper_pipeline_stage</span>
+<a id="__codelineno-0-129" name="__codelineno-0-129"></a>
+<a id="__codelineno-0-130" name="__codelineno-0-130"></a>    <span class="k">return</span> <span class="n">decorator_pipeline_stage</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/AllenInstitute/aibs-informatics-cdk-lib" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "content.code.annotate", "navigation.instant", "navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "search.share", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
