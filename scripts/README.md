@@ -56,3 +56,22 @@ Filters and preset definitions live in `regen_instance_types.py` itself —
 edit `BASE_FILTERS` or the `Preset(...)` entries in `build_presets()` to change
 what each list contains, then re-run. Diff the output against the previous
 committed version before committing.
+
+## backfill-docs-versions.sh
+
+Best-effort backfill of versioned documentation for release tags that predate mike-based doc versioning. Each tag's docs are built in a throwaway git worktree and deployed to `gh-pages` under its `X.Y` version; versions already published are skipped, and nothing is pushed without `--push`.
+
+See [Documentation](../CONTRIBUTING.md#documentation) for how the versioned site is laid out and published.
+
+```bash
+# from aibs-informatics-cdk-lib/
+scripts/backfill-docs-versions.sh            # build locally, review first
+make docs-serve-versions
+scripts/backfill-docs-versions.sh --push     # publish
+```
+
+Flags:
+
+- `--push` — push the resulting `gh-pages` commits to `origin`.
+- `--force` — rebuild versions that are already published.
+- `TAG ...` — backfill only these tags instead of every `v*` tag.
