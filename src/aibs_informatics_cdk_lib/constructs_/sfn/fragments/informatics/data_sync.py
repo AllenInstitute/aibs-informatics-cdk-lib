@@ -3,7 +3,6 @@ from collections.abc import Iterable
 import constructs
 from aibs_informatics_core.env import EnvBase
 from aws_cdk import aws_batch as batch
-from aws_cdk import aws_ecr_assets as ecr_assets
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_s3 as s3
 from aws_cdk import aws_stepfunctions as sfn
@@ -12,6 +11,10 @@ from aibs_informatics_cdk_lib.common.aws.iam_utils import (
     SFN_STATES_EXECUTION_ACTIONS,
     SFN_STATES_READ_ACCESS_ACTIONS,
     sfn_policy_statement,
+)
+from aibs_informatics_cdk_lib.constructs_.assets.docker_asset import (
+    DockerAssetLike,
+    resolve_image_uri,
 )
 from aibs_informatics_cdk_lib.constructs_.base import EnvBaseConstructMixins
 from aibs_informatics_cdk_lib.constructs_.efs.file_system import MountPointConfiguration
@@ -27,7 +30,7 @@ class DataSyncFragment(BatchInvokedBaseFragment, EnvBaseConstructMixins):
         scope: constructs.Construct,
         id: str,
         env_base: EnvBase,
-        aibs_informatics_docker_asset: ecr_assets.DockerImageAsset | str,
+        aibs_informatics_docker_asset: DockerAssetLike,
         batch_job_queue: batch.JobQueue | str,
         scaffolding_bucket: s3.Bucket,
         batch_job_role: iam.Role | str | None = None,
@@ -40,8 +43,8 @@ class DataSyncFragment(BatchInvokedBaseFragment, EnvBaseConstructMixins):
             scope (Construct): construct scope
             id (str): id
             env_base (EnvBase): env base
-            aibs_informatics_docker_asset (DockerImageAsset|str): Docker image asset or image uri
-                str for the aibs informatics aws lambda
+            aibs_informatics_docker_asset (DockerAssetLike): Docker asset, docker image asset,
+                or image uri str for the aibs informatics aws lambda
             batch_job_queue (JobQueue|str): Default batch job queue or job queue name str that
                 the batch job will be submitted to. This can be override by the payload.
             scaffolding_bucket (Bucket): Primary bucket used for request/response json blobs used
@@ -55,11 +58,7 @@ class DataSyncFragment(BatchInvokedBaseFragment, EnvBaseConstructMixins):
         """
         super().__init__(scope, id, env_base)
 
-        aibs_informatics_image_uri = (
-            aibs_informatics_docker_asset
-            if isinstance(aibs_informatics_docker_asset, str)
-            else aibs_informatics_docker_asset.image_uri
-        )
+        aibs_informatics_image_uri = resolve_image_uri(aibs_informatics_docker_asset)
 
         self.batch_job_queue_name = (
             batch_job_queue if isinstance(batch_job_queue, str) else batch_job_queue.job_queue_name
@@ -127,7 +126,7 @@ class DistributedDataSyncFragment(BatchInvokedBaseFragment):
         scope: constructs.Construct,
         id: str,
         env_base: EnvBase,
-        aibs_informatics_docker_asset: ecr_assets.DockerImageAsset | str,
+        aibs_informatics_docker_asset: DockerAssetLike,
         batch_job_queue: batch.JobQueue | str,
         scaffolding_bucket: s3.Bucket,
         batch_job_role: str | iam.Role | None = None,
@@ -139,8 +138,8 @@ class DistributedDataSyncFragment(BatchInvokedBaseFragment):
             scope (constructs.Construct): construct scope
             id (str): id
             env_base (EnvBase): env base
-            aibs_informatics_docker_asset (DockerImageAsset|str): Docker image asset or image uri
-                str for the aibs informatics aws lambda
+            aibs_informatics_docker_asset (DockerAssetLike): Docker asset, docker image asset,
+                or image uri str for the aibs informatics aws lambda
             batch_job_queue (JobQueue|str): Default batch job queue or job queue name str that
                 the batch job will be submitted to. This can be override by the payload.
             scaffolding_bucket (Bucket): Primary bucket used for request/response json blobs used
@@ -152,6 +151,7 @@ class DistributedDataSyncFragment(BatchInvokedBaseFragment):
                 List of mount point configurations to use. These can be overridden in the payload.
         """
         super().__init__(scope, id, env_base)
+        aibs_informatics_image_uri = resolve_image_uri(aibs_informatics_docker_asset)
         start_pass_state = sfn.Pass(
             self,
             f"{id}: Start",
@@ -167,11 +167,7 @@ class DistributedDataSyncFragment(BatchInvokedBaseFragment):
             env_base=env_base,
             name=prep_batch_sync_task_name,
             payload_path="$.request",
-            image=(
-                aibs_informatics_docker_asset
-                if isinstance(aibs_informatics_docker_asset, str)
-                else aibs_informatics_docker_asset.image_uri
-            ),
+            image=aibs_informatics_image_uri,
             handler="aibs_informatics_aws_lambda.handlers.data_sync.prepare_batch_data_sync_handler",
             job_queue=(
                 batch_job_queue
@@ -204,11 +200,7 @@ class DistributedDataSyncFragment(BatchInvokedBaseFragment):
                 env_base=env_base,
                 name="batch-data-sync",
                 payload_path="$",
-                image=(
-                    aibs_informatics_docker_asset
-                    if isinstance(aibs_informatics_docker_asset, str)
-                    else aibs_informatics_docker_asset.image_uri
-                ),
+                image=aibs_informatics_image_uri,
                 handler="aibs_informatics_aws_lambda.handlers.data_sync.batch_data_sync_handler",
                 job_queue=(
                     batch_job_queue

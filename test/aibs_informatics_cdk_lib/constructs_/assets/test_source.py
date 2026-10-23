@@ -294,6 +294,12 @@ class TestPackageSourceFromStr:
         with pytest.raises(ValueError, match="Cannot parse"):
             PackageSource.from_str("not-a-valid-source")
 
+    def test__from_str__container_image_does_not_print_git_errors(self, capfd):
+        """Image refs are probed as local repo paths first; that must not pollute stderr."""
+        source = PackageSource.from_str("ghcr.io/org/repo:latest")
+        assert isinstance(source, ContainerImageSource)
+        assert capfd.readouterr().err == ""
+
     def test__from_str__local_repo(self, tmp_path):
         """Local git repos should parse as GitSource."""
         # Initialize a git repo in the temp directory

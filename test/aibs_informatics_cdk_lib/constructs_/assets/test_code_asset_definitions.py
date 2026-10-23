@@ -3,6 +3,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from aibs_informatics_cdk_lib.constructs_.assets.code_asset import (
+    GLOBAL_GLOB_EXCLUDES,
+    PYTHON_GLOB_EXCLUDES,
+)
 from aibs_informatics_cdk_lib.constructs_.assets.code_asset_definitions import (
     AIBS_INFORMATICS_AWS_LAMBDA_REPO,
     AIBSInformaticsAssets,
@@ -10,6 +14,7 @@ from aibs_informatics_cdk_lib.constructs_.assets.code_asset_definitions import (
     AIBSInformaticsDockerAssets,
     AssetsMixin,
 )
+from aibs_informatics_cdk_lib.constructs_.assets.docker_asset import DockerAsset
 from aibs_informatics_cdk_lib.constructs_.assets.source import (
     ContainerImageSource,
     GitSource,
@@ -215,8 +220,9 @@ class TestAIBSInformaticsDockerAssets(CdkBaseTest):
             stack, "DockerAssets", self.env_base, aibs_informatics_aws_lambda_source=source
         )
         result = assets.AIBS_INFORMATICS_AWS_LAMBDA
-        assert isinstance(result, str)
-        assert result == "ghcr.io/alleninstitute/aibs-informatics-aws-lambda:v1.2.3"
+        assert isinstance(result, DockerAsset)
+        assert result.image_uri == "ghcr.io/alleninstitute/aibs-informatics-aws-lambda:v1.2.3"
+        assert result.source is source
 
     def test__AIBS_INFORMATICS_AWS_LAMBDA__container_image_with_digest(self):
         stack = self.get_dummy_stack("test")
@@ -228,9 +234,10 @@ class TestAIBSInformaticsDockerAssets(CdkBaseTest):
             stack, "DockerAssets", self.env_base, aibs_informatics_aws_lambda_source=source
         )
         result = assets.AIBS_INFORMATICS_AWS_LAMBDA
-        assert isinstance(result, str)
+        assert isinstance(result, DockerAsset)
         assert (
-            result == "ghcr.io/alleninstitute/aibs-informatics-aws-lambda@sha256:abcdef1234567890"
+            result.image_uri
+            == "ghcr.io/alleninstitute/aibs-informatics-aws-lambda@sha256:abcdef1234567890"
         )
 
     @patch.object(AssetsMixin, "resolve_repo_path")
@@ -251,7 +258,7 @@ class TestAIBSInformaticsDockerAssets(CdkBaseTest):
         # but the DockerImageAsset constructor will fail without a real directory,
         # so we patch that too
         with patch(
-            "aibs_informatics_cdk_lib.constructs_.assets.code_asset_definitions.aws_ecr_assets.DockerImageAsset"
+            "aibs_informatics_cdk_lib.constructs_.assets.docker_asset.ecr_assets.DockerImageAsset"
         ):
             with patch(
                 "aibs_informatics_cdk_lib.constructs_.assets.code_asset_definitions.generate_path_hash",
@@ -263,6 +270,36 @@ class TestAIBSInformaticsDockerAssets(CdkBaseTest):
             "git@github.com:org/repo.git#v1.0.0",
             "AIBS_INFORMATICS_AWS_LAMBDA_REPO",
         )
+
+    @patch.object(AssetsMixin, "resolve_repo_path")
+    def test__AIBS_INFORMATICS_AWS_LAMBDA__git_source_preserves_build_props(self, mock_resolve):
+        """The build props feed asset hashing and the ssh-backed build -- they must not drift."""
+        stack = self.get_dummy_stack("test")
+        assets = AIBSInformaticsDockerAssets(stack, "DockerAssets", self.env_base)
+
+        mock_path = MagicMock()
+        mock_path.as_posix.return_value = "/tmp/fake-repo"
+        mock_path.resolve.return_value = "/tmp/fake-repo"
+        mock_resolve.return_value = mock_path
+
+        with patch(
+            "aibs_informatics_cdk_lib.constructs_.assets.docker_asset.ecr_assets.DockerImageAsset"
+        ) as mock_image_asset:
+            with patch(
+                "aibs_informatics_cdk_lib.constructs_.assets.code_asset_definitions.generate_path_hash",
+                return_value="fakehash",
+            ):
+                result = assets.AIBS_INFORMATICS_AWS_LAMBDA
+
+        assert isinstance(result, DockerAsset)
+        _, kwargs = mock_image_asset.call_args
+        assert kwargs["directory"] == "/tmp/fake-repo"
+        assert kwargs["file"] == "docker/Dockerfile"
+        assert kwargs["build_ssh"] == "default"
+        assert kwargs["asset_name"] == "aibs-informatics-aws-lambda"
+        assert kwargs["platform"].platform == "linux/amd64"
+        assert kwargs["extra_hash"] == "fakehash"
+        assert kwargs["exclude"] == [*PYTHON_GLOB_EXCLUDES, *GLOBAL_GLOB_EXCLUDES]
 
 
 # ---------------------------------------------------------------------------
