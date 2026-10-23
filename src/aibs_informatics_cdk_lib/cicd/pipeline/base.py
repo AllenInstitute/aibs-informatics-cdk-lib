@@ -325,7 +325,7 @@ class BasePipelineStack(EnvBaseStack, Generic[STAGE_CONFIG, GLOBAL_CONFIG]):
                     #   4. Run our CI/CD release script
                     "export REPO_DIR=$(mktemp -d)",
                     "cd $REPO_DIR",
-                    f"git clone https://${{GITHUB_TOKEN}}@github.com/{pipeline_config.source.repository}.git .",  # noqa: E501
+                    f"git clone https://x-access-token:${{GITHUB_TOKEN}}@github.com/{pipeline_config.source.repository}.git .",  # noqa: E501
                     # Enables credential caching
                     "git config credential.helper store",
                     # Supposed to force the caching of the credentials
