@@ -9,13 +9,48 @@ import os
 import re
 import subprocess
 import tempfile
+from collections.abc import Mapping
 from pathlib import Path
-from typing import ClassVar
+from typing import ClassVar, Literal, cast
 
 from aibs_informatics_core.collections import ValidatedStr
 from aibs_informatics_core.utils.file_operations import remove_path
 
 logger = logging.getLogger(__name__)
+
+GitRefKind = Literal["branch", "tag", "commit"]
+"""The kind of ref a git URL points at.
+
+Branch and tag are interchangeable everywhere we resolve them; commit is not, and is the
+only distinction that changes behaviour (see ``clone_repo`` / ``get_commit_hash_from_url``).
+"""
+
+# The repository portion of a git URL: scheme/host followed by <org>/<name>[.git]
+_REPO_PATTERN = (
+    r"(?P<repo>"
+    r"(?:(?:git|ssh|http(?:s)?)(?::\/\/)(?:[\w\.]+)\/|(?:git@(?:[\w\.]+)):)"
+    r"(?:[\w\.-]+)\/(?:[\w\.-]+)(?:\.git)?"
+    r")"
+)
+# Separators that introduce a ref: `#ref`, `@ref`, and GitHub's `/tree/ref`
+_REF_SEP_PATTERN = r"(?:\#|@|\/tree\/)"
+# A ref name; may contain slashes (e.g. `release/1.0`) but never starts a new URL segment
+_REF_NAME_PATTERN = r"[\w\./-]+"
+# An abbreviated or full commit SHA
+_SHA_PATTERN = r"[a-fA-F0-9]{7,40}"
+
+# Ordered alternation of every ref form we can classify. Fully qualified refs come first so
+# that `refs/heads/x` is not swallowed by the catch-all, and the catch-all comes last.
+_REF_PATTERN = (
+    r"(?:"
+    rf"{_REF_SEP_PATTERN}refs\/heads\/(?P<branch>{_REF_NAME_PATTERN})"
+    rf"|{_REF_SEP_PATTERN}refs\/tags\/(?P<tag>{_REF_NAME_PATTERN})"
+    rf"|\/releases\/tag\/(?P<release_tag>{_REF_NAME_PATTERN})"
+    rf"|\/commit\/(?P<commit_path>{_SHA_PATTERN})"
+    rf"|{_REF_SEP_PATTERN}(?P<commit>{_SHA_PATTERN})"
+    rf"|{_REF_SEP_PATTERN}(?P<ambiguous_ref>{_REF_NAME_PATTERN})"
+    r")?"
+)
 
 
 class GitUrl(ValidatedStr):
@@ -24,17 +59,38 @@ class GitUrl(ValidatedStr):
     Supports various Git URL formats including HTTPS, SSH, and git protocols.
     Can extract repository name and optional ref (branch/tag/commit).
 
+    The ref is classified into a ``GitRefKind`` where the URL says so syntactically
+    (``refs/heads/``, ``refs/tags/``, ``/releases/tag/``, ``/commit/``, or a bare SHA).
+    Anything else -- ``#v1.2.3``, ``/tree/main`` -- is reported as a branch. This is
+    deliberate: ``/tree/`` is GitHub's segment for branches, tags *and* SHAs, so no pattern
+    can tell them apart, and branch vs tag makes no difference to anything downstream
+    (``git ls-remote --branch v1.0.0`` resolves tags just fine). Only commit is special.
+
     Attributes:
         regex_pattern: Compiled regex pattern for URL validation.
+        REF_GROUP_KINDS: Ref capture group name -> the kind of ref it represents.
     """
 
-    regex_pattern: ClassVar[re.Pattern] = re.compile(
-        r"((?:(?:git|ssh|http(?:s)?)(?::\/\/)(?:[\w\.]+)\/|(?:git@(?:[\w\.]+)):)(?:[\w\.-]+)\/(?:[\w\.-]+)(?:\.git)?)(?:(?:\#|@|\/tree\/)([\w\./-]+))?"
-    )
+    regex_pattern: ClassVar[re.Pattern] = re.compile(_REPO_PATTERN + _REF_PATTERN)
+
+    REF_GROUP_KINDS: ClassVar[dict[str, GitRefKind]] = {
+        "branch": "branch",
+        "tag": "tag",
+        "release_tag": "tag",
+        "commit_path": "commit",
+        "commit": "commit",
+        "ambiguous_ref": "branch",
+    }
+
+    @property
+    def match_groups(self) -> Mapping[str, str | None]:
+        """Named capture groups from matching this URL against ``regex_pattern``."""
+        # Validation at construction time guarantees a full match.
+        return cast(re.Match, self.regex_pattern.fullmatch(self)).groupdict()
 
     @property
     def repo_base_url(self) -> str:
-        return f"{self.get_match_groups()[0].removesuffix('.git')}.git"
+        return f"{cast(str, self.match_groups['repo']).removesuffix('.git')}.git"
 
     @property
     def repo_name(self) -> str:
@@ -42,7 +98,28 @@ class GitUrl(ValidatedStr):
 
     @property
     def ref(self) -> str | None:
-        return self.get_match_groups()[-1]
+        """The ref this URL pins, or None if it names no ref.
+
+        Fully qualified refs are reported by their short name, so that ``#refs/tags/v1.0.0``
+        and ``@v1.0.0`` both yield ``v1.0.0`` -- the form git's ``--branch`` accepts.
+        """
+        groups = self.match_groups
+        for group_name in self.REF_GROUP_KINDS:
+            if (value := groups[group_name]) is not None:
+                return value
+        return None
+
+    @property
+    def ref_kind(self) -> GitRefKind | None:
+        """The kind of ref this URL pins, or None if it names no ref.
+
+        Ambiguous refs are reported as ``"branch"``. See the class docstring for why.
+        """
+        groups = self.match_groups
+        for group_name, ref_kind in self.REF_GROUP_KINDS.items():
+            if groups[group_name] is not None:
+                return ref_kind
+        return None
 
 
 def is_repo_url(url: str) -> bool:
@@ -117,26 +194,36 @@ def get_commit_hash_from_url(repo_url: str) -> str:
         repo_url (str): The repository URL.
 
     Returns:
-        The commit hash of the HEAD or specified branch.
+        The commit hash of the HEAD or specified ref.
 
     Raises:
+        ValueError: If the ref does not resolve to any commit on the remote.
         subprocess.CalledProcessError: If git ls-remote fails.
     """
+    url = GitUrl(repo_url)
+    ref = url.ref
+    if ref is not None and url.ref_kind == "commit":
+        # A commit SHA is already the commit hash. `git ls-remote --branch` matches refs
+        # only, so it would exit 0 with no output and leave us with an empty hash.
+        return ref
+    ref = ref or "HEAD"
     try:
-        url = GitUrl(repo_url)
-        branch = url.ref or "HEAD"
         # Use git ls-remote to get the commit hashes of remote heads
         output = (
-            subprocess.check_output(["git", "ls-remote", url.repo_base_url, "--branch", branch])
+            subprocess.check_output(["git", "ls-remote", url.repo_base_url, "--branch", ref])
             .decode("utf-8")
             .strip()
         )
-        # The first part of the output is the commit hash of the HEAD reference
-        commit_hash = output.split("\t")[0]
-        return commit_hash
     except subprocess.CalledProcessError as e:
         logger.error(f"An error occurred: {e}")
         raise e
+    if not output:
+        raise ValueError(
+            f"Could not resolve ref '{ref}' to a commit hash on {url.repo_base_url}. "
+            "The ref does not exist on the remote."
+        )
+    # The first part of the output is the commit hash of the matched reference
+    return output.split("\t")[0]
 
 
 def get_commit_hash_from_local(repo_path: str | Path) -> str:
@@ -254,6 +341,9 @@ def clone_repo(
 
     Returns:
         Path to the cloned repository.
+
+    Raises:
+        subprocess.CalledProcessError: If any of the git commands fail.
     """
     target_path = construct_repo_path(repo_url, target_dir)
 
@@ -278,13 +368,25 @@ def clone_repo(
                 return target_path
         # If the target path exists but the commit hashes do not match, remove the existing path
         remove_path(target_path)
+    git_url = GitUrl(repo_url)
+    ref, ref_kind = git_url.ref, git_url.ref_kind
     try:
         # Clone the repository into the target directory
-        base_url, branch = get_repo_url_components(repo_url)
-        cmd: list[str] = ["git", "clone", base_url, target_path.as_posix(), "--single-branch"]
-        if branch:
-            cmd.extend(["--branch", branch])
+        cmd: list[str] = [
+            "git",
+            "clone",
+            git_url.repo_base_url,
+            target_path.as_posix(),
+            "--single-branch",
+        ]
+        # `--branch` accepts branch and tag names only, so a commit is fetched and checked
+        # out after the fact instead.
+        if ref and ref_kind != "commit":
+            cmd.extend(["--branch", ref])
         subprocess.check_call(cmd)
+        if ref and ref_kind == "commit":
+            subprocess.check_call(["git", "fetch", "origin", ref], cwd=target_path)
+            subprocess.check_call(["git", "checkout", ref], cwd=target_path)
         return target_path
     except subprocess.CalledProcessError as e:
         logger.error(f"An error occurred while trying to clone the repo: {e}")

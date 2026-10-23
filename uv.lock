@@ -24,6 +24,7 @@ dependencies = [
     { name = "aibs-informatics-core" },
     { name = "aws-cdk-lib" },
     { name = "constructs" },
+    { name = "pydantic" },
 ]
 
 [package.dev-dependencies]
@@ -70,6 +71,7 @@ requires-dist = [
     { name = "aibs-informatics-core", specifier = ">=1.0.1,<2" },
     { name = "aws-cdk-lib", specifier = "~=2.96" },
     { name = "constructs", specifier = "~=10.0" },
+    { name = "pydantic", specifier = "~=2.0" },
 ]
 
 [package.metadata.requires-dev]
