@@ -27,11 +27,23 @@ dependencies = [
     "pydantic~=2.0",
 ]
 
+# Optional extras. Keep these OUT of `dependencies` -- `gcs`, `ocs`, and `ocs-deploy` all
+# pin `cdk-ecr-deployment~=3.1.13` while upstream supports only v4, so a hard dependency on
+# either major makes those repos unresolvable the moment they bump. Mirroring is opt-in per
+# Docker Asset, so its dependency is opt-in too, imported lazily where it is used.
+[project.optional-dependencies]
+ecr-mirror = [
+    "cdk-ecr-deployment>=3.1,<5",
+]
+
 # For dev dependencies: https://peps.python.org/pep-0735/
 # See also: https://docs.astral.sh/uv/concepts/projects/dependencies/#dependency-groups
 [dependency-groups]
 dev = [
     "aibs-informatics-test-resources[all]~=0.0.4",
+    # Not a runtime dependency (see `[project.optional-dependencies]`), but installed for
+    # tests so CI exercises the ECR mirroring path instead of skipping it.
+    "cdk-ecr-deployment>=3.1,<5",
 ]
 lint = [
     "boto3-stubs[s3,batch]",
