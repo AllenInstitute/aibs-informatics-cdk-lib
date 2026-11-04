@@ -379,11 +379,9 @@ apt:
 
 packages:
 - jq
-- btrfs-progs
 - sed
 - git
 - {python_version}
-- {python_version}-venv
 - amazon-efs-utils
 - amazon-ssm-agent
 - unzip
@@ -398,7 +396,8 @@ write_files:
 runcmd:
 - systemctl start amazon-ssm-agent
 
-# Start aws cloudwatch agent
+# Start aws cloudwatch agent (install first if the packages module did not)
+- test -x /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl || (dnf install -y amazon-cloudwatch-agent || yum install -y amazon-cloudwatch-agent)
 - /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/config.json
 
 # enable ecs spot instance draining
@@ -410,8 +409,8 @@ runcmd:
 # Enable ECS Metadata file
 - echo ECS_ENABLE_CONTAINER_METADATA=true >> /etc/ecs/ecs.config
 
-# Install lustre
-- amazon-linux-extras install lustre -y
+# Install lustre (amazon-linux-extras only exists on AL2)
+- (command -v amazon-linux-extras >/dev/null 2>&1 && amazon-linux-extras install lustre -y) || dnf install -y lustre-client || yum install -y lustre-client || echo "Unable to install lustre client"
 
 --==BOUNDARY==--"""
 
@@ -432,11 +431,9 @@ apt:
 
 packages:
 - jq
-- btrfs-progs
 - sed
 - git
 - {python_version}
-- {python_version}-venv
 - amazon-efs-utils
 - amazon-ssm-agent
 - unzip
@@ -451,7 +448,8 @@ write_files:
 runcmd:
 - systemctl start amazon-ssm-agent
 
-# Start aws cloudwatch agent
+# Start aws cloudwatch agent (install first if the packages module did not)
+- test -x /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl || (dnf install -y amazon-cloudwatch-agent || yum install -y amazon-cloudwatch-agent)
 - /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/config.json
 
 # install aws-cli v2 and copy the static binary in an easy to find location for bind-mounts into containers
@@ -462,6 +460,7 @@ runcmd:
 - command -v aws || echo "Unable to install AWS CLI v2"
 
 ## Enable EBS Autoscale
+- dnf install -y btrfs-progs || yum install -y btrfs-progs || echo "btrfs-progs unavailable; ebs-autoscale btrfs setup may fail"
 - EBS_AUTOSCALE_VERSION=$(curl --silent "https://api.github.com/repos/awslabs/amazon-ebs-autoscale/releases/latest" | jq -r .tag_name)
 - cd /opt && git clone https://github.com/awslabs/amazon-ebs-autoscale.git
 - cd /opt/amazon-ebs-autoscale && git checkout $EBS_AUTOSCALE_VERSION
