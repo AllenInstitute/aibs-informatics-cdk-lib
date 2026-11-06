@@ -6,6 +6,24 @@ from test.aibs_informatics_cdk_lib.base import CdkBaseTest
 
 
 class TestBucket(CdkBaseTest):
+    def test__access_control__defaults_to_private(self):
+        stack = self.get_dummy_stack("test")
+
+        EnvBaseBucket(stack, "bucket", self.env_base, bucket_name="my-bucket")
+
+        template = self.get_template(stack)
+
+        template.has_resource_properties("AWS::S3::Bucket", {"AccessControl": "Private"})
+
+    def test__access_control__none_omits_property(self):
+        stack = self.get_dummy_stack("test")
+
+        EnvBaseBucket(stack, "bucket", self.env_base, bucket_name="my-bucket", access_control=None)
+
+        template = self.get_template(stack)
+
+        template.has_resource_properties("AWS::S3::Bucket", {"AccessControl": Match.absent()})
+
     def test__grant_permissions__with_key_pattern(self):
         stack = self.get_dummy_stack("test")
 
