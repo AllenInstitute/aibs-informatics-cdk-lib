@@ -13,13 +13,11 @@ from aibs_informatics_core.env import EnvBase
 from aibs_informatics_core.utils.decorators import cached_property
 from aibs_informatics_core.utils.hashing import sha256_hexdigest
 from aibs_informatics_core.utils.tools.dicttools import remove_null_values
-from aws_cdk import ArnFormat, Stack
 from aws_cdk import aws_batch as batch
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_efs as efs
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_s3 as s3
-from aws_cdk import custom_resources as cr
 
 from aibs_informatics_cdk_lib.common.aws.iam_utils import (
     BATCH_READ_ONLY_ACTIONS,
@@ -335,10 +333,9 @@ class BatchEnvironmentConfig:
         minv_cpus (Optional[int]): Minimum vCPUs for the environment.
             Defaults to 0.
         container_insights (Optional[Literal["enabled", "enhanced", "disabled"]]): ECS
-            Container Insights setting to apply to the ECS cluster that AWS Batch creates for
-            the compute environment. Defaults to None, which leaves the cluster setting (and the
-            account default) untouched. Batch owns the cluster and CloudFormation does not expose
-            its settings, so a pair of custom resources applies the setting at deploy time.
+            Container Insights setting for the compute environment. Applied natively through
+            the CloudFormation ``EcsSettings.ContainerInsights`` property. Defaults to None,
+            which leaves the setting (and the account default) untouched.
     """
 
     allocation_strategy: batch.AllocationStrategy | None
@@ -587,81 +584,22 @@ class BatchEnvironment(EnvBaseConstruct):
         compute_environment: batch.IComputeEnvironment,
         value: Literal["enabled", "enhanced", "disabled"],
     ) -> None:
-        """Set ECS Container Insights on the ECS cluster AWS Batch created for a compute
-        environment.
+        """Set ECS Container Insights on a compute environment.
 
-        Batch owns these clusters and neither CloudFormation nor CDK exposes their settings, so
-        two chained custom resources are used:
-
-            1. ``batch:DescribeComputeEnvironments`` to look up the cluster ARN
-            2. ``ecs:UpdateClusterSettings`` to set ``containerInsights``
-
-        Both are keyed on the compute environment ARN, so if the compute environment is replaced
-        (and Batch creates a new cluster) the setting is applied to the new cluster as well.
-        The setting is not reverted when the custom resources are deleted.
+        Applied natively through the CloudFormation ``EcsSettings.ContainerInsights`` property.
 
         Args:
             compute_environment (batch.IComputeEnvironment): The compute environment.
             value (Literal["enabled", "enhanced", "disabled"]): Container Insights setting.
         """
-        name = self.descriptor.get_name()
-        ce_arn = compute_environment.compute_environment_arn
-
-        describe_call = cr.AwsSdkCall(
-            service="Batch",
-            action="describeComputeEnvironments",
-            parameters={"computeEnvironments": [ce_arn]},
-            physical_resource_id=cr.PhysicalResourceId.of(f"{name}-describe-{ce_arn}"),
-            output_paths=["computeEnvironments.0.ecsClusterArn"],
-        )
-        describe = cr.AwsCustomResource(
-            self,
-            f"{name}-describe-ce",
-            on_create=describe_call,
-            on_update=describe_call,
-            policy=cr.AwsCustomResourcePolicy.from_statements(
-                [
-                    # DescribeComputeEnvironments does not support resource-level permissions
-                    iam.PolicyStatement(
-                        actions=["batch:DescribeComputeEnvironments"], resources=["*"]
-                    )
-                ]
-            ),
-            install_latest_aws_sdk=False,
-        )
-        describe.node.add_dependency(compute_environment)
-
-        update_call = cr.AwsSdkCall(
-            service="ECS",
-            action="updateClusterSettings",
-            parameters={
-                "cluster": describe.get_response_field("computeEnvironments.0.ecsClusterArn"),
-                "settings": [{"name": "containerInsights", "value": value}],
-            },
-            physical_resource_id=cr.PhysicalResourceId.of(f"{name}-settings-{ce_arn}-{value}"),
-        )
-        cr.AwsCustomResource(
-            self,
-            f"{name}-set-container-insights",
-            on_create=update_call,
-            on_update=update_call,
-            policy=cr.AwsCustomResourcePolicy.from_statements(
-                [
-                    iam.PolicyStatement(
-                        actions=["ecs:UpdateClusterSettings"],
-                        # Batch names the clusters it creates AWSBatch-<compute environment>-<id>
-                        resources=[
-                            Stack.of(self).format_arn(
-                                service="ecs",
-                                resource="cluster",
-                                resource_name="AWSBatch-*",
-                                arn_format=ArnFormat.SLASH_RESOURCE_NAME,
-                            )
-                        ],
-                    )
-                ]
-            ),
-            install_latest_aws_sdk=False,
+        cfn = compute_environment.node.default_child
+        if not isinstance(cfn, batch.CfnComputeEnvironment):
+            raise ValueError(
+                "Expected default child of compute environment to be a CfnComputeEnvironment, "
+                f"got {type(cfn)}"
+            )
+        cfn.ecs_settings = batch.CfnComputeEnvironment.EcsSettingsProperty(
+            container_insights=value.upper()
         )
 
     def grant_file_system_access(self, *file_systems: efs.IFileSystem) -> None:

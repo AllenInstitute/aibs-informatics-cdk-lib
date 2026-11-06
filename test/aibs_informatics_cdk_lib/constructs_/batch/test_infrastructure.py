@@ -1,4 +1,3 @@
-import json
 from enum import Enum
 
 from aibs_informatics_core.env import EnvBase
@@ -76,26 +75,32 @@ class BatchTests(CdkBaseTest):
         template = self._setup_environment()
 
         template.resource_count_is("Custom::AWS", 0)
+        for resource in template.find_resources("AWS::Batch::ComputeEnvironment").values():
+            assert "EcsSettings" not in resource["Properties"]
 
-    def test__container_insights__creates_describe_and_update_resources(self):
-        template = self._setup_environment(container_insights="enhanced")
+    def _assert_ecs_settings(self, value: str) -> None:
+        template = self._setup_environment(container_insights=value)
 
-        template.resource_count_is("Custom::AWS", 2)
-        create_calls = [
-            json.dumps(resource["Properties"]["Create"])
-            for resource in template.find_resources("Custom::AWS").values()
-        ]
-        assert any("describeComputeEnvironments" in call for call in create_calls)
-        assert any("ecsClusterArn" in call for call in create_calls)
-        assert any(
-            "updateClusterSettings" in call and "containerInsights" in call and "enhanced" in call
-            for call in create_calls
+        template.has_resource_properties(
+            "AWS::Batch::ComputeEnvironment",
+            {"EcsSettings": {"ContainerInsights": value.upper()}},
         )
+        template.resource_count_is("Custom::AWS", 0)
 
-    def test__container_insights__iam_is_scoped_to_batch_clusters(self):
-        template = self._setup_environment(container_insights="enabled")
+    def test__container_insights__enabled(self):
+        self._assert_ecs_settings("enabled")
 
-        policies = json.dumps(template.find_resources("AWS::IAM::Policy"))
-        assert "batch:DescribeComputeEnvironments" in policies
-        assert "ecs:UpdateClusterSettings" in policies
-        assert "cluster/AWSBatch-*" in policies
+    def test__container_insights__enhanced(self):
+        self._assert_ecs_settings("enhanced")
+
+    def test__container_insights__disabled(self):
+        self._assert_ecs_settings("disabled")
+
+    def test__container_insights__fargate(self):
+        template = self._setup_environment(use_fargate=True, container_insights="enhanced")
+
+        template.has_resource_properties(
+            "AWS::Batch::ComputeEnvironment",
+            {"EcsSettings": {"ContainerInsights": "ENHANCED"}},
+        )
+        template.resource_count_is("Custom::AWS", 0)
