@@ -22,7 +22,7 @@ dependencies = [
     "aibs-informatics-aws-utils~=1.0",
     "aibs-informatics-core>=1.0.1,<2",
     # AWS CDK dependencies
-    "aws-cdk-lib~=2.96",
+    "aws-cdk-lib~=2.275",
     "constructs~=10.0",
 ]
 
