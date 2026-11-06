@@ -44,7 +44,6 @@ class LambdaFunctionMetricConfigGenerator:
         alarm_datapoints_to_alarm: int = 1,
     ) -> GraphMetricConfig:
         name = name_override or self.lambda_function_name
-        idx = discriminator or "0"
         config = GraphMetricConfig(
             metric="Errors",
             statistic="Sum",
@@ -52,8 +51,10 @@ class LambdaFunctionMetricConfigGenerator:
             dimension_map=self.dimension_map,
         )
         if include_alarm:
+            # The alarm name feeds the alarm's construct id, so it must not depend on
+            # the function's position within a group.
             config["alarm"] = AlarmMetricConfig(
-                name=f"{name} Errors Alarm {idx}",
+                name=f"{name}-errors-{discriminator}" if discriminator else f"{name}-errors",
                 threshold=alarm_threshold,
                 evaluation_periods=alarm_evaluation_periods,
                 datapoints_to_alarm=alarm_datapoints_to_alarm,

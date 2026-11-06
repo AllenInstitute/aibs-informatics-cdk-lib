@@ -1,6 +1,5 @@
 from aibs_informatics_core.env import EnvBase, ResourceNameBaseEnum
 from aibs_informatics_core.models.email_address import EmailAddress
-from aibs_informatics_core.utils.hashing import uuid_str
 from aws_cdk import Duration
 from aws_cdk import aws_cloudwatch as cw
 from aws_cdk import aws_lambda as lambda_
@@ -121,7 +120,6 @@ class MonitoringConstruct(EnvBaseConstruct):
         grouped_invocation_metrics: list[GraphMetricConfig] = []
         grouped_error_metrics: list[GraphMetricConfig] = []
         grouped_timing_metrics: list[GraphMetricConfig] = []
-        group_name = uuid_str(str(function_names))
 
         for idx, raw_function_name in enumerate(function_names):
             if prefix_name_with_env:
@@ -138,9 +136,7 @@ class MonitoringConstruct(EnvBaseConstruct):
 
             grouped_invocation_metrics.append(fn_config_generator.get_invocations_metric())
             grouped_error_metrics.append(
-                fn_config_generator.get_errors_metric(
-                    discriminator=str(idx), include_alarm=include_alarm
-                )
+                fn_config_generator.get_errors_metric(include_alarm=include_alarm)
             )
 
             # Availability metric - make sure to set the axis_side to "right"
@@ -172,7 +168,8 @@ class MonitoringConstruct(EnvBaseConstruct):
             grouped_metric_configs=grouped_metrics,
             namespace="AWS/Lambda",
             period=Duration.minutes(5),
-            alarm_id_discriminator=group_name,
+            # Stable across calls, so adding a function to a group leaves the others' alarms alone.
+            alarm_id_discriminator=self.monitoring_name,
             alarm_topic=self.alarm_topic if self.notify_on_alarms else None,
             dimensions={},
         )
@@ -212,7 +209,6 @@ class MonitoringConstruct(EnvBaseConstruct):
         grouped_invocation_metrics: list[GraphMetricConfig] = []
         grouped_error_metrics: list[GraphMetricConfig] = []
         grouped_timing_metrics: list[GraphMetricConfig] = []
-        group_name = uuid_str(str(state_machine_names))
         for idx, raw_state_machine_name in enumerate(state_machine_names):
             state_machine_name = self.get_state_machine_name(
                 raw_state_machine_name, prefix_name_with_env=prefix_name_with_env
@@ -259,7 +255,7 @@ class MonitoringConstruct(EnvBaseConstruct):
             grouped_metric_configs=grouped_metrics,
             namespace="AWS/States",
             period=Duration.minutes(5),
-            alarm_id_discriminator=group_name,
+            alarm_id_discriminator=self.monitoring_name,
             alarm_topic=self.alarm_topic if self.notify_on_alarms else None,
             dimensions={},
         )
