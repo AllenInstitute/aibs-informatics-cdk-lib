@@ -26,6 +26,9 @@ class EnvBaseBucket(s3.Bucket, EnvBaseConstructMixins):
         bucket_key_enabled: bool = False,
         block_public_access: s3.BlockPublicAccess | None = s3.BlockPublicAccess.BLOCK_ALL,
         public_read_access: bool = False,
+        # None leaves the ACL unset. S3 now disables ACLs on new buckets by default and rejects
+        # an explicit one, so pass None for those.
+        access_control: s3.BucketAccessControl | None = s3.BucketAccessControl.PRIVATE,
         **kwargs,
     ):
         self.env_base = env_base
@@ -37,7 +40,7 @@ class EnvBaseBucket(s3.Bucket, EnvBaseConstructMixins):
         super().__init__(
             scope,
             id,
-            access_control=s3.BucketAccessControl.PRIVATE,
+            access_control=access_control,
             auto_delete_objects=auto_delete_objects,
             block_public_access=block_public_access,
             bucket_key_enabled=bucket_key_enabled,
