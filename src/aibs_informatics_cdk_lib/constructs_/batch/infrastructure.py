@@ -332,6 +332,11 @@ class BatchEnvironmentConfig:
             Defaults to 10240.
         minv_cpus (Optional[int]): Minimum vCPUs for the environment.
             Defaults to 0.
+        container_insights (Optional[Literal["ENABLED", "ENHANCED", "DISABLED"]]): ECS
+            Container Insights setting for the compute environment. Applied natively through
+            the CloudFormation ``EcsSettings.ContainerInsights`` property, which takes these
+            values. Defaults to None, which leaves the setting (and the account default)
+            untouched.
     """
 
     allocation_strategy: batch.AllocationStrategy | None
@@ -341,6 +346,7 @@ class BatchEnvironmentConfig:
     use_fargate: bool = False
     maxv_cpus: int | None = DEFAULT_MAXV_CPUS
     minv_cpus: int | None = DEFAULT_MINV_CPUS
+    container_insights: Literal["ENABLED", "ENHANCED", "DISABLED"] | None = None
 
     def __post_init__(self):
         self.maxv_cpus = min(DEFAULT_MAXV_CPUS, max(1, self.maxv_cpus or DEFAULT_MAXV_CPUS))
@@ -408,8 +414,11 @@ class BatchEnvironment(EnvBaseConstruct):
         self.launch_template_builder = launch_template_builder
 
         # Set up max number of compute environments
+        compute_environment = self.create_compute_environment()
+        if self.config.container_insights:
+            self.set_container_insights(compute_environment, self.config.container_insights)
         compute_env = batch.OrderedComputeEnvironment(
-            compute_environment=self.create_compute_environment(), order=1
+            compute_environment=compute_environment, order=1
         )
         self.compute_environments = [compute_env]
         job_queue = batch.JobQueue(
@@ -570,6 +579,29 @@ class BatchEnvironment(EnvBaseConstruct):
             for tag_key, tag_value in tags.items():
                 ce.tags.set_tag(key=tag_key, value=tag_value)
         return ce
+
+    def set_container_insights(
+        self,
+        compute_environment: batch.IComputeEnvironment,
+        value: Literal["ENABLED", "ENHANCED", "DISABLED"],
+    ) -> None:
+        """Set ECS Container Insights on a compute environment.
+
+        Applied natively through the CloudFormation ``EcsSettings.ContainerInsights`` property.
+
+        Args:
+            compute_environment (batch.IComputeEnvironment): The compute environment.
+            value (Literal["ENABLED", "ENHANCED", "DISABLED"]): Container Insights setting.
+        """
+        cfn = compute_environment.node.default_child
+        if not isinstance(cfn, batch.CfnComputeEnvironment):
+            raise ValueError(
+                "Expected default child of compute environment to be a CfnComputeEnvironment, "
+                f"got {type(cfn)}"
+            )
+        cfn.ecs_settings = batch.CfnComputeEnvironment.EcsSettingsProperty(
+            container_insights=value
+        )
 
     def grant_file_system_access(self, *file_systems: efs.IFileSystem) -> None:
         """Grant compute environments access to EFS file systems.
