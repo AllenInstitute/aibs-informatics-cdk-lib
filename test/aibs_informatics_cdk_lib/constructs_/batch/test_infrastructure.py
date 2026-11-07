@@ -83,21 +83,21 @@ class BatchTests(CdkBaseTest):
 
         template.has_resource_properties(
             "AWS::Batch::ComputeEnvironment",
-            {"EcsSettings": {"ContainerInsights": value.upper()}},
+            {"EcsSettings": {"ContainerInsights": value}},
         )
         template.resource_count_is("Custom::AWS", 0)
 
     def test__container_insights__enabled(self):
-        self._assert_ecs_settings("enabled")
+        self._assert_ecs_settings("ENABLED")
 
     def test__container_insights__enhanced(self):
-        self._assert_ecs_settings("enhanced")
+        self._assert_ecs_settings("ENHANCED")
 
     def test__container_insights__disabled(self):
-        self._assert_ecs_settings("disabled")
+        self._assert_ecs_settings("DISABLED")
 
     def test__container_insights__fargate(self):
-        template = self._setup_environment(use_fargate=True, container_insights="enhanced")
+        template = self._setup_environment(use_fargate=True, container_insights="ENHANCED")
 
         template.has_resource_properties(
             "AWS::Batch::ComputeEnvironment",

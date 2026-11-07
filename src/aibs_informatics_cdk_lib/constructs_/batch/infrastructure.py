@@ -332,10 +332,11 @@ class BatchEnvironmentConfig:
             Defaults to 10240.
         minv_cpus (Optional[int]): Minimum vCPUs for the environment.
             Defaults to 0.
-        container_insights (Optional[Literal["enabled", "enhanced", "disabled"]]): ECS
+        container_insights (Optional[Literal["ENABLED", "ENHANCED", "DISABLED"]]): ECS
             Container Insights setting for the compute environment. Applied natively through
-            the CloudFormation ``EcsSettings.ContainerInsights`` property. Defaults to None,
-            which leaves the setting (and the account default) untouched.
+            the CloudFormation ``EcsSettings.ContainerInsights`` property, which takes these
+            values. Defaults to None, which leaves the setting (and the account default)
+            untouched.
     """
 
     allocation_strategy: batch.AllocationStrategy | None
@@ -345,7 +346,7 @@ class BatchEnvironmentConfig:
     use_fargate: bool = False
     maxv_cpus: int | None = DEFAULT_MAXV_CPUS
     minv_cpus: int | None = DEFAULT_MINV_CPUS
-    container_insights: Literal["enabled", "enhanced", "disabled"] | None = None
+    container_insights: Literal["ENABLED", "ENHANCED", "DISABLED"] | None = None
 
     def __post_init__(self):
         self.maxv_cpus = min(DEFAULT_MAXV_CPUS, max(1, self.maxv_cpus or DEFAULT_MAXV_CPUS))
@@ -582,7 +583,7 @@ class BatchEnvironment(EnvBaseConstruct):
     def set_container_insights(
         self,
         compute_environment: batch.IComputeEnvironment,
-        value: Literal["enabled", "enhanced", "disabled"],
+        value: Literal["ENABLED", "ENHANCED", "DISABLED"],
     ) -> None:
         """Set ECS Container Insights on a compute environment.
 
@@ -590,7 +591,7 @@ class BatchEnvironment(EnvBaseConstruct):
 
         Args:
             compute_environment (batch.IComputeEnvironment): The compute environment.
-            value (Literal["enabled", "enhanced", "disabled"]): Container Insights setting.
+            value (Literal["ENABLED", "ENHANCED", "DISABLED"]): Container Insights setting.
         """
         cfn = compute_environment.node.default_child
         if not isinstance(cfn, batch.CfnComputeEnvironment):
@@ -599,7 +600,7 @@ class BatchEnvironment(EnvBaseConstruct):
                 f"got {type(cfn)}"
             )
         cfn.ecs_settings = batch.CfnComputeEnvironment.EcsSettingsProperty(
-            container_insights=value.upper()
+            container_insights=value
         )
 
     def grant_file_system_access(self, *file_systems: efs.IFileSystem) -> None:
