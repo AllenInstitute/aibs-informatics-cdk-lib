@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://AllenInstitute.github.io/aibs-informatics-cdk-lib/1.3/api/constructs/batch/">
+        <link rel="canonical" href="https://AllenInstitute.github.io/aibs-informatics-cdk-lib/1.4/api/constructs/batch/">
       
       
         <link rel="prev" href="../assets/">
@@ -3580,7 +3580,11 @@ builder for creating a launch template.</p>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">use_fargate</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">maxv_cpus</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n"><span title="aibs_informatics_cdk_lib.constructs_.batch.infrastructure.DEFAULT_MAXV_CPUS">DEFAULT_MAXV_CPUS</span></span><span class="p">,</span>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">minv_cpus</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n"><span title="aibs_informatics_cdk_lib.constructs_.batch.infrastructure.DEFAULT_MINV_CPUS">DEFAULT_MINV_CPUS</span></span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">)</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">container_insights</span><span class="p">:</span> <span class="n"><span title="typing.Literal">Literal</span></span><span class="p">[</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="s2">&quot;ENABLED&quot;</span><span class="p">,</span> <span class="s2">&quot;ENHANCED&quot;</span><span class="p">,</span> <span class="s2">&quot;DISABLED&quot;</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="p">]</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3678,6 +3682,21 @@ Defaults to 10240.</p>
               <div class="doc-md-description">
                 <p>Minimum vCPUs for the environment.
 Defaults to 0.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="aibs_informatics_cdk_lib.constructs_.batch.infrastructure.BatchEnvironmentConfig.container_insights">container_insights</span></code></td>
+            <td>
+                  <code><span title="Optional">Optional</span>[<span title="typing.Literal">Literal</span>[&#39;ENABLED&#39;, &#39;ENHANCED&#39;, &#39;DISABLED&#39;]]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>ECS
+Container Insights setting for the compute environment. Applied natively through
+the CloudFormation <code>EcsSettings.ContainerInsights</code> property, which takes these
+values. Defaults to None, which leaves the setting (and the account default)
+untouched.</p>
               </div>
             </td>
           </tr>
@@ -3974,13 +3993,7 @@ configurations and launch templates.</p>
 
                   <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/aibs_informatics_cdk_lib/constructs_/batch/infrastructure.py</code></summary>
-                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-376">376</a></span>
-<span class="normal"><a href="#__codelineno-0-377">377</a></span>
-<span class="normal"><a href="#__codelineno-0-378">378</a></span>
-<span class="normal"><a href="#__codelineno-0-379">379</a></span>
-<span class="normal"><a href="#__codelineno-0-380">380</a></span>
-<span class="normal"><a href="#__codelineno-0-381">381</a></span>
-<span class="normal"><a href="#__codelineno-0-382">382</a></span>
+                    <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-382">382</a></span>
 <span class="normal"><a href="#__codelineno-0-383">383</a></span>
 <span class="normal"><a href="#__codelineno-0-384">384</a></span>
 <span class="normal"><a href="#__codelineno-0-385">385</a></span>
@@ -4019,52 +4032,64 @@ configurations and launch templates.</p>
 <span class="normal"><a href="#__codelineno-0-418">418</a></span>
 <span class="normal"><a href="#__codelineno-0-419">419</a></span>
 <span class="normal"><a href="#__codelineno-0-420">420</a></span>
-<span class="normal"><a href="#__codelineno-0-421">421</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-376" name="__codelineno-0-376"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-<a id="__codelineno-0-377" name="__codelineno-0-377"></a>    <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-378" name="__codelineno-0-378"></a>    <span class="n">scope</span><span class="p">:</span> <span class="n">constructs</span><span class="o">.</span><span class="n">Construct</span><span class="p">,</span>
-<a id="__codelineno-0-379" name="__codelineno-0-379"></a>    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<a id="__codelineno-0-380" name="__codelineno-0-380"></a>    <span class="n">env_base</span><span class="p">:</span> <span class="n">EnvBase</span><span class="p">,</span>
-<a id="__codelineno-0-381" name="__codelineno-0-381"></a>    <span class="n">descriptor</span><span class="p">:</span> <span class="n">IBatchEnvironmentDescriptor</span><span class="p">,</span>
-<a id="__codelineno-0-382" name="__codelineno-0-382"></a>    <span class="n">config</span><span class="p">:</span> <span class="n">BatchEnvironmentConfig</span><span class="p">,</span>
-<a id="__codelineno-0-383" name="__codelineno-0-383"></a>    <span class="n">vpc</span><span class="p">:</span> <span class="n">ec2</span><span class="o">.</span><span class="n">IVpc</span><span class="p">,</span>
-<a id="__codelineno-0-384" name="__codelineno-0-384"></a>    <span class="n">instance_role</span><span class="p">:</span> <span class="n">iam</span><span class="o">.</span><span class="n">IRole</span><span class="p">,</span>
-<a id="__codelineno-0-385" name="__codelineno-0-385"></a>    <span class="n">security_group</span><span class="p">:</span> <span class="n">ec2</span><span class="o">.</span><span class="n">SecurityGroup</span><span class="p">,</span>
-<a id="__codelineno-0-386" name="__codelineno-0-386"></a>    <span class="n">launch_template_builder</span><span class="p">:</span> <span class="n">IBatchLaunchTemplateBuilder</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-387" name="__codelineno-0-387"></a><span class="p">):</span>
-<a id="__codelineno-0-388" name="__codelineno-0-388"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize a BatchEnvironment construct.</span>
-<a id="__codelineno-0-389" name="__codelineno-0-389"></a>
-<a id="__codelineno-0-390" name="__codelineno-0-390"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-391" name="__codelineno-0-391"></a><span class="sd">        scope (constructs.Construct): The construct scope.</span>
-<a id="__codelineno-0-392" name="__codelineno-0-392"></a><span class="sd">        id (str): The construct ID.</span>
-<a id="__codelineno-0-393" name="__codelineno-0-393"></a><span class="sd">        env_base (EnvBase): Environment base for resource naming.</span>
-<a id="__codelineno-0-394" name="__codelineno-0-394"></a><span class="sd">        descriptor (IBatchEnvironmentDescriptor): Environment descriptor.</span>
-<a id="__codelineno-0-395" name="__codelineno-0-395"></a><span class="sd">        config (BatchEnvironmentConfig): Environment configuration.</span>
-<a id="__codelineno-0-396" name="__codelineno-0-396"></a><span class="sd">        vpc (ec2.IVpc): VPC for the environment.</span>
-<a id="__codelineno-0-397" name="__codelineno-0-397"></a><span class="sd">        instance_role (iam.IRole): IAM role for instances.</span>
-<a id="__codelineno-0-398" name="__codelineno-0-398"></a><span class="sd">        security_group (ec2.SecurityGroup): Security group for instances.</span>
-<a id="__codelineno-0-399" name="__codelineno-0-399"></a><span class="sd">        launch_template_builder (Optional[IBatchLaunchTemplateBuilder]):</span>
-<a id="__codelineno-0-400" name="__codelineno-0-400"></a><span class="sd">            Optional launch template builder.</span>
-<a id="__codelineno-0-401" name="__codelineno-0-401"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-402" name="__codelineno-0-402"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span> <span class="n">env_base</span><span class="p">)</span>
-<a id="__codelineno-0-403" name="__codelineno-0-403"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_descriptor</span> <span class="o">=</span> <span class="n">descriptor</span>
-<a id="__codelineno-0-404" name="__codelineno-0-404"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
-<a id="__codelineno-0-405" name="__codelineno-0-405"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">vpc</span> <span class="o">=</span> <span class="n">vpc</span>
-<a id="__codelineno-0-406" name="__codelineno-0-406"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">instance_role</span> <span class="o">=</span> <span class="n">instance_role</span>
-<a id="__codelineno-0-407" name="__codelineno-0-407"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">security_group</span> <span class="o">=</span> <span class="n">security_group</span>
-<a id="__codelineno-0-408" name="__codelineno-0-408"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">launch_template_builder</span> <span class="o">=</span> <span class="n">launch_template_builder</span>
-<a id="__codelineno-0-409" name="__codelineno-0-409"></a>
-<a id="__codelineno-0-410" name="__codelineno-0-410"></a>    <span class="c1"># Set up max number of compute environments</span>
-<a id="__codelineno-0-411" name="__codelineno-0-411"></a>    <span class="n">compute_env</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">OrderedComputeEnvironment</span><span class="p">(</span>
-<a id="__codelineno-0-412" name="__codelineno-0-412"></a>        <span class="n">compute_environment</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">create_compute_environment</span><span class="p">(),</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span>
-<a id="__codelineno-0-413" name="__codelineno-0-413"></a>    <span class="p">)</span>
-<a id="__codelineno-0-414" name="__codelineno-0-414"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">compute_environments</span> <span class="o">=</span> <span class="p">[</span><span class="n">compute_env</span><span class="p">]</span>
-<a id="__codelineno-0-415" name="__codelineno-0-415"></a>    <span class="n">job_queue</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">JobQueue</span><span class="p">(</span>
-<a id="__codelineno-0-416" name="__codelineno-0-416"></a>        <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-417" name="__codelineno-0-417"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">job_queue_name</span><span class="p">,</span>
-<a id="__codelineno-0-418" name="__codelineno-0-418"></a>        <span class="n">job_queue_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">job_queue_name</span><span class="p">,</span>
-<a id="__codelineno-0-419" name="__codelineno-0-419"></a>        <span class="n">compute_environments</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">compute_environments</span><span class="p">,</span>
-<a id="__codelineno-0-420" name="__codelineno-0-420"></a>    <span class="p">)</span>
-<a id="__codelineno-0-421" name="__codelineno-0-421"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">job_queue</span> <span class="o">=</span> <span class="n">job_queue</span>
+<span class="normal"><a href="#__codelineno-0-421">421</a></span>
+<span class="normal"><a href="#__codelineno-0-422">422</a></span>
+<span class="normal"><a href="#__codelineno-0-423">423</a></span>
+<span class="normal"><a href="#__codelineno-0-424">424</a></span>
+<span class="normal"><a href="#__codelineno-0-425">425</a></span>
+<span class="normal"><a href="#__codelineno-0-426">426</a></span>
+<span class="normal"><a href="#__codelineno-0-427">427</a></span>
+<span class="normal"><a href="#__codelineno-0-428">428</a></span>
+<span class="normal"><a href="#__codelineno-0-429">429</a></span>
+<span class="normal"><a href="#__codelineno-0-430">430</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-382" name="__codelineno-0-382"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+<a id="__codelineno-0-383" name="__codelineno-0-383"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-384" name="__codelineno-0-384"></a>    <span class="n">scope</span><span class="p">:</span> <span class="n">constructs</span><span class="o">.</span><span class="n">Construct</span><span class="p">,</span>
+<a id="__codelineno-0-385" name="__codelineno-0-385"></a>    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-0-386" name="__codelineno-0-386"></a>    <span class="n">env_base</span><span class="p">:</span> <span class="n">EnvBase</span><span class="p">,</span>
+<a id="__codelineno-0-387" name="__codelineno-0-387"></a>    <span class="n">descriptor</span><span class="p">:</span> <span class="n">IBatchEnvironmentDescriptor</span><span class="p">,</span>
+<a id="__codelineno-0-388" name="__codelineno-0-388"></a>    <span class="n">config</span><span class="p">:</span> <span class="n">BatchEnvironmentConfig</span><span class="p">,</span>
+<a id="__codelineno-0-389" name="__codelineno-0-389"></a>    <span class="n">vpc</span><span class="p">:</span> <span class="n">ec2</span><span class="o">.</span><span class="n">IVpc</span><span class="p">,</span>
+<a id="__codelineno-0-390" name="__codelineno-0-390"></a>    <span class="n">instance_role</span><span class="p">:</span> <span class="n">iam</span><span class="o">.</span><span class="n">IRole</span><span class="p">,</span>
+<a id="__codelineno-0-391" name="__codelineno-0-391"></a>    <span class="n">security_group</span><span class="p">:</span> <span class="n">ec2</span><span class="o">.</span><span class="n">SecurityGroup</span><span class="p">,</span>
+<a id="__codelineno-0-392" name="__codelineno-0-392"></a>    <span class="n">launch_template_builder</span><span class="p">:</span> <span class="n">IBatchLaunchTemplateBuilder</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-393" name="__codelineno-0-393"></a><span class="p">):</span>
+<a id="__codelineno-0-394" name="__codelineno-0-394"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize a BatchEnvironment construct.</span>
+<a id="__codelineno-0-395" name="__codelineno-0-395"></a>
+<a id="__codelineno-0-396" name="__codelineno-0-396"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-397" name="__codelineno-0-397"></a><span class="sd">        scope (constructs.Construct): The construct scope.</span>
+<a id="__codelineno-0-398" name="__codelineno-0-398"></a><span class="sd">        id (str): The construct ID.</span>
+<a id="__codelineno-0-399" name="__codelineno-0-399"></a><span class="sd">        env_base (EnvBase): Environment base for resource naming.</span>
+<a id="__codelineno-0-400" name="__codelineno-0-400"></a><span class="sd">        descriptor (IBatchEnvironmentDescriptor): Environment descriptor.</span>
+<a id="__codelineno-0-401" name="__codelineno-0-401"></a><span class="sd">        config (BatchEnvironmentConfig): Environment configuration.</span>
+<a id="__codelineno-0-402" name="__codelineno-0-402"></a><span class="sd">        vpc (ec2.IVpc): VPC for the environment.</span>
+<a id="__codelineno-0-403" name="__codelineno-0-403"></a><span class="sd">        instance_role (iam.IRole): IAM role for instances.</span>
+<a id="__codelineno-0-404" name="__codelineno-0-404"></a><span class="sd">        security_group (ec2.SecurityGroup): Security group for instances.</span>
+<a id="__codelineno-0-405" name="__codelineno-0-405"></a><span class="sd">        launch_template_builder (Optional[IBatchLaunchTemplateBuilder]):</span>
+<a id="__codelineno-0-406" name="__codelineno-0-406"></a><span class="sd">            Optional launch template builder.</span>
+<a id="__codelineno-0-407" name="__codelineno-0-407"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-408" name="__codelineno-0-408"></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span> <span class="n">env_base</span><span class="p">)</span>
+<a id="__codelineno-0-409" name="__codelineno-0-409"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_descriptor</span> <span class="o">=</span> <span class="n">descriptor</span>
+<a id="__codelineno-0-410" name="__codelineno-0-410"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+<a id="__codelineno-0-411" name="__codelineno-0-411"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">vpc</span> <span class="o">=</span> <span class="n">vpc</span>
+<a id="__codelineno-0-412" name="__codelineno-0-412"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">instance_role</span> <span class="o">=</span> <span class="n">instance_role</span>
+<a id="__codelineno-0-413" name="__codelineno-0-413"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">security_group</span> <span class="o">=</span> <span class="n">security_group</span>
+<a id="__codelineno-0-414" name="__codelineno-0-414"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">launch_template_builder</span> <span class="o">=</span> <span class="n">launch_template_builder</span>
+<a id="__codelineno-0-415" name="__codelineno-0-415"></a>
+<a id="__codelineno-0-416" name="__codelineno-0-416"></a>    <span class="c1"># Set up max number of compute environments</span>
+<a id="__codelineno-0-417" name="__codelineno-0-417"></a>    <span class="n">compute_environment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_compute_environment</span><span class="p">()</span>
+<a id="__codelineno-0-418" name="__codelineno-0-418"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">container_insights</span><span class="p">:</span>
+<a id="__codelineno-0-419" name="__codelineno-0-419"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">set_container_insights</span><span class="p">(</span><span class="n">compute_environment</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">container_insights</span><span class="p">)</span>
+<a id="__codelineno-0-420" name="__codelineno-0-420"></a>    <span class="n">compute_env</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">OrderedComputeEnvironment</span><span class="p">(</span>
+<a id="__codelineno-0-421" name="__codelineno-0-421"></a>        <span class="n">compute_environment</span><span class="o">=</span><span class="n">compute_environment</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span>
+<a id="__codelineno-0-422" name="__codelineno-0-422"></a>    <span class="p">)</span>
+<a id="__codelineno-0-423" name="__codelineno-0-423"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">compute_environments</span> <span class="o">=</span> <span class="p">[</span><span class="n">compute_env</span><span class="p">]</span>
+<a id="__codelineno-0-424" name="__codelineno-0-424"></a>    <span class="n">job_queue</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">JobQueue</span><span class="p">(</span>
+<a id="__codelineno-0-425" name="__codelineno-0-425"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-426" name="__codelineno-0-426"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">job_queue_name</span><span class="p">,</span>
+<a id="__codelineno-0-427" name="__codelineno-0-427"></a>        <span class="n">job_queue_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">job_queue_name</span><span class="p">,</span>
+<a id="__codelineno-0-428" name="__codelineno-0-428"></a>        <span class="n">compute_environments</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">compute_environments</span><span class="p">,</span>
+<a id="__codelineno-0-429" name="__codelineno-0-429"></a>    <span class="p">)</span>
+<a id="__codelineno-0-430" name="__codelineno-0-430"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">job_queue</span> <span class="o">=</span> <span class="n">job_queue</span>
 </code></pre></div></td></tr></table></div>
                   </details>
 
@@ -4454,31 +4479,31 @@ configurations and launch templates.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/aibs_informatics_cdk_lib/constructs_/batch/infrastructure.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-467">467</a></span>
-<span class="normal"><a href="#__codelineno-0-468">468</a></span>
-<span class="normal"><a href="#__codelineno-0-469">469</a></span>
-<span class="normal"><a href="#__codelineno-0-470">470</a></span>
-<span class="normal"><a href="#__codelineno-0-471">471</a></span>
-<span class="normal"><a href="#__codelineno-0-472">472</a></span>
-<span class="normal"><a href="#__codelineno-0-473">473</a></span>
-<span class="normal"><a href="#__codelineno-0-474">474</a></span>
-<span class="normal"><a href="#__codelineno-0-475">475</a></span>
-<span class="normal"><a href="#__codelineno-0-476">476</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-476">476</a></span>
 <span class="normal"><a href="#__codelineno-0-477">477</a></span>
 <span class="normal"><a href="#__codelineno-0-478">478</a></span>
-<span class="normal"><a href="#__codelineno-0-479">479</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-467" name="__codelineno-0-467"></a><span class="nd">@cached_property</span>
-<a id="__codelineno-0-468" name="__codelineno-0-468"></a><span class="k">def</span><span class="w"> </span><span class="nf">launch_template</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ec2</span><span class="o">.</span><span class="n">LaunchTemplate</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-469" name="__codelineno-0-469"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get or create the launch template.</span>
-<a id="__codelineno-0-470" name="__codelineno-0-470"></a>
-<a id="__codelineno-0-471" name="__codelineno-0-471"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-472" name="__codelineno-0-472"></a><span class="sd">        The launch template, or None for Fargate environments.</span>
-<a id="__codelineno-0-473" name="__codelineno-0-473"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-474" name="__codelineno-0-474"></a>    <span class="n">launch_template</span> <span class="o">=</span> <span class="kc">None</span>
-<a id="__codelineno-0-475" name="__codelineno-0-475"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">launch_template_builder</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">use_fargate</span><span class="p">:</span>
-<a id="__codelineno-0-476" name="__codelineno-0-476"></a>        <span class="n">launch_template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">launch_template_builder</span><span class="o">.</span><span class="n">create_launch_template</span><span class="p">(</span>
-<a id="__codelineno-0-477" name="__codelineno-0-477"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">descriptor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">security_group</span>
-<a id="__codelineno-0-478" name="__codelineno-0-478"></a>        <span class="p">)</span>
-<a id="__codelineno-0-479" name="__codelineno-0-479"></a>    <span class="k">return</span> <span class="n">launch_template</span>
+<span class="normal"><a href="#__codelineno-0-479">479</a></span>
+<span class="normal"><a href="#__codelineno-0-480">480</a></span>
+<span class="normal"><a href="#__codelineno-0-481">481</a></span>
+<span class="normal"><a href="#__codelineno-0-482">482</a></span>
+<span class="normal"><a href="#__codelineno-0-483">483</a></span>
+<span class="normal"><a href="#__codelineno-0-484">484</a></span>
+<span class="normal"><a href="#__codelineno-0-485">485</a></span>
+<span class="normal"><a href="#__codelineno-0-486">486</a></span>
+<span class="normal"><a href="#__codelineno-0-487">487</a></span>
+<span class="normal"><a href="#__codelineno-0-488">488</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-476" name="__codelineno-0-476"></a><span class="nd">@cached_property</span>
+<a id="__codelineno-0-477" name="__codelineno-0-477"></a><span class="k">def</span><span class="w"> </span><span class="nf">launch_template</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ec2</span><span class="o">.</span><span class="n">LaunchTemplate</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-478" name="__codelineno-0-478"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get or create the launch template.</span>
+<a id="__codelineno-0-479" name="__codelineno-0-479"></a>
+<a id="__codelineno-0-480" name="__codelineno-0-480"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-481" name="__codelineno-0-481"></a><span class="sd">        The launch template, or None for Fargate environments.</span>
+<a id="__codelineno-0-482" name="__codelineno-0-482"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-483" name="__codelineno-0-483"></a>    <span class="n">launch_template</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-484" name="__codelineno-0-484"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">launch_template_builder</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">use_fargate</span><span class="p">:</span>
+<a id="__codelineno-0-485" name="__codelineno-0-485"></a>        <span class="n">launch_template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">launch_template_builder</span><span class="o">.</span><span class="n">create_launch_template</span><span class="p">(</span>
+<a id="__codelineno-0-486" name="__codelineno-0-486"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">descriptor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">security_group</span>
+<a id="__codelineno-0-487" name="__codelineno-0-487"></a>        <span class="p">)</span>
+<a id="__codelineno-0-488" name="__codelineno-0-488"></a>    <span class="k">return</span> <span class="n">launch_template</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4526,16 +4551,7 @@ configurations and launch templates.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/aibs_informatics_cdk_lib/constructs_/batch/infrastructure.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-533">533</a></span>
-<span class="normal"><a href="#__codelineno-0-534">534</a></span>
-<span class="normal"><a href="#__codelineno-0-535">535</a></span>
-<span class="normal"><a href="#__codelineno-0-536">536</a></span>
-<span class="normal"><a href="#__codelineno-0-537">537</a></span>
-<span class="normal"><a href="#__codelineno-0-538">538</a></span>
-<span class="normal"><a href="#__codelineno-0-539">539</a></span>
-<span class="normal"><a href="#__codelineno-0-540">540</a></span>
-<span class="normal"><a href="#__codelineno-0-541">541</a></span>
-<span class="normal"><a href="#__codelineno-0-542">542</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-542">542</a></span>
 <span class="normal"><a href="#__codelineno-0-543">543</a></span>
 <span class="normal"><a href="#__codelineno-0-544">544</a></span>
 <span class="normal"><a href="#__codelineno-0-545">545</a></span>
@@ -4565,46 +4581,173 @@ configurations and launch templates.</p>
 <span class="normal"><a href="#__codelineno-0-569">569</a></span>
 <span class="normal"><a href="#__codelineno-0-570">570</a></span>
 <span class="normal"><a href="#__codelineno-0-571">571</a></span>
-<span class="normal"><a href="#__codelineno-0-572">572</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-533" name="__codelineno-0-533"></a><span class="k">def</span><span class="w"> </span><span class="nf">create_compute_environment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">batch</span><span class="o">.</span><span class="n">IComputeEnvironment</span><span class="p">:</span>
-<a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Create the compute environment.</span>
-<a id="__codelineno-0-535" name="__codelineno-0-535"></a>
-<a id="__codelineno-0-536" name="__codelineno-0-536"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-537" name="__codelineno-0-537"></a><span class="sd">        A Fargate or EC2 compute environment based on configuration.</span>
-<a id="__codelineno-0-538" name="__codelineno-0-538"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-539" name="__codelineno-0-539"></a>    <span class="n">ce</span><span class="p">:</span> <span class="n">batch</span><span class="o">.</span><span class="n">FargateComputeEnvironment</span> <span class="o">|</span> <span class="n">batch</span><span class="o">.</span><span class="n">ManagedEc2EcsComputeEnvironment</span>
-<a id="__codelineno-0-540" name="__codelineno-0-540"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">use_fargate</span><span class="p">:</span>
-<a id="__codelineno-0-541" name="__codelineno-0-541"></a>        <span class="n">ce</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">FargateComputeEnvironment</span><span class="p">(</span>
-<a id="__codelineno-0-542" name="__codelineno-0-542"></a>            <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-543" name="__codelineno-0-543"></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">descriptor</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s2">-ce&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-544" name="__codelineno-0-544"></a>            <span class="n">vpc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vpc</span><span class="p">,</span>
-<a id="__codelineno-0-545" name="__codelineno-0-545"></a>            <span class="n">maxv_cpus</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">maxv_cpus</span><span class="p">,</span>
-<a id="__codelineno-0-546" name="__codelineno-0-546"></a>            <span class="n">spot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">use_spot</span><span class="p">,</span>
-<a id="__codelineno-0-547" name="__codelineno-0-547"></a>            <span class="n">vpc_subnets</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vpc_subnets</span><span class="p">,</span>
-<a id="__codelineno-0-548" name="__codelineno-0-548"></a>        <span class="p">)</span>
-<a id="__codelineno-0-549" name="__codelineno-0-549"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="n">ce</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">ManagedEc2EcsComputeEnvironment</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-572">572</a></span>
+<span class="normal"><a href="#__codelineno-0-573">573</a></span>
+<span class="normal"><a href="#__codelineno-0-574">574</a></span>
+<span class="normal"><a href="#__codelineno-0-575">575</a></span>
+<span class="normal"><a href="#__codelineno-0-576">576</a></span>
+<span class="normal"><a href="#__codelineno-0-577">577</a></span>
+<span class="normal"><a href="#__codelineno-0-578">578</a></span>
+<span class="normal"><a href="#__codelineno-0-579">579</a></span>
+<span class="normal"><a href="#__codelineno-0-580">580</a></span>
+<span class="normal"><a href="#__codelineno-0-581">581</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-542" name="__codelineno-0-542"></a><span class="k">def</span><span class="w"> </span><span class="nf">create_compute_environment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">batch</span><span class="o">.</span><span class="n">IComputeEnvironment</span><span class="p">:</span>
+<a id="__codelineno-0-543" name="__codelineno-0-543"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Create the compute environment.</span>
+<a id="__codelineno-0-544" name="__codelineno-0-544"></a>
+<a id="__codelineno-0-545" name="__codelineno-0-545"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-546" name="__codelineno-0-546"></a><span class="sd">        A Fargate or EC2 compute environment based on configuration.</span>
+<a id="__codelineno-0-547" name="__codelineno-0-547"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-548" name="__codelineno-0-548"></a>    <span class="n">ce</span><span class="p">:</span> <span class="n">batch</span><span class="o">.</span><span class="n">FargateComputeEnvironment</span> <span class="o">|</span> <span class="n">batch</span><span class="o">.</span><span class="n">ManagedEc2EcsComputeEnvironment</span>
+<a id="__codelineno-0-549" name="__codelineno-0-549"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">use_fargate</span><span class="p">:</span>
+<a id="__codelineno-0-550" name="__codelineno-0-550"></a>        <span class="n">ce</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">FargateComputeEnvironment</span><span class="p">(</span>
 <a id="__codelineno-0-551" name="__codelineno-0-551"></a>            <span class="bp">self</span><span class="p">,</span>
 <a id="__codelineno-0-552" name="__codelineno-0-552"></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">descriptor</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s2">-ce&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-553" name="__codelineno-0-553"></a>            <span class="n">vpc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vpc</span><span class="p">,</span>
-<a id="__codelineno-0-554" name="__codelineno-0-554"></a>            <span class="n">allocation_strategy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">allocation_strategy</span><span class="p">,</span>
-<a id="__codelineno-0-555" name="__codelineno-0-555"></a>            <span class="n">maxv_cpus</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">maxv_cpus</span><span class="p">,</span>
-<a id="__codelineno-0-556" name="__codelineno-0-556"></a>            <span class="n">minv_cpus</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">minv_cpus</span><span class="p">,</span>
-<a id="__codelineno-0-557" name="__codelineno-0-557"></a>            <span class="n">instance_role</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instance_role</span><span class="p">,</span>
-<a id="__codelineno-0-558" name="__codelineno-0-558"></a>            <span class="n">launch_template</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">launch_template</span><span class="p">,</span>
-<a id="__codelineno-0-559" name="__codelineno-0-559"></a>            <span class="n">instance_types</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instance_types</span><span class="p">,</span>
-<a id="__codelineno-0-560" name="__codelineno-0-560"></a>            <span class="c1"># When instance types are explicitly configured, dont use optimal instance classes</span>
-<a id="__codelineno-0-561" name="__codelineno-0-561"></a>            <span class="c1"># because we want to control the instance types via configuration and launch</span>
-<a id="__codelineno-0-562" name="__codelineno-0-562"></a>            <span class="c1"># templates. If no instance types are specified, fall back to optimal selection.</span>
-<a id="__codelineno-0-563" name="__codelineno-0-563"></a>            <span class="n">use_optimal_instance_classes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instance_types</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-564" name="__codelineno-0-564"></a>            <span class="n">spot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">use_spot</span><span class="p">,</span>
-<a id="__codelineno-0-565" name="__codelineno-0-565"></a>            <span class="n">spot_bid_percentage</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">spot_bid_percentage</span><span class="p">,</span>
-<a id="__codelineno-0-566" name="__codelineno-0-566"></a>            <span class="n">vpc_subnets</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vpc_subnets</span><span class="p">,</span>
-<a id="__codelineno-0-567" name="__codelineno-0-567"></a>        <span class="p">)</span>
-<a id="__codelineno-0-568" name="__codelineno-0-568"></a>
-<a id="__codelineno-0-569" name="__codelineno-0-569"></a>    <span class="k">if</span> <span class="n">tags</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_resource_tags</span><span class="p">:</span>
-<a id="__codelineno-0-570" name="__codelineno-0-570"></a>        <span class="k">for</span> <span class="n">tag_key</span><span class="p">,</span> <span class="n">tag_value</span> <span class="ow">in</span> <span class="n">tags</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-<a id="__codelineno-0-571" name="__codelineno-0-571"></a>            <span class="n">ce</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">tag_key</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">tag_value</span><span class="p">)</span>
-<a id="__codelineno-0-572" name="__codelineno-0-572"></a>    <span class="k">return</span> <span class="n">ce</span>
+<a id="__codelineno-0-554" name="__codelineno-0-554"></a>            <span class="n">maxv_cpus</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">maxv_cpus</span><span class="p">,</span>
+<a id="__codelineno-0-555" name="__codelineno-0-555"></a>            <span class="n">spot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">use_spot</span><span class="p">,</span>
+<a id="__codelineno-0-556" name="__codelineno-0-556"></a>            <span class="n">vpc_subnets</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vpc_subnets</span><span class="p">,</span>
+<a id="__codelineno-0-557" name="__codelineno-0-557"></a>        <span class="p">)</span>
+<a id="__codelineno-0-558" name="__codelineno-0-558"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-559" name="__codelineno-0-559"></a>        <span class="n">ce</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">ManagedEc2EcsComputeEnvironment</span><span class="p">(</span>
+<a id="__codelineno-0-560" name="__codelineno-0-560"></a>            <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-561" name="__codelineno-0-561"></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">descriptor</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s2">-ce&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-562" name="__codelineno-0-562"></a>            <span class="n">vpc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vpc</span><span class="p">,</span>
+<a id="__codelineno-0-563" name="__codelineno-0-563"></a>            <span class="n">allocation_strategy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">allocation_strategy</span><span class="p">,</span>
+<a id="__codelineno-0-564" name="__codelineno-0-564"></a>            <span class="n">maxv_cpus</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">maxv_cpus</span><span class="p">,</span>
+<a id="__codelineno-0-565" name="__codelineno-0-565"></a>            <span class="n">minv_cpus</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">minv_cpus</span><span class="p">,</span>
+<a id="__codelineno-0-566" name="__codelineno-0-566"></a>            <span class="n">instance_role</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instance_role</span><span class="p">,</span>
+<a id="__codelineno-0-567" name="__codelineno-0-567"></a>            <span class="n">launch_template</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">launch_template</span><span class="p">,</span>
+<a id="__codelineno-0-568" name="__codelineno-0-568"></a>            <span class="n">instance_types</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instance_types</span><span class="p">,</span>
+<a id="__codelineno-0-569" name="__codelineno-0-569"></a>            <span class="c1"># When instance types are explicitly configured, dont use optimal instance classes</span>
+<a id="__codelineno-0-570" name="__codelineno-0-570"></a>            <span class="c1"># because we want to control the instance types via configuration and launch</span>
+<a id="__codelineno-0-571" name="__codelineno-0-571"></a>            <span class="c1"># templates. If no instance types are specified, fall back to optimal selection.</span>
+<a id="__codelineno-0-572" name="__codelineno-0-572"></a>            <span class="n">use_optimal_instance_classes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">instance_types</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-573" name="__codelineno-0-573"></a>            <span class="n">spot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">use_spot</span><span class="p">,</span>
+<a id="__codelineno-0-574" name="__codelineno-0-574"></a>            <span class="n">spot_bid_percentage</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">spot_bid_percentage</span><span class="p">,</span>
+<a id="__codelineno-0-575" name="__codelineno-0-575"></a>            <span class="n">vpc_subnets</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vpc_subnets</span><span class="p">,</span>
+<a id="__codelineno-0-576" name="__codelineno-0-576"></a>        <span class="p">)</span>
+<a id="__codelineno-0-577" name="__codelineno-0-577"></a>
+<a id="__codelineno-0-578" name="__codelineno-0-578"></a>    <span class="k">if</span> <span class="n">tags</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_resource_tags</span><span class="p">:</span>
+<a id="__codelineno-0-579" name="__codelineno-0-579"></a>        <span class="k">for</span> <span class="n">tag_key</span><span class="p">,</span> <span class="n">tag_value</span> <span class="ow">in</span> <span class="n">tags</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-0-580" name="__codelineno-0-580"></a>            <span class="n">ce</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">tag_key</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">tag_value</span><span class="p">)</span>
+<a id="__codelineno-0-581" name="__codelineno-0-581"></a>    <span class="k">return</span> <span class="n">ce</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h8 id="aibs_informatics_cdk_lib.constructs_.batch.infrastructure.BatchEnvironment.set_container_insights" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">set_container_insights</span>
+
+
+<a href="#aibs_informatics_cdk_lib.constructs_.batch.infrastructure.BatchEnvironment.set_container_insights" class="headerlink" title="Permanent link">&para;</a></h8>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">set_container_insights</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">compute_environment</span><span class="p">:</span> <span class="n"><span title="aws_cdk.aws_batch.IComputeEnvironment">IComputeEnvironment</span></span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">value</span><span class="p">:</span> <span class="n"><span title="typing.Literal">Literal</span></span><span class="p">[</span><span class="s2">&quot;ENABLED&quot;</span><span class="p">,</span> <span class="s2">&quot;ENHANCED&quot;</span><span class="p">,</span> <span class="s2">&quot;DISABLED&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Set ECS Container Insights on a compute environment.</p>
+<p>Applied natively through the CloudFormation <code>EcsSettings.ContainerInsights</code> property.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>compute_environment</code>
+            </td>
+            <td>
+                  <code><span title="aws_cdk.aws_batch.IComputeEnvironment">IComputeEnvironment</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The compute environment.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>value</code>
+            </td>
+            <td>
+                  <code><span title="typing.Literal">Literal</span>[&#39;ENABLED&#39;, &#39;ENHANCED&#39;, &#39;DISABLED&#39;]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Container Insights setting.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>src/aibs_informatics_cdk_lib/constructs_/batch/infrastructure.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-583">583</a></span>
+<span class="normal"><a href="#__codelineno-0-584">584</a></span>
+<span class="normal"><a href="#__codelineno-0-585">585</a></span>
+<span class="normal"><a href="#__codelineno-0-586">586</a></span>
+<span class="normal"><a href="#__codelineno-0-587">587</a></span>
+<span class="normal"><a href="#__codelineno-0-588">588</a></span>
+<span class="normal"><a href="#__codelineno-0-589">589</a></span>
+<span class="normal"><a href="#__codelineno-0-590">590</a></span>
+<span class="normal"><a href="#__codelineno-0-591">591</a></span>
+<span class="normal"><a href="#__codelineno-0-592">592</a></span>
+<span class="normal"><a href="#__codelineno-0-593">593</a></span>
+<span class="normal"><a href="#__codelineno-0-594">594</a></span>
+<span class="normal"><a href="#__codelineno-0-595">595</a></span>
+<span class="normal"><a href="#__codelineno-0-596">596</a></span>
+<span class="normal"><a href="#__codelineno-0-597">597</a></span>
+<span class="normal"><a href="#__codelineno-0-598">598</a></span>
+<span class="normal"><a href="#__codelineno-0-599">599</a></span>
+<span class="normal"><a href="#__codelineno-0-600">600</a></span>
+<span class="normal"><a href="#__codelineno-0-601">601</a></span>
+<span class="normal"><a href="#__codelineno-0-602">602</a></span>
+<span class="normal"><a href="#__codelineno-0-603">603</a></span>
+<span class="normal"><a href="#__codelineno-0-604">604</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-583" name="__codelineno-0-583"></a><span class="k">def</span><span class="w"> </span><span class="nf">set_container_insights</span><span class="p">(</span>
+<a id="__codelineno-0-584" name="__codelineno-0-584"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-585" name="__codelineno-0-585"></a>    <span class="n">compute_environment</span><span class="p">:</span> <span class="n">batch</span><span class="o">.</span><span class="n">IComputeEnvironment</span><span class="p">,</span>
+<a id="__codelineno-0-586" name="__codelineno-0-586"></a>    <span class="n">value</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;ENABLED&quot;</span><span class="p">,</span> <span class="s2">&quot;ENHANCED&quot;</span><span class="p">,</span> <span class="s2">&quot;DISABLED&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-587" name="__codelineno-0-587"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-588" name="__codelineno-0-588"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Set ECS Container Insights on a compute environment.</span>
+<a id="__codelineno-0-589" name="__codelineno-0-589"></a>
+<a id="__codelineno-0-590" name="__codelineno-0-590"></a><span class="sd">    Applied natively through the CloudFormation ``EcsSettings.ContainerInsights`` property.</span>
+<a id="__codelineno-0-591" name="__codelineno-0-591"></a>
+<a id="__codelineno-0-592" name="__codelineno-0-592"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-593" name="__codelineno-0-593"></a><span class="sd">        compute_environment (batch.IComputeEnvironment): The compute environment.</span>
+<a id="__codelineno-0-594" name="__codelineno-0-594"></a><span class="sd">        value (Literal[&quot;ENABLED&quot;, &quot;ENHANCED&quot;, &quot;DISABLED&quot;]): Container Insights setting.</span>
+<a id="__codelineno-0-595" name="__codelineno-0-595"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-596" name="__codelineno-0-596"></a>    <span class="n">cfn</span> <span class="o">=</span> <span class="n">compute_environment</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">default_child</span>
+<a id="__codelineno-0-597" name="__codelineno-0-597"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cfn</span><span class="p">,</span> <span class="n">batch</span><span class="o">.</span><span class="n">CfnComputeEnvironment</span><span class="p">):</span>
+<a id="__codelineno-0-598" name="__codelineno-0-598"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-599" name="__codelineno-0-599"></a>            <span class="s2">&quot;Expected default child of compute environment to be a CfnComputeEnvironment, &quot;</span>
+<a id="__codelineno-0-600" name="__codelineno-0-600"></a>            <span class="sa">f</span><span class="s2">&quot;got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">cfn</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-601" name="__codelineno-0-601"></a>        <span class="p">)</span>
+<a id="__codelineno-0-602" name="__codelineno-0-602"></a>    <span class="n">cfn</span><span class="o">.</span><span class="n">ecs_settings</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">CfnComputeEnvironment</span><span class="o">.</span><span class="n">EcsSettingsProperty</span><span class="p">(</span>
+<a id="__codelineno-0-603" name="__codelineno-0-603"></a>        <span class="n">container_insights</span><span class="o">=</span><span class="n">value</span>
+<a id="__codelineno-0-604" name="__codelineno-0-604"></a>    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4663,29 +4806,29 @@ to grant access to.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/aibs_informatics_cdk_lib/constructs_/batch/infrastructure.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-574">574</a></span>
-<span class="normal"><a href="#__codelineno-0-575">575</a></span>
-<span class="normal"><a href="#__codelineno-0-576">576</a></span>
-<span class="normal"><a href="#__codelineno-0-577">577</a></span>
-<span class="normal"><a href="#__codelineno-0-578">578</a></span>
-<span class="normal"><a href="#__codelineno-0-579">579</a></span>
-<span class="normal"><a href="#__codelineno-0-580">580</a></span>
-<span class="normal"><a href="#__codelineno-0-581">581</a></span>
-<span class="normal"><a href="#__codelineno-0-582">582</a></span>
-<span class="normal"><a href="#__codelineno-0-583">583</a></span>
-<span class="normal"><a href="#__codelineno-0-584">584</a></span>
-<span class="normal"><a href="#__codelineno-0-585">585</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-574" name="__codelineno-0-574"></a><span class="k">def</span><span class="w"> </span><span class="nf">grant_file_system_access</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">file_systems</span><span class="p">:</span> <span class="n">efs</span><span class="o">.</span><span class="n">IFileSystem</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-575" name="__codelineno-0-575"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Grant compute environments access to EFS file systems.</span>
-<a id="__codelineno-0-576" name="__codelineno-0-576"></a>
-<a id="__codelineno-0-577" name="__codelineno-0-577"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-578" name="__codelineno-0-578"></a><span class="sd">        *file_systems (efs.IFileSystem): Variable number of file systems</span>
-<a id="__codelineno-0-579" name="__codelineno-0-579"></a><span class="sd">            to grant access to.</span>
-<a id="__codelineno-0-580" name="__codelineno-0-580"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-581" name="__codelineno-0-581"></a>    <span class="k">for</span> <span class="n">file_system</span> <span class="ow">in</span> <span class="n">file_systems</span><span class="p">:</span>
-<a id="__codelineno-0-582" name="__codelineno-0-582"></a>        <span class="k">for</span> <span class="n">ce</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">job_queue</span><span class="o">.</span><span class="n">compute_environments</span><span class="p">:</span>
-<a id="__codelineno-0-583" name="__codelineno-0-583"></a>            <span class="n">grant_connectable_file_system_access</span><span class="p">(</span>
-<a id="__codelineno-0-584" name="__codelineno-0-584"></a>                <span class="n">file_system</span><span class="p">,</span> <span class="n">cast</span><span class="p">(</span><span class="n">ec2</span><span class="o">.</span><span class="n">IConnectable</span><span class="p">,</span> <span class="n">ce</span><span class="o">.</span><span class="n">compute_environment</span><span class="p">)</span>
-<a id="__codelineno-0-585" name="__codelineno-0-585"></a>            <span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-606">606</a></span>
+<span class="normal"><a href="#__codelineno-0-607">607</a></span>
+<span class="normal"><a href="#__codelineno-0-608">608</a></span>
+<span class="normal"><a href="#__codelineno-0-609">609</a></span>
+<span class="normal"><a href="#__codelineno-0-610">610</a></span>
+<span class="normal"><a href="#__codelineno-0-611">611</a></span>
+<span class="normal"><a href="#__codelineno-0-612">612</a></span>
+<span class="normal"><a href="#__codelineno-0-613">613</a></span>
+<span class="normal"><a href="#__codelineno-0-614">614</a></span>
+<span class="normal"><a href="#__codelineno-0-615">615</a></span>
+<span class="normal"><a href="#__codelineno-0-616">616</a></span>
+<span class="normal"><a href="#__codelineno-0-617">617</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-606" name="__codelineno-0-606"></a><span class="k">def</span><span class="w"> </span><span class="nf">grant_file_system_access</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">file_systems</span><span class="p">:</span> <span class="n">efs</span><span class="o">.</span><span class="n">IFileSystem</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-607" name="__codelineno-0-607"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Grant compute environments access to EFS file systems.</span>
+<a id="__codelineno-0-608" name="__codelineno-0-608"></a>
+<a id="__codelineno-0-609" name="__codelineno-0-609"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-610" name="__codelineno-0-610"></a><span class="sd">        *file_systems (efs.IFileSystem): Variable number of file systems</span>
+<a id="__codelineno-0-611" name="__codelineno-0-611"></a><span class="sd">            to grant access to.</span>
+<a id="__codelineno-0-612" name="__codelineno-0-612"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-613" name="__codelineno-0-613"></a>    <span class="k">for</span> <span class="n">file_system</span> <span class="ow">in</span> <span class="n">file_systems</span><span class="p">:</span>
+<a id="__codelineno-0-614" name="__codelineno-0-614"></a>        <span class="k">for</span> <span class="n">ce</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">job_queue</span><span class="o">.</span><span class="n">compute_environments</span><span class="p">:</span>
+<a id="__codelineno-0-615" name="__codelineno-0-615"></a>            <span class="n">grant_connectable_file_system_access</span><span class="p">(</span>
+<a id="__codelineno-0-616" name="__codelineno-0-616"></a>                <span class="n">file_system</span><span class="p">,</span> <span class="n">cast</span><span class="p">(</span><span class="n">ec2</span><span class="o">.</span><span class="n">IConnectable</span><span class="p">,</span> <span class="n">ce</span><span class="o">.</span><span class="n">compute_environment</span><span class="p">)</span>
+<a id="__codelineno-0-617" name="__codelineno-0-617"></a>            <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
