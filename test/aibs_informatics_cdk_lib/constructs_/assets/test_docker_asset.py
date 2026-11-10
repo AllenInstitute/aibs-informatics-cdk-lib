@@ -410,20 +410,29 @@ class TestDockerAssetMirroring(DockerAssetBaseTest):
         assert asset.mirror_tags == (DIGEST_TAG, "stable")
         self.get_template(stack).resource_count_is(ECR_DEPLOYMENT_RESOURCE, 2)
 
-    def test__mirror__an_alias_override_still_references_the_digest_tag(self):
-        """`:stable` keeps its name when the digest moves, so Lambda and ECS would go stale."""
+    def test__mirror__dependent_consumers_wait_for_the_digest_tag(self):
+        """`:stable` would go stale when the digest moves; add_dependency awaits each copy."""
         stack = self.get_dummy_stack("test")
         asset = self.mirrored(stack=stack, mirror_tags=["stable"])
-        lambda_.DockerImageFunction(stack, "Function", code=asset.as_lambda_code())
-        ecs.FargateTaskDefinition(stack, "Task").add_container("Main", image=asset.as_ecs_image())
+        function = lambda_.DockerImageFunction(stack, "Function", code=asset.as_lambda_code())
+        task = ecs.FargateTaskDefinition(stack, "Task")
+        task.add_container("Main", image=asset.as_ecs_image())
+        function.node.add_dependency(asset)
+        task.node.add_dependency(asset)
         template = self.get_template(stack)
         digest_uri = {"Fn::Join": ["", Match.array_with([f":{DIGEST_TAG}"])]}
-        template.has_resource_properties(
-            "AWS::Lambda::Function", {"Code": {"ImageUri": digest_uri}}
+        # DependsOn lists the copies in construct-path order, which their logical ids share.
+        mirrors = Match.array_with(sorted(template.find_resources(ECR_DEPLOYMENT_RESOURCE)))
+        template.has_resource(
+            "AWS::Lambda::Function",
+            {"Properties": {"Code": {"ImageUri": digest_uri}}, "DependsOn": mirrors},
         )
-        template.has_resource_properties(
+        template.has_resource(
             "AWS::ECS::TaskDefinition",
-            {"ContainerDefinitions": [Match.object_like({"Image": digest_uri})]},
+            {
+                "Properties": {"ContainerDefinitions": [Match.object_like({"Image": digest_uri})]},
+                "DependsOn": mirrors,
+            },
         )
 
     def test__mirror__empty_mirror_tags_publishes_only_the_digest_tag(self):

@@ -88,7 +88,8 @@ class DockerAsset(constructs.Construct):
             source: The Source this image was produced from, recorded for provenance.
             mirror_to_ecr: Copy the registry image into an ECR repository at deploy time so
                 workloads pull in-region. Requires the ``ecr-mirror`` extra, and resolves
-                the source tag to its digest at synth -- see ``pin_digest``.
+                the source tag to its digest at synth -- see ``pin_digest``. Consumers do
+                not wait for the copy, so give each one ``consumer.node.add_dependency(asset)``.
             ecr_repository: The repository to mirror into. Defaults to one this construct
                 creates, named ``{env_base}-{asset_name}`` and retained on stack deletion.
                 Only valid alongside ``mirror_to_ecr``.
