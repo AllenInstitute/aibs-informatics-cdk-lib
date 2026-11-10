@@ -133,8 +133,9 @@ class AssetsMixin:
         repo path for development.
 
         Args:
-            repo_url (str): The git repo url. This is required.
-                If the repo path is not in the environment, the repo will be cloned from this url.
+            repo_url (str): The git repo url or local repo path. This is required.
+                If the repo path is not in the environment, a url is cloned and a local repo
+                path is used in place.
             repo_path_env_var (Optional[str]): The environment variable that contains the
                 repo path or alternative repo url. This is optional.
                 This is useful for local development.
@@ -150,6 +151,8 @@ class AssetsMixin:
                 return clone_repo(repo_path, skip_if_exists=True)
             else:
                 raise ValueError(f"Env variable {repo_path_env_var} is not a valid git repo")
+        elif not is_repo_url(repo_url) and is_local_repo(repo_url):
+            return Path(repo_url)
         else:
             return clone_repo(repo_url, skip_if_exists=True)
 

@@ -1,10 +1,14 @@
+import subprocess
 import warnings
 from unittest.mock import MagicMock, patch
 
+import aws_cdk as cdk
 import pytest
+from aibs_informatics_core.env import EnvBase
 
 from aibs_informatics_cdk_lib.constructs_.assets.code_asset_definitions import (
     AIBS_INFORMATICS_AWS_LAMBDA_REPO,
+    AIBS_INFORMATICS_AWS_LAMBDA_REPO_ENV_VAR,
     AIBSInformaticsAssets,
     AIBSInformaticsCodeAssets,
     AIBSInformaticsDockerAssets,
@@ -110,6 +114,32 @@ class TestResolveDeprecatedSource:
         """
         with pytest.raises(TypeError, match=match):
             AssetsMixin._resolve_deprecated_source(None, kwargs)
+
+
+# ---------------------------------------------------------------------------
+# AssetsMixin.resolve_repo_path
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "assets_cls, source_path",
+    [
+        (AIBSInformaticsCodeAssets, lambda asset: asset.asset_props.path),
+        (AIBSInformaticsDockerAssets, lambda asset: asset.node.find_child("Staging").source_path),
+    ],
+)
+def test__local_repo_source_is_used_in_place(assets_cls, source_path, tmp_path, monkeypatch):
+    monkeypatch.delenv(AIBS_INFORMATICS_AWS_LAMBDA_REPO_ENV_VAR, raising=False)
+    (tmp_path / "docker").mkdir()
+    (tmp_path / "docker" / "Dockerfile").write_text("FROM scratch\n")
+    subprocess.check_call(["git", "init", "-q", str(tmp_path)])
+    assets = assets_cls(
+        cdk.Stack(cdk.App()),
+        "Assets",
+        EnvBase("dev-test"),
+        aibs_informatics_aws_lambda_source=str(tmp_path),
+    )
+    assert source_path(assets.AIBS_INFORMATICS_AWS_LAMBDA) == str(tmp_path)
 
 
 # ---------------------------------------------------------------------------
