@@ -372,9 +372,10 @@ class DockerAsset(constructs.Construct):
         # properties change, and a tag's properties do not change when the tag moves.
         source_uri = f"{image_name}@{digest}"
         for mirror_tag in tags:
+            # Verbatim: sanitizing would collide `v1.2` with `v12`, and no tag can contain "/".
             ecr_deployment(
                 self,
-                f"{MIRROR_CONSTRUCT_ID_PREFIX}{_construct_id_fragment(mirror_tag)}",
+                f"{MIRROR_CONSTRUCT_ID_PREFIX}{mirror_tag}",
                 src=docker_image_name(source_uri),
                 dest=docker_image_name(repository.repository_uri_for_tag(mirror_tag)),
             )
@@ -571,18 +572,6 @@ def _default_mirror_tags(digest: str, tag: str | None) -> tuple[str, ...]:
     if tag is not None and tag not in tags:
         tags.append(tag)
     return tuple(tags)
-
-
-def _construct_id_fragment(value: str) -> str:
-    """Reduce a tag to something usable inside a construct id.
-
-    Args:
-        value: The tag to reduce.
-
-    Returns:
-        The tag with every non-alphanumeric character removed.
-    """
-    return re.sub(r"[^A-Za-z0-9]+", "", value)
 
 
 def _import_ecr_deployment() -> tuple[Any, Any]:

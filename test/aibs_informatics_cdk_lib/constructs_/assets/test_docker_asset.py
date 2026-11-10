@@ -350,8 +350,9 @@ class TestDockerAssetMirroring(DockerAssetBaseTest):
         template.has_resource("AWS::ECR::Repository", {"DeletionPolicy": "Retain"})
 
     def test__mirror__deploys_one_ecr_deployment_per_destination_tag(self):
+        """Tags differing only in punctuation must not collide on one construct id."""
         stack = self.get_dummy_stack("test")
-        self.mirrored(stack=stack)
+        self.mirrored(stack=stack, mirror_tags=["v1.2", "v12"])
         self.get_template(stack).resource_count_is(ECR_DEPLOYMENT_RESOURCE, 2)
 
     def test__mirror__defaults_to_a_digest_tag_plus_the_source_tag(self):
