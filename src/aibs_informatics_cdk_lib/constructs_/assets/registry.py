@@ -6,12 +6,13 @@ at first deploy and then freeze the ECR copy forever while ``latest`` moved on u
 Resolving the tag to its immutable digest at synth time is what makes the mirror's
 properties change whenever the upstream image does, so mirroring requires it.
 
-The lookup is two anonymous requests against the OCI Distribution API -- a pull-scoped
-token, then a manifest ``HEAD`` -- issued with stdlib ``urllib`` so that Digest Pinning
-costs no runtime dependency. The ``Accept`` header lists the index media types as well as
-the single-manifest one, so a multi-platform image resolves to its image index digest; that
-is the correct thing to pin and to mirror, because the per-platform child is selected at
-pull time.
+The lookup is an anonymous manifest ``HEAD`` against the OCI Distribution API, issued with
+stdlib ``urllib`` so that Digest Pinning costs no runtime dependency. A registry that answers
+``401`` gets the standard bearer flow: a token from the realm its ``WWW-Authenticate``
+challenge names, then one retry. The ``Accept`` header lists the index media types as well
+as the single-manifest one, so a multi-platform image resolves to its image index digest;
+that is the correct thing to pin and to mirror, because the per-platform child is selected
+at pull time.
 
 Auth is pluggable via ``auth_header`` so a token can be supplied if the package ever goes
 private, but no credential plumbing exists today -- see ADR 0002.
@@ -19,6 +20,7 @@ private, but no credential plumbing exists today -- see ADR 0002.
 
 import json
 import logging
+import re
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -42,10 +44,13 @@ MANIFEST_MEDIA_TYPES = (
 DEFAULT_TIMEOUT: float = 10.0
 """Seconds to wait on each registry request before giving up."""
 
+REGISTRY_API_HOSTS = {"docker.io": "registry-1.docker.io"}
+"""Registries whose Distribution API is served from a different host than the image name's."""
+
 AuthHeaderProvider = Callable[[str, str], str | None]
 """Builds the ``Authorization`` header value for a ``(registry, repository)`` pair.
 
-Returning ``None`` sends the manifest request unauthenticated.
+Returning ``None`` sends the manifest request anonymously, answering any bearer challenge.
 """
 
 
@@ -103,7 +108,7 @@ def resolve_image_digest(
             ``ghcr.io/alleninstitute/aibs-informatics-aws-lambda``.
         tag: The tag to resolve. Defaults to ``latest``.
         auth_header: Builds the ``Authorization`` header for the manifest request. Defaults
-            to fetching an anonymous pull-scoped token from the registry.
+            to an anonymous request, answering the registry's bearer challenge if it sends one.
         timeout: Seconds to wait on each registry request.
 
     Returns:
@@ -116,19 +121,20 @@ def resolve_image_digest(
     registry, _, repository = image_name.partition("/")
     if not repository:
         raise _resolution_error(image_name, tag, "the reference names no registry host to ask")
+    if registry == "docker.io" and "/" not in repository:
+        repository = f"library/{repository}"  # Docker Hub's implicit official-image namespace
 
-    provider = auth_header or (lambda reg, repo: _anonymous_auth_header(reg, repo, timeout))
+    url = f"https://{REGISTRY_API_HOSTS.get(registry, registry)}/v2/{repository}/manifests/{tag}"
     try:
-        header = provider(registry, repository)
-        request = urllib.request.Request(
-            f"https://{registry}/v2/{repository}/manifests/{tag}",
-            method="HEAD",
-            headers={"Accept": ", ".join(MANIFEST_MEDIA_TYPES)},
-        )
-        if header:
-            request.add_header("Authorization", header)
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            digest = response.headers.get(DIGEST_HEADER)
+        header = auth_header(registry, repository) if auth_header else None
+        try:
+            digest = _head_manifest(url, header, timeout)
+        except urllib.error.HTTPError as e:
+            if e.code != 401 or header:
+                raise
+            challenge = e.headers.get("WWW-Authenticate", "")
+            header = _answer_challenge(challenge, registry, repository, timeout)
+            digest = _head_manifest(url, header, timeout)
     except DigestResolutionError:
         raise
     except (OSError, ValueError) as e:
@@ -143,26 +149,28 @@ def resolve_image_digest(
     return digest
 
 
-def _anonymous_auth_header(registry: str, repository: str, timeout: float) -> str | None:
-    """Fetch an anonymous pull-scoped bearer token for a repository.
+def _head_manifest(url: str, header: str | None, timeout: float) -> str | None:
+    """HEAD a manifest and return its digest header, if the registry sent one."""
+    request = urllib.request.Request(
+        url, method="HEAD", headers={"Accept": ", ".join(MANIFEST_MEDIA_TYPES)}
+    )
+    if header:
+        request.add_header("Authorization", header)
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        return response.headers.get(DIGEST_HEADER)
 
-    Args:
-        registry: The registry host, e.g. ``ghcr.io``.
-        repository: The repository path within the registry, e.g. ``org/repo``.
-        timeout: Seconds to wait on the token request.
 
-    Returns:
-        The ``Authorization`` header value.
-
-    Raises:
-        DigestResolutionError: If the registry issues no token.
-    """
-    scope = urllib.parse.quote(f"repository:{repository}:pull", safe=":/")
-    token_url = f"https://{registry}/token?scope={scope}&service={registry}"
-    with urllib.request.urlopen(urllib.request.Request(token_url), timeout=timeout) as response:
-        payload = json.loads(response.read().decode("utf-8"))
-
-    token = payload.get("token") or payload.get("access_token")
+def _answer_challenge(challenge: str, registry: str, repository: str, timeout: float) -> str:
+    """Answer a ``WWW-Authenticate: Bearer`` challenge with an anonymous token header."""
+    scheme, _, params = challenge.partition(" ")
+    fields = dict(re.findall(r'(\w+)="([^"]*)"', params))
+    token = None
+    if scheme.lower() == "bearer" and "realm" in fields:
+        query = urllib.parse.urlencode({k: fields[k] for k in ("service", "scope") if k in fields})
+        token_request = urllib.request.Request(f"{fields['realm']}?{query}")
+        with urllib.request.urlopen(token_request, timeout=timeout) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        token = payload.get("token") or payload.get("access_token")
     if not token:
         raise DigestResolutionError(
             f"Registry '{registry}' issued no anonymous pull token for '{repository}'. "

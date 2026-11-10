@@ -23,9 +23,13 @@ from aibs_informatics_cdk_lib.constructs_.assets.registry import (
 
 IMAGE_NAME = "ghcr.io/alleninstitute/aibs-informatics-aws-lambda"
 DIGEST = "sha256:" + "ab" * 32
+CHALLENGE = (
+    'Bearer realm="https://ghcr.io/token",service="ghcr.io",'
+    'scope="repository:alleninstitute/aibs-informatics-aws-lambda:pull"'
+)
 TOKEN_URL = (
-    "https://ghcr.io/token"
-    "?scope=repository:alleninstitute/aibs-informatics-aws-lambda:pull&service=ghcr.io"
+    "https://ghcr.io/token?service=ghcr.io"
+    "&scope=repository%3Aalleninstitute%2Faibs-informatics-aws-lambda%3Apull"
 )
 MANIFEST_URL = "https://ghcr.io/v2/alleninstitute/aibs-informatics-aws-lambda/manifests/latest"
 
@@ -50,12 +54,15 @@ class FakeResponse:
 def registry_responses(
     token_payload: dict | None = None,
     manifest_headers: dict[str, str] | None = None,
+    challenge: str | None = CHALLENGE,
 ):
     """Build a ``urlopen`` side effect answering the token and manifest requests.
 
     Args:
         token_payload: The JSON body the token endpoint returns.
         manifest_headers: The headers the manifest endpoint returns.
+        challenge: The ``WWW-Authenticate`` header of the ``401`` an anonymous manifest
+            request gets, or None to serve the manifest anonymously.
 
     Returns:
         A callable suitable as a ``urlopen`` mock side effect, and the list it records
@@ -68,6 +75,14 @@ def registry_responses(
         if "/token" in request.full_url:
             payload = token_payload if token_payload is not None else {"token": "t0ken"}
             return FakeResponse(body=json.dumps(payload).encode("utf-8"))
+        if challenge and not request.get_header("Authorization"):
+            raise urllib.error.HTTPError(
+                request.full_url,
+                401,
+                "Unauthorized",
+                {"WWW-Authenticate": challenge},  # type: ignore[arg-type]
+                None,
+            )
         headers = manifest_headers if manifest_headers is not None else {DIGEST_HEADER: DIGEST}
         return FakeResponse(headers=headers)
 
@@ -136,27 +151,46 @@ class TestResolveImageDigest:
         with patch.object(urllib.request, "urlopen", side_effect=urlopen):
             assert resolve_image_digest(IMAGE_NAME, "latest") == DIGEST
 
-    def test__resolve_image_digest__requests_an_anonymous_pull_scoped_token(self):
+    def test__resolve_image_digest__answers_the_bearer_challenge_and_retries_once(self):
         urlopen, requests = registry_responses()
         with patch.object(urllib.request, "urlopen", side_effect=urlopen):
             resolve_image_digest(IMAGE_NAME, "latest")
-        assert requests[0].full_url == TOKEN_URL
+        assert [r.full_url for r in requests] == [MANIFEST_URL, TOKEN_URL, MANIFEST_URL]
+        assert requests[0].get_header("Authorization") is None
+        assert requests[2].get_method() == "HEAD"
+        assert requests[2].get_header("Authorization") == "Bearer t0ken"
 
-    def test__resolve_image_digest__heads_the_manifest_with_the_bearer_token(self):
-        urlopen, requests = registry_responses()
+    def test__resolve_image_digest__anonymous_manifest_needs_no_token(self):
+        urlopen, requests = registry_responses(challenge=None)
         with patch.object(urllib.request, "urlopen", side_effect=urlopen):
-            resolve_image_digest(IMAGE_NAME, "latest")
-        manifest_request = requests[1]
-        assert manifest_request.full_url == MANIFEST_URL
-        assert manifest_request.get_method() == "HEAD"
-        assert manifest_request.get_header("Authorization") == "Bearer t0ken"
+            assert resolve_image_digest(IMAGE_NAME, "latest") == DIGEST
+        assert [r.full_url for r in requests] == [MANIFEST_URL]
+
+    @mark.parametrize("image_name", ["docker.io/library/python", "docker.io/python"])
+    def test__resolve_image_digest__docker_hub_uses_its_api_host_and_challenge_realm(
+        self, image_name
+    ):
+        challenge = (
+            'Bearer realm="https://auth.docker.io/token",service="registry.docker.io",'
+            'scope="repository:library/python:pull"'
+        )
+        urlopen, requests = registry_responses(challenge=challenge)
+        with patch.object(urllib.request, "urlopen", side_effect=urlopen):
+            resolve_image_digest(image_name, "3.11")
+        manifest_url = "https://registry-1.docker.io/v2/library/python/manifests/3.11"
+        assert [r.full_url for r in requests] == [
+            manifest_url,
+            "https://auth.docker.io/token?service=registry.docker.io"
+            "&scope=repository%3Alibrary%2Fpython%3Apull",
+            manifest_url,
+        ]
 
     def test__resolve_image_digest__accepts_multi_platform_indexes(self):
         """A multi-platform image must resolve to its index digest, not one platform's."""
         urlopen, requests = registry_responses()
         with patch.object(urllib.request, "urlopen", side_effect=urlopen):
             resolve_image_digest(IMAGE_NAME, "latest")
-        accept = requests[1].get_header("Accept")
+        accept = requests[-1].get_header("Accept")
         assert accept is not None
         for media_type in MANIFEST_MEDIA_TYPES:
             assert media_type in accept
@@ -165,7 +199,7 @@ class TestResolveImageDigest:
         urlopen, requests = registry_responses()
         with patch.object(urllib.request, "urlopen", side_effect=urlopen):
             resolve_image_digest(IMAGE_NAME)
-        assert requests[1].full_url.endswith("/manifests/latest")
+        assert requests[-1].full_url.endswith("/manifests/latest")
 
     def test__resolve_image_digest__accepts_an_access_token_field(self):
         urlopen, _ = registry_responses(token_payload={"access_token": "other"})
@@ -218,8 +252,12 @@ class TestResolveImageDigestFailures:
                 resolve_image_digest(IMAGE_NAME, "latest")
 
     def test__resolve_image_digest__unparseable_token_response_raises(self):
+        registry, _ = registry_responses()
+
         def urlopen(request, **kwargs):
-            return FakeResponse(body=b"<html>not json</html>")
+            if "/token" in request.full_url:
+                return FakeResponse(body=b"<html>not json</html>")
+            return registry(request, **kwargs)
 
         with patch.object(urllib.request, "urlopen", side_effect=urlopen):
             with pytest.raises(DigestResolutionError, match="Could not resolve"):
