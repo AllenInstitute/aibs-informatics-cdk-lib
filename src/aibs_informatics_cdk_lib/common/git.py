@@ -364,7 +364,9 @@ def clone_repo(
                 )
 
             else:
-                if target_path_commit_hash == repo_url_commit_hash:
+                # A commit ref may be an abbreviated or uppercase SHA; the checkout reports the
+                # full lowercase one.
+                if target_path_commit_hash.startswith(repo_url_commit_hash.lower()):
                     # If the commit hashes match, return the existing path
                     logger.info(
                         f"Skipping cloning of repository as target path already exists: {target_path}"  # noqa: E501
@@ -376,21 +378,19 @@ def clone_repo(
     ref, ref_kind = git_url.ref, git_url.ref_kind
     try:
         # Clone the repository into the target directory
-        cmd: list[str] = [
-            "git",
-            "clone",
-            git_url.repo_base_url,
-            target_path.as_posix(),
-            "--single-branch",
-        ]
-        # `--branch` accepts branch and tag names only, so a commit is fetched and checked
-        # out after the fact instead.
-        if ref and ref_kind != "commit":
-            cmd.extend(["--branch", ref])
+        cmd: list[str] = ["git", "clone", git_url.repo_base_url, target_path.as_posix()]
+        # `--branch` accepts branch and tag names only, so a commit is checked out after the
+        # fact instead, from a clone of every branch so that an abbreviated SHA resolves.
+        if ref_kind != "commit":
+            cmd.append("--single-branch")
+            if ref:
+                cmd.extend(["--branch", ref])
         subprocess.check_call(cmd)
         if ref and ref_kind == "commit":
-            subprocess.check_call(["git", "fetch", "origin", ref], cwd=target_path)
-            subprocess.check_call(["git", "checkout", ref], cwd=target_path)
+            # Fetch only a commit no branch reaches; the remote looks up full SHAs only.
+            if subprocess.call(["git", "checkout", ref], cwd=target_path):
+                subprocess.check_call(["git", "fetch", "origin", ref], cwd=target_path)
+                subprocess.check_call(["git", "checkout", ref], cwd=target_path)
         return target_path
     except subprocess.CalledProcessError as e:
         logger.error(f"An error occurred while trying to clone the repo: {e}")

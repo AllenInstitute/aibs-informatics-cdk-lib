@@ -37,11 +37,15 @@ def remote_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def _commit(repo: Path, ref: str) -> str:
-    """Point ``ref`` at a new commit on top of main, leaving HEAD on main."""
+    """Point ``ref`` at a new commit on top of main, leaving HEAD on main. Tags are annotated."""
     sha = subprocess.check_output(
         [*GIT, "-C", str(repo), "commit-tree", "main^{tree}", "-p", "main", "-m", ref], text=True
     ).strip()
-    subprocess.check_call(["git", "-C", str(repo), "update-ref", ref, sha])
+    if ref.startswith("refs/tags/"):
+        tag = ref.removeprefix("refs/tags/")
+        subprocess.check_call([*GIT, "-C", str(repo), "tag", "--no-sign", "-am", tag, tag, sha])
+    else:
+        subprocess.check_call(["git", "-C", str(repo), "update-ref", ref, sha])
     return sha
 
 
@@ -237,25 +241,27 @@ def test__construct_repo_path__commit_ref_uses_the_sha(mock_check_output, tmp_pa
     mock_check_output.assert_not_called()
 
 
-@patch("aibs_informatics_cdk_lib.common.git.subprocess.check_call")
-def test__clone_repo__commit_ref_fetches_and_checks_out(mock_check_call, tmp_path):
-    """`git clone --branch` takes branch and tag names only, so a commit needs a checkout."""
-    target_path = clone_repo(f"git@github.com:org/package.git#{FULL_SHA}", tmp_path)
+@mark.parametrize(
+    "ref, url_ref",
+    [
+        param("refs/heads/feature", lambda sha: sha[:7], id="short sha off the default branch"),
+        param("refs/heads/feature", lambda sha: sha, id="full sha off the default branch"),
+        param("refs/pull/1/head", lambda sha: sha, id="full sha no branch reaches"),
+        param("refs/heads/feature", lambda sha: sha[:7].upper(), id="uppercase short sha"),
+        param("refs/tags/v1", lambda sha: "v1", id="annotated tag"),
+    ],
+)
+def test__clone_repo__checks_out_ref(remote_repo, tmp_path, ref, url_ref):
+    sha = _commit(remote_repo, ref)
+    url = f"{REMOTE_URL}#{url_ref(sha)}"
 
-    assert target_path == tmp_path / f"package_{FULL_SHA}"
-    assert mock_check_call.call_args_list == [
-        call(
-            [
-                "git",
-                "clone",
-                "git@github.com:org/package.git",
-                target_path.as_posix(),
-                "--single-branch",
-            ]
-        ),
-        call(["git", "fetch", "origin", FULL_SHA], cwd=target_path),
-        call(["git", "checkout", FULL_SHA], cwd=target_path),
-    ]
+    repo_path = clone_repo(url, tmp_path)
+    assert get_commit_hash(repo_path) == sha
+
+    # A second call must reuse the checkout, though the URL may not name its full commit SHA.
+    (repo_path / "marker").touch()
+    assert clone_repo(url, tmp_path) == repo_path
+    assert (repo_path / "marker").exists()
 
 
 @patch("aibs_informatics_cdk_lib.common.git.get_commit_hash_from_url", return_value="b" * 40)
