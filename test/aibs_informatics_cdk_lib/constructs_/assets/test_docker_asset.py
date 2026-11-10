@@ -353,7 +353,7 @@ class TestDockerAssetMirroring(DockerAssetBaseTest):
         """Tags differing only in punctuation must not collide on one construct id."""
         stack = self.get_dummy_stack("test")
         self.mirrored(stack=stack, mirror_tags=["v1.2", "v12"])
-        self.get_template(stack).resource_count_is(ECR_DEPLOYMENT_RESOURCE, 2)
+        self.get_template(stack).resource_count_is(ECR_DEPLOYMENT_RESOURCE, 3)
 
     def test__mirror__defaults_to_a_digest_tag_plus_the_source_tag(self):
         asset = self.mirrored()
@@ -404,16 +404,34 @@ class TestDockerAssetMirroring(DockerAssetBaseTest):
                 DockerAsset.from_registry(stack, "Image", IMAGE_URI, mirror_to_ecr=True)
         self.get_template(stack).resource_count_is(ECR_DEPLOYMENT_RESOURCE, 0)
 
-    def test__mirror__mirror_tags_overrides_the_default_pair(self):
-        """The escape hatch when two deployments cost more than the alias is worth."""
+    def test__mirror__mirror_tags_replaces_the_source_tag_alias(self):
         stack = self.get_dummy_stack("test")
         asset = self.mirrored(stack=stack, mirror_tags=["stable"])
-        assert asset.mirror_tags == ("stable",)
-        self.get_template(stack).resource_count_is(ECR_DEPLOYMENT_RESOURCE, 1)
+        assert asset.mirror_tags == (DIGEST_TAG, "stable")
+        self.get_template(stack).resource_count_is(ECR_DEPLOYMENT_RESOURCE, 2)
 
-    def test__mirror__empty_mirror_tags_raises(self):
-        with pytest.raises(ValueError, match="at least one destination tag"):
-            self.mirrored(mirror_tags=[])
+    def test__mirror__an_alias_override_still_references_the_digest_tag(self):
+        """`:stable` keeps its name when the digest moves, so Lambda and ECS would go stale."""
+        stack = self.get_dummy_stack("test")
+        asset = self.mirrored(stack=stack, mirror_tags=["stable"])
+        lambda_.DockerImageFunction(stack, "Function", code=asset.as_lambda_code())
+        ecs.FargateTaskDefinition(stack, "Task").add_container("Main", image=asset.as_ecs_image())
+        template = self.get_template(stack)
+        digest_uri = {"Fn::Join": ["", Match.array_with([f":{DIGEST_TAG}"])]}
+        template.has_resource_properties(
+            "AWS::Lambda::Function", {"Code": {"ImageUri": digest_uri}}
+        )
+        template.has_resource_properties(
+            "AWS::ECS::TaskDefinition",
+            {"ContainerDefinitions": [Match.object_like({"Image": digest_uri})]},
+        )
+
+    def test__mirror__empty_mirror_tags_publishes_only_the_digest_tag(self):
+        """The escape hatch when the alias deployment costs more than it is worth."""
+        stack = self.get_dummy_stack("test")
+        asset = self.mirrored(stack=stack, mirror_tags=[])
+        assert asset.mirror_tags == (DIGEST_TAG,)
+        self.get_template(stack).resource_count_is(ECR_DEPLOYMENT_RESOURCE, 1)
 
     def test__mirror__uses_a_supplied_repository_instead_of_creating_one(self):
         stack = self.get_dummy_stack("test")

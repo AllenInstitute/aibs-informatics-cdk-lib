@@ -92,9 +92,11 @@ class DockerAsset(constructs.Construct):
             ecr_repository: The repository to mirror into. Defaults to one this construct
                 creates, named ``{env_base}-{asset_name}`` and retained on stack deletion.
                 Only valid alongside ``mirror_to_ecr``.
-            mirror_tags: The destination tags to publish the mirrored image under, one
-                ``ECRDeployment`` each. Defaults to an immutable ``sha256-<hex>`` tag plus
-                the source tag as a moving alias. Only valid alongside ``mirror_to_ecr``.
+            mirror_tags: Moving aliases to publish beside the immutable ``sha256-<hex>``
+                tag, one ``ECRDeployment`` each. The digest tag is always published, and it
+                is what ``ecr_image_uri``, Lambda, and ECS reference. Defaults to the source
+                tag; ``[]`` publishes the digest tag alone. Only valid alongside
+                ``mirror_to_ecr``.
             pin_digest: Resolve the source tag to its immutable digest and reference the
                 image by that digest, for direct pull as well as mirroring. Off by default
                 so that direct pull keeps following the mutable tag. Mirroring pins
@@ -226,7 +228,7 @@ class DockerAsset(constructs.Construct):
                 Source; see ``DockerAsset.__init__``.
             ecr_repository: The repository to mirror into. Only valid for a Container Image
                 Source; see ``DockerAsset.__init__``.
-            mirror_tags: The destination tags for the mirror. Only valid for a Container
+            mirror_tags: The aliases the mirror publishes. Only valid for a Container
                 Image Source; see ``DockerAsset.__init__``.
             pin_digest: Reference the image by its resolved digest. Only valid for a
                 Container Image Source; see ``DockerAsset.__init__``.
@@ -311,7 +313,7 @@ class DockerAsset(constructs.Construct):
             image: A Container Image Source, or an image URI string.
             mirror_to_ecr: Mirror the image into ECR; see ``DockerAsset.__init__``.
             ecr_repository: The repository to mirror into; see ``DockerAsset.__init__``.
-            mirror_tags: The destination tags for the mirror; see ``DockerAsset.__init__``.
+            mirror_tags: The aliases the mirror publishes; see ``DockerAsset.__init__``.
             pin_digest: Reference the image by its resolved digest; see
                 ``DockerAsset.__init__``.
 
@@ -355,17 +357,19 @@ class DockerAsset(constructs.Construct):
             tag: The source tag, if the reference carried one.
             digest: The resolved content digest of the image to copy.
             ecr_repository: The repository to mirror into, or None to create one.
-            mirror_tags: The destination tags, or None for the default pair.
+            mirror_tags: The aliases to publish beside the digest tag, or None for the
+                source tag.
 
         Raises:
-            ValueError: If ``mirror_tags`` is empty.
             ImportError: If the ``ecr-mirror`` extra is not installed.
         """
         docker_image_name, ecr_deployment = _import_ecr_deployment()
 
-        tags = tuple(mirror_tags) if mirror_tags is not None else _default_mirror_tags(digest, tag)
-        if not tags:
-            raise ValueError("`mirror_tags` must name at least one destination tag to copy to.")
+        if mirror_tags is None:
+            mirror_tags = [tag] if tag else []
+        # Consumers reference the digest tag, never an alias: an alias keeps its name when
+        # the digest moves, so CloudFormation would see no change and keep the old image.
+        tags = tuple(dict.fromkeys([digest_to_tag(digest), *mirror_tags]))
 
         repository = ecr_repository or self._create_mirror_repository(image_name)
         # Copy from the digest, never the tag: the custom resource reruns only when its
@@ -446,7 +450,7 @@ class DockerAsset(constructs.Construct):
 
     @property
     def mirror_tags(self) -> tuple[str, ...]:
-        """The destination tags the mirror publishes, most specific first, or empty."""
+        """The destination tags the mirror publishes, the digest tag first, or empty."""
         return self._mirror_tags
 
     @property
@@ -482,10 +486,9 @@ class DockerAsset(constructs.Construct):
         """The URI of this image inside an ECR repository, or None if it is not in one.
 
         A locally built image is published to the CDK asset repository, which is ECR. A
-        mirrored image is in the mirror repository under the first mirror tag -- the
-        immutable digest tag, by default -- even when its origin is ECR too. Otherwise an
-        image whose origin is an ECR repository is already in one, and any other registry
-        image stays at its origin.
+        mirrored image is in the mirror repository under its immutable digest tag, even
+        when its origin is ECR too. Otherwise an image whose origin is an ECR repository is
+        already in one, and any other registry image stays at its origin.
 
         Returns:
             The in-ECR image URI, or None when the image is only at its origin registry.
@@ -553,25 +556,6 @@ class DockerAsset(constructs.Construct):
         return lambda_.DockerImageCode.from_ecr(
             self._image_asset.repository, tag_or_digest=self._image_asset.image_tag
         )
-
-
-def _default_mirror_tags(digest: str, tag: str | None) -> tuple[str, ...]:
-    """Build the destination tags a mirror publishes when the caller names none.
-
-    An immutable digest tag so a workload can name one exact image forever, plus the source
-    tag as a moving alias so ``:latest`` in ECR keeps meaning what it means upstream.
-
-    Args:
-        digest: The resolved content digest of the image being mirrored.
-        tag: The source tag, if the reference carried one.
-
-    Returns:
-        The destination tags, immutable one first.
-    """
-    tags = [digest_to_tag(digest)]
-    if tag is not None and tag not in tags:
-        tags.append(tag)
-    return tuple(tags)
 
 
 def _import_ecr_deployment() -> tuple[Any, Any]:

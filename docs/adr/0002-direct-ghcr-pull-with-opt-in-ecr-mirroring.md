@@ -42,7 +42,9 @@ never a silent fallback to the mutable tag.
 illegal in an ECR tag) for immutable reference, plus the original source tag as a moving
 alias. `ECRDeployment` takes one source/destination pair, so this is two constructs — but
 the second is nearly free, as the layers already exist in the destination and the copy
-skips blobs already present. `mirror_tags` overrides the default when that cost matters.
+skips blobs already present. `mirror_tags` replaces only the alias (`[]` drops it):
+`ecr_image_uri`, Lambda, and ECS always reference the digest tag, since an alias keeps its
+name when the digest moves and CloudFormation would see no change.
 
 **Private packages are documented, not solved.** The package is public today. If it goes
 private, both synth-time digest resolution and the Batch pull need credentials — and
