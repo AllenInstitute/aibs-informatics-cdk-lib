@@ -394,4 +394,5 @@ def clone_repo(
         return target_path
     except subprocess.CalledProcessError as e:
         logger.error(f"An error occurred while trying to clone the repo: {e}")
+        remove_path(target_path)
         raise e

@@ -286,6 +286,13 @@ def test__clone_repo__replaces_cached_clone_at_another_commit(remote_repo, tmp_p
     assert get_commit_hash(clone_repo(f"{REMOTE_URL}#{sha}", tmp_path / "cache")) == sha
 
 
+def test__clone_repo__failed_checkout_leaves_no_clone(remote_repo, tmp_path):
+    url = f"{REMOTE_URL}#{FULL_SHA}"
+    with pytest.raises(subprocess.CalledProcessError):
+        clone_repo(url, tmp_path)
+    assert not construct_repo_path(url, tmp_path).exists()
+
+
 class GitTests(BaseTest):
     def setUp(self) -> None:
         super().setUp()
