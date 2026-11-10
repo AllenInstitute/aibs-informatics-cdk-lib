@@ -1,10 +1,12 @@
 from pathlib import Path
 from unittest.mock import patch
 
+import aws_cdk as cdk
 import pytest
 from aws_cdk import aws_ecr_assets as ecr_assets
 from aws_cdk import aws_ecs as ecs
 from aws_cdk import aws_lambda as lambda_
+from aws_cdk.assertions import Match
 
 from aibs_informatics_cdk_lib.constructs_.assets.docker_asset import (
     DockerAsset,
@@ -17,6 +19,25 @@ from aibs_informatics_cdk_lib.constructs_.assets.source import (
 from test.aibs_informatics_cdk_lib.base import CdkBaseTest
 
 IMAGE_URI = "ghcr.io/alleninstitute/aibs-informatics-aws-lambda:v1.2.3"
+ECR_REPOSITORY = "123456789012.dkr.ecr.us-west-2.amazonaws.com/team/my-repo"
+ECR_REPOSITORY_ARN = {
+    "Fn::Join": [
+        "",
+        ["arn:", {"Ref": "AWS::Partition"}, ":ecr:us-west-2:123456789012:repository/team/my-repo"],
+    ]
+}
+ECR_IMAGE_REFS = [":v1", "@sha256:" + "ab" * 32]
+"""A tag and a digest, each appended to ``ECR_REPOSITORY`` to name an image already in ECR."""
+
+
+def synthesized_ecr_image_uri(ref: str) -> dict:
+    """The image URI CDK synthesizes for ``ECR_REPOSITORY + ref``."""
+    return {
+        "Fn::Join": [
+            "",
+            ["123456789012.dkr.ecr.us-west-2.", {"Ref": "AWS::URLSuffix"}, f"/team/my-repo{ref}"],
+        ]
+    }
 
 
 class DockerAssetBaseTest(CdkBaseTest):
@@ -41,6 +62,12 @@ class DockerAssetBaseTest(CdkBaseTest):
             directory=self.build_context().as_posix(),
             file="docker/Dockerfile",
         )
+
+    def ecr_asset(self, ref: str) -> DockerAsset:
+        """An image already in ECR, in an app of its own so each ref synthesizes alone."""
+        self.app = cdk.App()
+        stack = self.get_dummy_stack("test")
+        return DockerAsset.from_registry(stack, "Image", ECR_REPOSITORY + ref)
 
 
 # ---------------------------------------------------------------------------
@@ -161,6 +188,12 @@ class TestDockerAssetUris(DockerAssetBaseTest):
         asset = DockerAsset.from_registry(stack, "Image", IMAGE_URI)
         assert asset.image_uri == asset.source_image_uri
 
+    def test__registry__ecr_image_is_already_in_ecr(self):
+        for ref in ECR_IMAGE_REFS:
+            with self.subTest(ref=ref):
+                asset = self.ecr_asset(ref)
+                assert asset.ecr_image_uri == asset.image_uri == ECR_REPOSITORY + ref
+
 
 # ---------------------------------------------------------------------------
 # Per-service representations
@@ -189,6 +222,39 @@ class TestDockerAssetAsEcsImage(DockerAssetBaseTest):
         asset = DockerAsset.from_registry(stack, "Image", IMAGE_URI)
         assert isinstance(asset.as_ecs_image(), ecs.ContainerImage)
 
+    def test__as_ecs_image__ecr_image_grants_the_execution_role_pull(self):
+        """``from_registry`` would grant nothing, so a Fargate task could not pull the image."""
+        for ref in ECR_IMAGE_REFS:
+            with self.subTest(ref=ref):
+                asset = self.ecr_asset(ref)
+                stack = cdk.Stack.of(asset)
+                task = ecs.FargateTaskDefinition(stack, "Task")
+                task.add_container("Main", image=asset.as_ecs_image(), memory_limit_mib=512)
+                assert task.execution_role is not None
+                template = self.get_template(stack)
+                template.has_resource_properties(
+                    "AWS::ECS::TaskDefinition",
+                    {"ContainerDefinitions": [{"Image": synthesized_ecr_image_uri(ref)}]},
+                )
+                template.has_resource_properties(
+                    "AWS::IAM::Policy",
+                    {
+                        "PolicyDocument": {
+                            "Statement": Match.array_with(
+                                [
+                                    Match.object_like(
+                                        {
+                                            "Action": Match.array_with(["ecr:BatchGetImage"]),
+                                            "Resource": ECR_REPOSITORY_ARN,
+                                        }
+                                    )
+                                ]
+                            )
+                        },
+                        "Roles": [stack.resolve(task.execution_role.role_name)],
+                    },
+                )
+
 
 class TestDockerAssetAsLambdaCode(DockerAssetBaseTest):
     def test__as_lambda_code__local_build_points_at_the_asset_repository(self):
@@ -207,12 +273,28 @@ class TestDockerAssetAsLambdaCode(DockerAssetBaseTest):
         asset = self.local_build_asset()
         assert isinstance(asset.as_lambda_code(), lambda_.DockerImageCode)
 
+    def test__as_lambda_code__ecr_image_points_at_its_repository(self):
+        for ref in ECR_IMAGE_REFS:
+            with self.subTest(ref=ref):
+                asset = self.ecr_asset(ref)
+                stack = cdk.Stack.of(asset)
+                lambda_.DockerImageFunction(stack, "Fn", code=asset.as_lambda_code())
+                self.get_template(stack).has_resource_properties(
+                    "AWS::Lambda::Function", {"Code": {"ImageUri": synthesized_ecr_image_uri(ref)}}
+                )
+
     def test__as_lambda_code__unmirrored_registry_raises(self):
         """Lambda container images must live in ECR; mirroring is the fix, not a fallback."""
         stack = self.get_dummy_stack("test")
         asset = DockerAsset.from_registry(stack, "Image", IMAGE_URI)
         with pytest.raises(ValueError, match="mirror_to_ecr=True"):
             asset.as_lambda_code()
+        east = cdk.Stack(self.app, "east", env=cdk.Environment(region="us-east-1"))
+        asset = DockerAsset.from_registry(east, "Image", ECR_REPOSITORY + ":v1")
+        with pytest.raises(ValueError, match="us-east-1: .* us-west-2. .*mirror_to_ecr=True"):
+            asset.as_lambda_code()
+        west = cdk.Stack(self.app, "west", env=cdk.Environment(region="us-west-2"))
+        DockerAsset.from_registry(west, "Image", ECR_REPOSITORY + ":v1").as_lambda_code()
 
     def test__as_lambda_code__error_names_the_offending_image(self):
         stack = self.get_dummy_stack("test")

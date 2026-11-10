@@ -6,14 +6,18 @@ representations belong to a single image, not to the Assets Construct that colle
 several of them, so they hang off ``DockerAsset``.
 
 ``DockerAsset`` is a ``constructs.Construct`` rather than a plain value object so that it
-can own child constructs -- today the ``DockerImageAsset`` it builds, later the ECR
-repository and deployment used to mirror a Container Image Source in-region.
+can own child constructs -- today the ``DockerImageAsset`` it builds or the existing ECR
+repository it references, later the ECR repository and deployment used to mirror a
+Container Image Source in-region.
 """
 
 import logging
+import re
 from typing import Any
 
+import aws_cdk as cdk
 import constructs
+from aws_cdk import aws_ecr as ecr
 from aws_cdk import aws_ecr_assets as ecr_assets
 from aws_cdk import aws_ecs as ecs
 from aws_cdk import aws_lambda as lambda_
@@ -27,6 +31,12 @@ logger = logging.getLogger(__name__)
 
 IMAGE_CONSTRUCT_ID = "Image"
 """Construct id of the ``DockerImageAsset`` a locally built ``DockerAsset`` owns."""
+
+# Matches an image in a private ECR repository: <account>.dkr.ecr.<region>.amazonaws.com/...
+_ECR_IMAGE_URI_RE = re.compile(
+    r"^(?P<account>\d{12})\.dkr\.ecr\.(?P<region>[a-z0-9-]+)\.amazonaws\.com/"
+    r"(?P<repository>[^:@]+)(?::(?P<tag>[^@]+))?(?:@(?P<digest>sha256:[a-fA-F0-9]+))?$"
+)
 
 
 class DockerAsset(constructs.Construct):
@@ -88,6 +98,24 @@ class DockerAsset(constructs.Construct):
             if directory is not None
             else None
         )
+        self._ecr_repository: ecr.IRepository | None = None
+        self._ecr_tag_or_digest: str | None = None
+        self._ecr_region: str | None = None
+        if ecr_image := _ECR_IMAGE_URI_RE.match(registry_image_uri or ""):
+            self._ecr_repository = ecr.Repository.from_repository_attributes(
+                self,
+                "Repository",
+                repository_arn=cdk.Stack.of(self).format_arn(
+                    service="ecr",
+                    account=ecr_image["account"],
+                    region=ecr_image["region"],
+                    resource="repository",
+                    resource_name=ecr_image["repository"],
+                ),
+                repository_name=ecr_image["repository"],
+            )
+            self._ecr_tag_or_digest = ecr_image["digest"] or ecr_image["tag"]
+            self._ecr_region = ecr_image["region"]
 
     # -----------------------------------------------------------------------------
     # Factories
@@ -228,9 +256,10 @@ class DockerAsset(constructs.Construct):
     def ecr_image_uri(self) -> str | None:
         """The URI of this image inside an ECR repository, or None if it is not in one.
 
-        A locally built image is published to the CDK asset repository, which is ECR. An
-        image resolved from a Container Image Source stays at its origin registry until
-        it is mirrored into ECR, which this construct does not yet do.
+        A locally built image is published to the CDK asset repository, which is ECR, and
+        an image whose origin is an ECR repository is already in one. Any other registry
+        image stays at its origin until it is mirrored into ECR, which this construct does
+        not yet do.
 
         Returns:
             The in-ECR image URI, or None when the image is only at its origin registry.
@@ -238,37 +267,58 @@ class DockerAsset(constructs.Construct):
         # NOTE: mirroring a Container Image Source into ECR resolves the None case.
         if self._image_asset is not None:
             return self._image_asset.image_uri
+        if self._ecr_repository is not None:
+            return self._registry_image_uri
         return None
 
     def as_ecs_image(self) -> ecs.ContainerImage:
         """Present this image to ECS.
 
         ECS can pull directly from a public registry, so a Container Image Source needs
-        no mirroring to be usable here.
+        no mirroring to be usable here. An image already in ECR goes through its
+        repository so that the task execution role is granted pull access.
 
         Returns:
             The image as an ``ecs.ContainerImage``.
         """
         if self._image_asset is not None:
             return ecs.ContainerImage.from_docker_image_asset(self._image_asset)
+        if self._ecr_repository is not None:
+            return ecs.ContainerImage.from_ecr_repository(
+                self._ecr_repository, tag=self._ecr_tag_or_digest
+            )
         return ecs.ContainerImage.from_registry(self.image_uri)
 
     def as_lambda_code(self) -> lambda_.DockerImageCode:
         """Present this image to Lambda.
 
+        An image already in ECR must be in the function's region.
+
         Returns:
             The image as a ``lambda_.DockerImageCode``.
 
         Raises:
-            ValueError: If the image is only available at its origin registry. Lambda
+            ValueError: If the image is only available at a non-ECR registry. Lambda
                 container images must live in ECR -- ``DockerImageCode`` offers only
                 ``from_ecr()`` and ``from_image_asset()`` -- so the image has to be
                 mirrored first. Provisioning that ECR repository here would create
                 infrastructure as a side effect of reading a property, so it has to be
-                asked for explicitly.
+                asked for explicitly. Also raised for an image in ECR in a region other
+                than this stack's, when that region is known.
         """
         # NOTE: mirroring a Container Image Source into ECR gives this the repository and
         # tag it needs, and the `from_ecr` call below serves that case unchanged.
+        if self._ecr_repository is not None:
+            region = cdk.Stack.of(self).region
+            if not cdk.Token.is_unresolved(region) and region != self._ecr_region:
+                raise ValueError(
+                    f"Cannot use '{self.source_image_uri}' as Lambda code in {region}: it is "
+                    f"in ECR in {self._ecr_region}. Pass `mirror_to_ecr=True` for this asset "
+                    "to copy it into ECR in this stack's region."
+                )
+            return lambda_.DockerImageCode.from_ecr(
+                self._ecr_repository, tag_or_digest=self._ecr_tag_or_digest
+            )
         if self._image_asset is None:
             raise ValueError(
                 f"Cannot use '{self.source_image_uri}' as Lambda code: Lambda container "
