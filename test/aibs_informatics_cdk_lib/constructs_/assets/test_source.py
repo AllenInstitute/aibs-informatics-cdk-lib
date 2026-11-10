@@ -54,6 +54,17 @@ class TestGitSource:
         )
         assert source.repo_url_with_ref == "git@github.com:org/repo.git#abc123"
 
+    @mark.parametrize(
+        "value",
+        [
+            param("git@github.com:org/repo.git#refs/heads/20261022", id="sha-like branch"),
+            param("git@github.com:org/repo.git#refs/tags/20261022", id="sha-like tag"),
+        ],
+    )
+    def test__repo_url_with_ref__round_trips_sha_like_names(self, value):
+        source = PackageSource.from_str(value)
+        assert PackageSource.from_str(source.repo_url_with_ref) == source
+
     def test__source_type(self):
         source = GitSource(url="git@github.com:org/repo.git")
         assert source.source_type == "git"

@@ -9,7 +9,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Discriminator
 
-from aibs_informatics_cdk_lib.common.git import GitUrl, is_local_repo, is_repo_url
+from aibs_informatics_cdk_lib.common.git import SHA_PATTERN, GitUrl, is_local_repo, is_repo_url
 
 # Matches container image references: registry.tld/path[:tag][@sha256:digest]
 _CONTAINER_IMAGE_RE = re.compile(
@@ -109,6 +109,9 @@ class GitSource(PackageSource):
         which parse the #ref fragment.
         """
         ref = self.commit or self.tag or self.branch
+        if ref and not self.commit and re.fullmatch(SHA_PATTERN, ref):
+            # Qualify a SHA-like branch or tag name, or it would be reparsed as a commit.
+            ref = f"refs/{'tags' if self.tag else 'heads'}/{ref}"
         if ref:
             return f"{self.url}#{ref}"
         return self.url

@@ -37,7 +37,7 @@ _REF_SEP_PATTERN = r"(?:\#|@|\/tree\/)"
 # A ref name; may contain slashes (e.g. `release/1.0`) but never starts a new URL segment
 _REF_NAME_PATTERN = r"[\w\./-]+"
 # An abbreviated or full commit SHA
-_SHA_PATTERN = r"[a-fA-F0-9]{7,40}"
+SHA_PATTERN = r"[a-fA-F0-9]{7,40}"
 
 # Ordered alternation of every ref form we can classify. Fully qualified refs come first so
 # that `refs/heads/x` is not swallowed by the catch-all, and the catch-all comes last.
@@ -46,8 +46,8 @@ _REF_PATTERN = (
     rf"{_REF_SEP_PATTERN}refs\/heads\/(?P<branch>{_REF_NAME_PATTERN})"
     rf"|{_REF_SEP_PATTERN}refs\/tags\/(?P<tag>{_REF_NAME_PATTERN})"
     rf"|\/releases\/tag\/(?P<release_tag>{_REF_NAME_PATTERN})"
-    rf"|\/commit\/(?P<commit_path>{_SHA_PATTERN})"
-    rf"|{_REF_SEP_PATTERN}(?P<commit>{_SHA_PATTERN})"
+    rf"|\/commit\/(?P<commit_path>{SHA_PATTERN})"
+    rf"|{_REF_SEP_PATTERN}(?P<commit>{SHA_PATTERN})"
     rf"|{_REF_SEP_PATTERN}(?P<ambiguous_ref>{_REF_NAME_PATTERN})"
     r")?"
 )
