@@ -210,7 +210,9 @@ def get_commit_hash_from_url(repo_url: str) -> str:
     try:
         # Use git ls-remote to get the commit hashes of remote heads
         output = (
-            subprocess.check_output(["git", "ls-remote", url.repo_base_url, "--branch", ref])
+            subprocess.check_output(
+                ["git", "ls-remote", url.repo_base_url, "--branch", ref, f"{ref}^{{}}"]
+            )
             .decode("utf-8")
             .strip()
         )
@@ -222,8 +224,10 @@ def get_commit_hash_from_url(repo_url: str) -> str:
             f"Could not resolve ref '{ref}' to a commit hash on {url.repo_base_url}. "
             "The ref does not exist on the remote."
         )
-    # The first part of the output is the commit hash of the matched reference
-    return output.split("\t")[0]
+    # An annotated tag names a tag object; a checkout reports the commit it peels to.
+    sha, name = output.splitlines()[0].split("\t")
+    peeled = dict(line.split("\t")[::-1] for line in output.splitlines())
+    return peeled.get(f"{name}^{{}}", sha)
 
 
 def get_commit_hash_from_local(repo_path: str | Path) -> str:
@@ -365,7 +369,7 @@ def clone_repo(
                     logger.info(
                         f"Skipping cloning of repository as target path already exists: {target_path}"  # noqa: E501
                     )
-                return target_path
+                    return target_path
         # If the target path exists but the commit hashes do not match, remove the existing path
         remove_path(target_path)
     git_url = GitUrl(repo_url)

@@ -1,3 +1,5 @@
+import subprocess
+from pathlib import Path
 from unittest.mock import call, patch
 
 import pytest
@@ -18,6 +20,29 @@ from aibs_informatics_cdk_lib.common.git import (
 
 FULL_SHA = "a" * 40
 SHORT_SHA = "abc1234"
+REMOTE_URL = "https://example.com/org/package.git"
+GIT = ["git", "-c", "user.name=test", "-c", "user.email=test@test.com"]
+
+
+@pytest.fixture
+def remote_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """A local repo on branch main that git fetches whenever it is asked for REMOTE_URL."""
+    repo = tmp_path / "remote"
+    subprocess.check_call(["git", "init", "-q", "-b", "main", str(repo)])
+    subprocess.check_call([*GIT, "-C", str(repo), "commit", "-q", "--allow-empty", "-m", "main"])
+    monkeypatch.setenv("GIT_CONFIG_COUNT", "1")
+    monkeypatch.setenv("GIT_CONFIG_KEY_0", f"url.{repo.as_uri()}.insteadOf")
+    monkeypatch.setenv("GIT_CONFIG_VALUE_0", REMOTE_URL)
+    return repo
+
+
+def _commit(repo: Path, ref: str) -> str:
+    """Point ``ref`` at a new commit on top of main, leaving HEAD on main."""
+    sha = subprocess.check_output(
+        [*GIT, "-C", str(repo), "commit-tree", "main^{tree}", "-p", "main", "-m", ref], text=True
+    ).strip()
+    subprocess.check_call(["git", "-C", str(repo), "update-ref", ref, sha])
+    return sha
 
 
 @mark.parametrize(
@@ -251,6 +276,14 @@ def test__clone_repo__tag_ref_uses_branch_flag(mock_check_call, mock_get_commit_
             ]
         )
     ]
+
+
+def test__clone_repo__replaces_cached_clone_at_another_commit(remote_repo, tmp_path):
+    sha = _commit(remote_repo, "refs/heads/feature")
+    stale_path = construct_repo_path(f"{REMOTE_URL}#{sha}", tmp_path / "cache")
+    subprocess.check_call(["git", "clone", "-q", REMOTE_URL, stale_path.as_posix()])
+
+    assert get_commit_hash(clone_repo(f"{REMOTE_URL}#{sha}", tmp_path / "cache")) == sha
 
 
 class GitTests(BaseTest):
