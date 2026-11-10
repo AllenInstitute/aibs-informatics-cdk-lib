@@ -185,8 +185,8 @@ class TestResolveImageDigest:
             manifest_url,
         ]
 
-    def test__resolve_image_digest__accepts_multi_platform_indexes(self):
-        """A multi-platform image must resolve to its index digest, not one platform's."""
+    def test__resolve_image_digest__accepts_indexes_and_single_platform_manifests(self):
+        """An index pins a multi-platform image; GHCR 404s an OCI manifest not accepted."""
         urlopen, requests = registry_responses()
         with patch.object(urllib.request, "urlopen", side_effect=urlopen):
             resolve_image_digest(IMAGE_NAME, "latest")
@@ -194,6 +194,7 @@ class TestResolveImageDigest:
         assert accept is not None
         for media_type in MANIFEST_MEDIA_TYPES:
             assert media_type in accept
+        assert "application/vnd.oci.image.manifest.v1+json" in accept
 
     def test__resolve_image_digest__defaults_to_the_latest_tag(self):
         urlopen, requests = registry_responses()

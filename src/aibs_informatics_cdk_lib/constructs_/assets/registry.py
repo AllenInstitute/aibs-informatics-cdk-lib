@@ -10,7 +10,7 @@ The lookup is an anonymous manifest ``HEAD`` against the OCI Distribution API, i
 stdlib ``urllib`` so that Digest Pinning costs no runtime dependency. A registry that answers
 ``401`` gets the standard bearer flow: a token from the realm its ``WWW-Authenticate``
 challenge names, then one retry. The ``Accept`` header lists the index media types as well
-as the single-manifest one, so a multi-platform image resolves to its image index digest;
+as the single-manifest ones, so a multi-platform image resolves to its image index digest;
 that is the correct thing to pin and to mirror, because the per-platform child is selected
 at pull time.
 
@@ -37,6 +37,7 @@ DIGEST_HEADER = "Docker-Content-Digest"
 MANIFEST_MEDIA_TYPES = (
     "application/vnd.oci.image.index.v1+json",
     "application/vnd.docker.distribution.manifest.list.v2+json",
+    "application/vnd.oci.image.manifest.v1+json",
     "application/vnd.docker.distribution.manifest.v2+json",
 )
 """Manifest media types to accept, multi-platform indexes first."""
