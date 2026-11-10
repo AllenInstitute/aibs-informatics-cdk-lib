@@ -27,12 +27,18 @@ dependencies = [
     { name = "pydantic" },
 ]
 
+[package.optional-dependencies]
+ecr-mirror = [
+    { name = "cdk-ecr-deployment" },
+]
+
 [package.dev-dependencies]
 all = [
     { name = "aibs-informatics-test-resources" },
     { name = "boto3-stubs", extra = ["batch", "s3"] },
     { name = "build" },
     { name = "bump-my-version" },
+    { name = "cdk-ecr-deployment" },
     { name = "griffe-pydantic" },
     { name = "mike" },
     { name = "mkdocs" },
@@ -45,6 +51,7 @@ all = [
 ]
 dev = [
     { name = "aibs-informatics-test-resources" },
+    { name = "cdk-ecr-deployment" },
 ]
 docs = [
     { name = "griffe-pydantic" },
@@ -70,9 +77,11 @@ requires-dist = [
     { name = "aibs-informatics-aws-utils", specifier = "~=1.0" },
     { name = "aibs-informatics-core", specifier = ">=1.0.1,<2" },
     { name = "aws-cdk-lib", specifier = "~=2.275" },
+    { name = "cdk-ecr-deployment", marker = "extra == 'ecr-mirror'", specifier = ">=3.1,<5" },
     { name = "constructs", specifier = "~=10.0" },
     { name = "pydantic", specifier = "~=2.5" },
 ]
+provides-extras = ["ecr-mirror"]
 
 [package.metadata.requires-dev]
 all = [
@@ -80,6 +89,7 @@ all = [
     { name = "boto3-stubs", extras = ["s3", "batch"] },
     { name = "build" },
     { name = "bump-my-version" },
+    { name = "cdk-ecr-deployment", specifier = ">=3.1,<5" },
     { name = "griffe-pydantic", specifier = "~=1.1" },
     { name = "mike", specifier = "~=2.1" },
     { name = "mkdocs", specifier = "~=1.6" },
@@ -90,7 +100,10 @@ all = [
     { name = "types-pyyaml" },
     { name = "wheel" },
 ]
-dev = [{ name = "aibs-informatics-test-resources", extras = ["all"], specifier = "~=0.0.4" }]
+dev = [
+    { name = "aibs-informatics-test-resources", extras = ["all"], specifier = "~=0.0.4" },
+    { name = "cdk-ecr-deployment", specifier = ">=3.1,<5" },
+]
 docs = [
     { name = "griffe-pydantic", specifier = "~=1.1" },
     { name = "mike", specifier = "~=2.1" },
@@ -393,6 +406,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/6e/00/2432bb2d445b39b5407f0a90e01b9a271475eea7caf913d7a86bcb956385/cattrs-25.3.0.tar.gz", hash = "sha256:1ac88d9e5eda10436c4517e390a4142d88638fe682c436c93db7ce4a277b884a", size = 509321, upload-time = "2025-10-07T12:26:08.737Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d8/2b/a40e1488fdfa02d3f9a653a61a5935ea08b3c2225ee818db6a76c7ba9695/cattrs-25.3.0-py3-none-any.whl", hash = "sha256:9896e84e0a5bf723bc7b4b68f4481785367ce07a8a02e7e9ee6eb2819bc306ff", size = 70738, upload-time = "2025-10-07T12:26:06.603Z" },
+]
+
+[[package]]
+name = "cdk-ecr-deployment"
+version = "4.2.88"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "aws-cdk-lib" },
+    { name = "constructs" },
+    { name = "jsii" },
+    { name = "publication" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/de/7e/3dbb9b4a4972be3b4ae5b1d20cbc84db7344bd192143938549adf326d758/cdk_ecr_deployment-4.2.88.tar.gz", hash = "sha256:49bee3146759c946cb3008c1d688c1527d4a61211d2d00e3ee33797e70016a16", size = 24612578, upload-time = "2026-11-11T10:53:39.304Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/68/a1/b8ebf93c2af7da5ba19b46e46982175ed2697dec32c69626dc13fba25549/cdk_ecr_deployment-4.2.88-py3-none-any.whl", hash = "sha256:c88aeb6f7804309ea4af72276c49f03766d7ded4e249992ee4dbd86ee12f7f52", size = 24611198, upload-time = "2026-11-11T10:53:36.068Z" },
 ]
 
 [[package]]
