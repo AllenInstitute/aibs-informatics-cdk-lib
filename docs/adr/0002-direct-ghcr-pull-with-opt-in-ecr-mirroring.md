@@ -15,10 +15,9 @@ images, which AWS requires to be in ECR.
 
 Mirroring-always was rejected on dependency grounds rather than architectural ones.
 `cdk-ecr-deployment` is proven in-house (`gcs-infra` runs three `ECRDeployment`s today) but
-`gcs`, `ocs`, and `ocs-deploy` all pin `~=3.1.13` while upstream supports only v4. A hard
-dependency on either major forces a coordinated multi-repo change; declaring it as an
-optional `ecr-mirror` extra with a lazy import and a `>=3.1,<5` range avoids the resolver
-conflict entirely and matches the fact that mirroring is already opt-in.
+`gcs`, `ocs`, and `ocs-deploy` all pin `~=3.1.13` while upstream supports only v4.
+We require v4, the line we test against (3.x registers its custom resource under a different type), so a hard dependency would force a coordinated multi-repo upgrade.
+Declaring it as an optional `ecr-mirror` extra with a lazy import and a `>=4,<5` range leaves those repos unaffected unless they enable it, and matches the fact that mirroring is already opt-in.
 
 Registry throttling was raised as an argument for mirroring and does not hold up: GHCR
 publishes no pull rate limit for public packages and public package usage is free, unlike
@@ -42,7 +41,10 @@ never a silent fallback to the mutable tag.
 illegal in an ECR tag) for immutable reference, plus the original source tag as a moving
 alias. `ECRDeployment` takes one source/destination pair, so this is two constructs — but
 the second is nearly free, as the layers already exist in the destination and the copy
-skips blobs already present. `mirror_tags` overrides the default when that cost matters.
+skips blobs already present. `mirror_tags` replaces only the alias (`[]` drops it):
+`ecr_image_uri`, Lambda, and ECS always reference the digest tag, since an alias keeps its
+name when the digest moves and CloudFormation would see no change.
+The digest tag names the source index but holds its linux/amd64 image, pinned with `image_arch=["amd64"]`, because Lambda only runs single-architecture images.
 
 **Private packages are documented, not solved.** The package is public today. If it goes
 private, both synth-time digest resolution and the Batch pull need credentials — and
