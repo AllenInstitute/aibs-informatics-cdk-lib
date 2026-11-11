@@ -367,9 +367,12 @@ class TestDockerAssetMirroring(DockerAssetBaseTest):
         """A tag-to-tag copy would run once and then never notice the tag moving."""
         stack = self.get_dummy_stack("test")
         self.mirrored(stack=stack)
-        self.get_template(stack).has_resource_properties(
+        template = self.get_template(stack)
+        template.has_resource_properties(
             ECR_DEPLOYMENT_RESOURCE, {"SrcImage": f"docker://{DIGEST_URI}"}
         )
+        # Lambda rejects multi-architecture images, so every copy pins the one it runs.
+        template.all_resources_properties(ECR_DEPLOYMENT_RESOURCE, {"ImageArch": "amd64"})
 
     def test__mirror__resolves_a_mutable_tag_at_synth(self):
         stack = self.get_dummy_stack("test")

@@ -45,6 +45,7 @@ the second is nearly free, as the layers already exist in the destination and th
 skips blobs already present. `mirror_tags` replaces only the alias (`[]` drops it):
 `ecr_image_uri`, Lambda, and ECS always reference the digest tag, since an alias keeps its
 name when the digest moves and CloudFormation would see no change.
+The digest tag names the source index but holds its linux/amd64 image, pinned with `image_arch=["amd64"]`, because Lambda only runs single-architecture images.
 
 **Private packages are documented, not solved.** The package is public today. If it goes
 private, both synth-time digest resolution and the Batch pull need credentials — and

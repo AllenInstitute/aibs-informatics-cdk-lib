@@ -90,6 +90,8 @@ class DockerAsset(constructs.Construct):
                 workloads pull in-region. Requires the ``ecr-mirror`` extra, and resolves
                 the source tag to its digest at synth -- see ``pin_digest``. Consumers do
                 not wait for the copy, so give each one ``consumer.node.add_dependency(asset)``.
+                The digest tag names a source index but holds its linux/amd64 image, because
+                Lambda only runs single-architecture images.
             ecr_repository: The repository to mirror into. Defaults to one this construct
                 creates, named ``{env_base}-{asset_name}`` and retained on stack deletion.
                 Only valid alongside ``mirror_to_ecr``.
@@ -383,6 +385,7 @@ class DockerAsset(constructs.Construct):
                 f"{MIRROR_CONSTRUCT_ID_PREFIX}{mirror_tag}",
                 src=docker_image_name(source_uri),
                 dest=docker_image_name(repository.repository_uri_for_tag(mirror_tag)),
+                image_arch=["amd64"],
             )
 
         self._mirror_repository = repository
