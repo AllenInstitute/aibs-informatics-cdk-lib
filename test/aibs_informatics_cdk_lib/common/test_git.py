@@ -222,6 +222,20 @@ def test__git_url__ref_and_ref_kind(repo_url, expected_ref, expected_ref_kind):
 
 
 @patch("aibs_informatics_cdk_lib.common.git.subprocess.check_output")
+def test__is_local_repo__discards_git_stderr(mock_check_output):
+    """The predicate is asked about non-paths routinely; git's complaint is noise."""
+    assert is_local_repo("ghcr.io/org/repo:latest")
+    _, kwargs = mock_check_output.call_args
+    assert kwargs["stderr"] == subprocess.DEVNULL
+
+
+def test__is_local_repo__container_image_ref_stays_quiet(capfd):
+    """`PackageSource.from_str` probes this for every image ref, on every synth."""
+    assert not is_local_repo("ghcr.io/org/repo:latest")
+    assert capfd.readouterr().err == ""
+
+
+@patch("aibs_informatics_cdk_lib.common.git.subprocess.check_output")
 def test__get_commit_hash_from_url__commit_ref_short_circuits(mock_check_output):
     """A commit SHA is already a commit hash -- ls-remote would report nothing for it."""
     assert get_commit_hash_from_url(f"git@github.com:org/package.git#{FULL_SHA}") == FULL_SHA
