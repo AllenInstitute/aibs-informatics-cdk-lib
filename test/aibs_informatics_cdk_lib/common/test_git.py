@@ -1,15 +1,52 @@
+import subprocess
+from pathlib import Path
+from unittest.mock import call, patch
+
+import pytest
 from aibs_informatics_test_resources import BaseTest
 from pytest import mark, param
 
 from aibs_informatics_cdk_lib.common.git import (
+    GitUrl,
     clone_repo,
     construct_repo_path,
     get_commit_hash,
+    get_commit_hash_from_url,
     get_repo_name,
     get_repo_url_components,
     is_local_repo,
     is_repo_url,
 )
+
+FULL_SHA = "a" * 40
+SHORT_SHA = "abc1234"
+REMOTE_URL = "https://example.com/org/package.git"
+GIT = ["git", "-c", "user.name=test", "-c", "user.email=test@test.com"]
+
+
+@pytest.fixture
+def remote_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """A local repo on branch main that git fetches whenever it is asked for REMOTE_URL."""
+    repo = tmp_path / "remote"
+    subprocess.check_call(["git", "init", "-q", "-b", "main", str(repo)])
+    subprocess.check_call([*GIT, "-C", str(repo), "commit", "-q", "--allow-empty", "-m", "main"])
+    monkeypatch.setenv("GIT_CONFIG_COUNT", "1")
+    monkeypatch.setenv("GIT_CONFIG_KEY_0", f"url.{repo.as_uri()}.insteadOf")
+    monkeypatch.setenv("GIT_CONFIG_VALUE_0", REMOTE_URL)
+    return repo
+
+
+def _commit(repo: Path, ref: str) -> str:
+    """Point ``ref`` at a new commit on top of main, leaving HEAD on main. Tags are annotated."""
+    sha = subprocess.check_output(
+        [*GIT, "-C", str(repo), "commit-tree", "main^{tree}", "-p", "main", "-m", ref], text=True
+    ).strip()
+    if ref.startswith("refs/tags/"):
+        tag = ref.removeprefix("refs/tags/")
+        subprocess.check_call([*GIT, "-C", str(repo), "tag", "--no-sign", "-am", tag, tag, sha])
+    else:
+        subprocess.check_call(["git", "-C", str(repo), "update-ref", ref, sha])
+    return sha
 
 
 @mark.parametrize(
@@ -85,11 +122,181 @@ from aibs_informatics_cdk_lib.common.git import (
             ("git@github.com:github/octoforce-actions.git", "v1.0.0"),
             id="ssh branch2",
         ),
+        param(
+            "https://github.com/org/package/releases/tag/v1.0.0",
+            ("https://github.com/org/package.git", "v1.0.0"),
+            id="https releases/tag",
+        ),
+        param(
+            f"https://github.com/org/package/commit/{SHORT_SHA}",
+            ("https://github.com/org/package.git", SHORT_SHA),
+            id="https commit",
+        ),
+        param(
+            "git@github.com:org/package.git#refs/heads/branch/name",
+            ("git@github.com:org/package.git", "branch/name"),
+            id="ssh refs/heads is reported by short name",
+        ),
+        param(
+            "git@github.com:org/package.git#refs/tags/v1.0.0",
+            ("git@github.com:org/package.git", "v1.0.0"),
+            id="ssh refs/tags is reported by short name",
+        ),
     ],
 )
 def test__get_url_components(repo_url, expected_components):
     git_url_components = get_repo_url_components(repo_url)
     assert git_url_components == expected_components
+
+
+@mark.parametrize(
+    "repo_url, expected_ref, expected_ref_kind",
+    [
+        param("git@github.com:org/package.git", None, None, id="no ref"),
+        param(
+            "git@github.com:org/package.git#refs/heads/main",
+            "main",
+            "branch",
+            id="refs/heads is a branch",
+        ),
+        param(
+            "https://github.com/org/package/tree/refs/heads/release/1.0",
+            "release/1.0",
+            "branch",
+            id="tree refs/heads is a branch",
+        ),
+        param(
+            "git@github.com:org/package.git#refs/tags/v1.2.3",
+            "v1.2.3",
+            "tag",
+            id="refs/tags is a tag",
+        ),
+        param(
+            "https://github.com/org/package/releases/tag/v1.2.3",
+            "v1.2.3",
+            "tag",
+            id="releases/tag is a tag",
+        ),
+        param(
+            f"https://github.com/org/package/commit/{SHORT_SHA}",
+            SHORT_SHA,
+            "commit",
+            id="commit path is a commit",
+        ),
+        param(
+            f"https://github.com/org/package/commit/{FULL_SHA}",
+            FULL_SHA,
+            "commit",
+            id="commit path with full sha is a commit",
+        ),
+        param(
+            f"git@github.com:org/package.git#{SHORT_SHA}",
+            SHORT_SHA,
+            "commit",
+            id="bare short sha is a commit",
+        ),
+        param(
+            f"git@github.com:org/package.git@{FULL_SHA}",
+            FULL_SHA,
+            "commit",
+            id="bare full sha is a commit",
+        ),
+        # Anything the URL does not classify is reported as a branch. `/tree/` is GitHub's
+        # segment for branches, tags and SHAs alike, and branch vs tag changes nothing
+        # downstream -- only commit does.
+        param("git@github.com:org/package.git#main", "main", "branch", id="ambiguous name"),
+        param("git@github.com:org/package.git#v1.2.3", "v1.2.3", "branch", id="ambiguous tag"),
+        param("https://github.com/org/package/tree/main", "main", "branch", id="ambiguous tree"),
+        param(
+            "git@github.com:org/package.git#abc123",
+            "abc123",
+            "branch",
+            id="six hex chars is too short to be a sha",
+        ),
+    ],
+)
+def test__git_url__ref_and_ref_kind(repo_url, expected_ref, expected_ref_kind):
+    git_url = GitUrl(repo_url)
+    assert git_url.ref == expected_ref
+    assert git_url.ref_kind == expected_ref_kind
+
+
+@patch("aibs_informatics_cdk_lib.common.git.subprocess.check_output")
+def test__get_commit_hash_from_url__commit_ref_short_circuits(mock_check_output):
+    """A commit SHA is already a commit hash -- ls-remote would report nothing for it."""
+    assert get_commit_hash_from_url(f"git@github.com:org/package.git#{FULL_SHA}") == FULL_SHA
+    mock_check_output.assert_not_called()
+
+
+@patch("aibs_informatics_cdk_lib.common.git.subprocess.check_output", return_value=b"")
+def test__get_commit_hash_from_url__unresolvable_ref_raises(mock_check_output):
+    with pytest.raises(ValueError, match="Could not resolve ref 'no-such-branch'"):
+        get_commit_hash_from_url("git@github.com:org/package.git#no-such-branch")
+
+
+@patch("aibs_informatics_cdk_lib.common.git.subprocess.check_output")
+def test__construct_repo_path__commit_ref_uses_the_sha(mock_check_output, tmp_path):
+    target_path = construct_repo_path(f"git@github.com:org/package.git#{FULL_SHA}", tmp_path)
+    assert target_path == tmp_path / f"package_{FULL_SHA}"
+    mock_check_output.assert_not_called()
+
+
+@mark.parametrize(
+    "ref, url_ref",
+    [
+        param("refs/heads/feature", lambda sha: sha[:7], id="short sha off the default branch"),
+        param("refs/heads/feature", lambda sha: sha, id="full sha off the default branch"),
+        param("refs/pull/1/head", lambda sha: sha, id="full sha no branch reaches"),
+        param("refs/heads/feature", lambda sha: sha[:7].upper(), id="uppercase short sha"),
+        param("refs/tags/v1", lambda sha: "v1", id="annotated tag"),
+    ],
+)
+def test__clone_repo__checks_out_ref(remote_repo, tmp_path, ref, url_ref):
+    sha = _commit(remote_repo, ref)
+    url = f"{REMOTE_URL}#{url_ref(sha)}"
+
+    repo_path = clone_repo(url, tmp_path)
+    assert get_commit_hash(repo_path) == sha
+
+    # A second call must reuse the checkout, though the URL may not name its full commit SHA.
+    (repo_path / "marker").touch()
+    assert clone_repo(url, tmp_path) == repo_path
+    assert (repo_path / "marker").exists()
+
+
+@patch("aibs_informatics_cdk_lib.common.git.get_commit_hash_from_url", return_value="b" * 40)
+@patch("aibs_informatics_cdk_lib.common.git.subprocess.check_call")
+def test__clone_repo__tag_ref_uses_branch_flag(mock_check_call, mock_get_commit_hash, tmp_path):
+    target_path = clone_repo("https://github.com/org/package/releases/tag/v1.0.0", tmp_path)
+
+    assert mock_check_call.call_args_list == [
+        call(
+            [
+                "git",
+                "clone",
+                "https://github.com/org/package.git",
+                target_path.as_posix(),
+                "--single-branch",
+                "--branch",
+                "v1.0.0",
+            ]
+        )
+    ]
+
+
+def test__clone_repo__replaces_cached_clone_at_another_commit(remote_repo, tmp_path):
+    sha = _commit(remote_repo, "refs/heads/feature")
+    stale_path = construct_repo_path(f"{REMOTE_URL}#{sha}", tmp_path / "cache")
+    subprocess.check_call(["git", "clone", "-q", REMOTE_URL, stale_path.as_posix()])
+
+    assert get_commit_hash(clone_repo(f"{REMOTE_URL}#{sha}", tmp_path / "cache")) == sha
+
+
+def test__clone_repo__failed_checkout_leaves_no_clone(remote_repo, tmp_path):
+    url = f"{REMOTE_URL}#{FULL_SHA}"
+    with pytest.raises(subprocess.CalledProcessError):
+        clone_repo(url, tmp_path)
+    assert not construct_repo_path(url, tmp_path).exists()
 
 
 class GitTests(BaseTest):
@@ -135,7 +342,9 @@ class GitTests(BaseTest):
 
         p1a = construct_repo_path("https://github.com/github/check-all/tree/v0.4.0", root)
         p1b = construct_repo_path("git@github.com:github/check-all.git@v0.4.0", root)
-        p2 = construct_repo_path("https://github.com/github/check-all/tree/0.3.0", root)
+        # NOTE: this used to read `0.3.0`, a tag that does not exist. It "passed" only
+        # because an unresolvable ref used to yield an empty commit hash.
+        p2 = construct_repo_path("https://github.com/github/check-all/tree/v0.3.0", root)
         assert p1a == p1b
         assert p1a != p2
 
