@@ -77,7 +77,7 @@ requires-dist = [
     { name = "aibs-informatics-aws-utils", specifier = "~=1.0" },
     { name = "aibs-informatics-core", specifier = ">=1.0.1,<2" },
     { name = "aws-cdk-lib", specifier = "~=2.275" },
-    { name = "cdk-ecr-deployment", marker = "extra == 'ecr-mirror'", specifier = ">=3.1,<5" },
+    { name = "cdk-ecr-deployment", marker = "extra == 'ecr-mirror'", specifier = ">=4,<5" },
     { name = "constructs", specifier = "~=10.0" },
     { name = "pydantic", specifier = "~=2.5" },
 ]
@@ -89,7 +89,7 @@ all = [
     { name = "boto3-stubs", extras = ["s3", "batch"] },
     { name = "build" },
     { name = "bump-my-version" },
-    { name = "cdk-ecr-deployment", specifier = ">=3.1,<5" },
+    { name = "cdk-ecr-deployment", specifier = ">=4,<5" },
     { name = "griffe-pydantic", specifier = "~=1.1" },
     { name = "mike", specifier = "~=2.1" },
     { name = "mkdocs", specifier = "~=1.6" },
@@ -102,7 +102,7 @@ all = [
 ]
 dev = [
     { name = "aibs-informatics-test-resources", extras = ["all"], specifier = "~=0.0.4" },
-    { name = "cdk-ecr-deployment", specifier = ">=3.1,<5" },
+    { name = "cdk-ecr-deployment", specifier = ">=4,<5" },
 ]
 docs = [
     { name = "griffe-pydantic", specifier = "~=1.1" },

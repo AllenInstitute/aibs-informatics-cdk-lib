@@ -565,9 +565,10 @@ class DockerAsset(constructs.Construct):
 def _import_ecr_deployment() -> tuple[Any, Any]:
     """Import the optional ``cdk-ecr-deployment`` package, lazily.
 
-    Mirroring is opt-in per Docker Asset, so its dependency is opt-in too: ``gcs``, ``ocs``,
-    and ``ocs-deploy`` all pin ``cdk-ecr-deployment~=3.1.13`` while upstream supports only
-    v4, and a hard dependency on either major would make those repos unresolvable.
+    Mirroring is opt-in per Docker Asset, so its dependency is opt-in too: the extra requires
+    ``cdk-ecr-deployment`` v4, the line it is tested against (3.x registers its custom
+    resource under a different type), while ``gcs``, ``ocs``, and ``ocs-deploy`` pin
+    ``~=3.1.13``, so a hard dependency would make those repos unresolvable.
 
     Returns:
         The ``DockerImageName`` and ``ECRDeployment`` classes.

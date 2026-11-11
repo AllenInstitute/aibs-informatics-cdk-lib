@@ -15,10 +15,9 @@ images, which AWS requires to be in ECR.
 
 Mirroring-always was rejected on dependency grounds rather than architectural ones.
 `cdk-ecr-deployment` is proven in-house (`gcs-infra` runs three `ECRDeployment`s today) but
-`gcs`, `ocs`, and `ocs-deploy` all pin `~=3.1.13` while upstream supports only v4. A hard
-dependency on either major forces a coordinated multi-repo change; declaring it as an
-optional `ecr-mirror` extra with a lazy import and a `>=3.1,<5` range avoids the resolver
-conflict entirely and matches the fact that mirroring is already opt-in.
+`gcs`, `ocs`, and `ocs-deploy` all pin `~=3.1.13` while upstream supports only v4.
+We require v4, the line we test against (3.x registers its custom resource under a different type), so a hard dependency would force a coordinated multi-repo upgrade.
+Declaring it as an optional `ecr-mirror` extra with a lazy import and a `>=4,<5` range leaves those repos unaffected unless they enable it, and matches the fact that mirroring is already opt-in.
 
 Registry throttling was raised as an argument for mirroring and does not hold up: GHCR
 publishes no pull rate limit for public packages and public package usage is free, unlike
